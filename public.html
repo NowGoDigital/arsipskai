@@ -1,1 +1,748 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DocuCloud — Sistem Pengarsipan Dokumen Modern untuk Tim Anda</title>
+<meta name="description" content="DocuCloud adalah platform pengarsipan dokumen modern terintegrasi Google Drive. Kelola, bagikan, dan amankan dokumen perusahaan dengan mudah.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+  [x-cloak] { display: none !important; }
+  .scrollbar::-webkit-scrollbar { width: 6px; }
+  .scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 10px; }
+  .glass { backdrop-filter: blur(16px); background: rgba(255,255,255,.75); }
+  .dark .glass { background: rgba(15,23,42,.75); }
+  .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
+  .gradient-text { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .fade-in { animation: fadeIn .6s ease both; }
+  .fade-up { animation: fadeUp .7s ease both; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  .blob {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: .35;
+    animation: float 20s infinite ease-in-out;
+  }
+  @keyframes float {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(40px,-60px) scale(1.1); }
+    66% { transform: translate(-30px,40px) scale(.9); }
+  }
+  .card-hover { transition: all .3s ease; }
+  .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -10px rgba(102,126,234,.3); }
+  .marquee { display: flex; animation: marquee 30s linear infinite; }
+  @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .pulse-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .watermark {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 100px, rgba(100,116,139,.08) 100px, rgba(100,116,139,.08) 101px);
+  }
+  .shine { position: relative; overflow: hidden; }
+  .shine::after {
+    content:''; position:absolute; top:0; left:-100%; width:50%; height:100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+    transition: left .6s ease;
+  }
+  .shine:hover::after { left: 120%; }
+</style>
+</head>
+<body class="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 overflow-x-hidden"
+      x-data="publicSite()" x-init="init()" x-cloak
+      :class="{'dark': darkMode}">
 
+<!-- ================== LANDING PAGE ================== -->
+<template x-if="view === 'home'">
+<div class="min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav :class="scrolled ? 'glass shadow-sm' : 'bg-transparent'" class="fixed top-0 w-full z-40 transition-all duration-300 border-b border-slate-200/50 dark:border-slate-800/50">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="#" @click.prevent="view='home'" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center">
+          <i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-bold text-lg">DocuCloud</span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#features" class="text-sm font-medium hover:text-indigo-600 transition">Fitur</a>
+        <a href="#how" class="text-sm font-medium hover:text-indigo-600 transition">Cara Kerja</a>
+        <a href="#pricing" class="text-sm font-medium hover:text-indigo-600 transition">Harga</a>
+        <a href="#testimonials" class="text-sm font-medium hover:text-indigo-600 transition">Testimoni</a>
+        <a href="#faq" class="text-sm font-medium hover:text-indigo-600 transition">FAQ</a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button @click="darkMode = !darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+          <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
+        </button>
+        <button @click="showAuth = true; authTab='login'" class="hidden sm:block text-sm font-medium px-4 py-2 hover:text-indigo-600">Masuk</button>
+        <button @click="showAuth = true; authTab='register'" class="shine px-4 py-2 gradient-bg text-white rounded-lg text-sm font-semibold">Coba Gratis</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="relative pt-32 pb-20 px-6 overflow-hidden">
+    <div class="blob bg-indigo-500 w-96 h-96 top-10 -left-20"></div>
+    <div class="blob bg-purple-500 w-96 h-96 top-40 right-0" style="animation-delay:-7s"></div>
+    <div class="blob bg-pink-400 w-72 h-72 bottom-0 left-1/3" style="animation-delay:-14s"></div>
+
+    <div class="relative max-w-7xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-full text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-6 fade-up">
+        <span class="w-2 h-2 rounded-full bg-green-500 pulse-dot"></span>
+        🚀 Versi 2.4 — Integrasi Google Drive Resmi Dirilis
+      </div>
+
+      <h1 class="text-5xl md:text-7xl font-black tracking-tight leading-[1.05] fade-up" style="animation-delay:.1s">
+        Arsip dokumen tim Anda<br>
+        <span class="gradient-text">modern, aman, terintegrasi.</span>
+      </h1>
+
+      <p class="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto fade-up" style="animation-delay:.2s">
+        DocuCloud menyatukan seluruh dokumen perusahaan dalam satu dashboard elegan.
+        Upload, cari, bagikan, dan kolaborasi — semuanya terhubung langsung ke Google Drive.
+      </p>
+
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 fade-up" style="animation-delay:.3s">
+        <button @click="showAuth = true; authTab='register'" class="shine w-full sm:w-auto px-8 py-4 gradient-bg text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30">
+          Mulai Gratis 14 Hari
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+        <button @click="view='demo-doc'; loadDemoDoc()" class="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800">
+          <i data-lucide="play-circle" class="w-4 h-4"></i>
+          Lihat Demo Dokumen Publik
+        </button>
+      </div>
+
+      <!-- Trust Bar -->
+      <div class="mt-12 flex items-center justify-center gap-6 text-xs text-slate-500 fade-up" style="animation-delay:.4s">
+        <div class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-green-500"></i> ISO 27001</div>
+        <div class="flex items-center gap-1.5"><i data-lucide="lock" class="w-4 h-4 text-indigo-500"></i> End-to-End Encryption</div>
+        <div class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> GDPR Compliant</div>
+      </div>
+
+      <!-- Hero Preview -->
+      <div class="relative mt-16 max-w-5xl mx-auto fade-up" style="animation-delay:.5s">
+        <div class="absolute -inset-4 gradient-bg rounded-3xl blur-2xl opacity-20"></div>
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div class="flex items-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+            <div class="flex gap-1.5">
+              <div class="w-3 h-3 rounded-full bg-red-400"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+              <div class="w-3 h-3 rounded-full bg-green-400"></div>
+            </div>
+            <div class="flex-1 text-center text-xs text-slate-400">docucloud.app/dashboard</div>
+          </div>
+          <div class="grid grid-cols-4 gap-3 p-5">
+            <div class="col-span-1 space-y-2">
+              <div class="h-8 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
+              <div class="h-6 bg-indigo-500/20 rounded-lg"></div>
+              <div class="h-6 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
+              <div class="h-6 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
+              <div class="h-6 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
+            </div>
+            <div class="col-span-3 space-y-3">
+              <div class="grid grid-cols-4 gap-2">
+                <div class="h-16 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg"></div>
+                <div class="h-16 bg-green-100 dark:bg-green-500/20 rounded-lg"></div>
+                <div class="h-16 bg-yellow-100 dark:bg-yellow-500/20 rounded-lg"></div>
+                <div class="h-16 bg-purple-100 dark:bg-purple-500/20 rounded-lg"></div>
+              </div>
+              <div class="grid grid-cols-5 gap-2">
+                <template x-for="i in 10" :key="i">
+                  <div class="aspect-square rounded-lg" :class="i%3===0?'bg-red-100 dark:bg-red-500/20':i%3===1?'bg-blue-100 dark:bg-blue-500/20':'bg-slate-100 dark:bg-slate-800'"></div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="py-12 px-6 border-y border-slate-200 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <template x-for="s in stats" :key="s.label">
+        <div>
+          <p class="text-4xl md:text-5xl font-black gradient-text" x-text="s.value"></p>
+          <p class="text-sm text-slate-500 mt-2" x-text="s.label"></p>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- CLIENTS MARQUEE -->
+  <section class="py-10 px-6 overflow-hidden">
+    <p class="text-center text-xs uppercase tracking-widest text-slate-400 mb-6">Dipercaya oleh 500+ perusahaan</p>
+    <div class="relative">
+      <div class="marquee gap-16 whitespace-nowrap">
+        <template x-for="i in 2" :key="i">
+          <div class="flex gap-16 items-center">
+            <template x-for="c in ['TOKOPEDIA','GOJEK','BUKALAPAK','TELKOM','BCA','MANDIRI','PERTAMINA','ASTRA','SHOPEE','TRAVELOKA']" :key="c">
+              <span class="text-2xl font-black text-slate-300 dark:text-slate-700" x-text="c"></span>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs font-bold tracking-widest text-indigo-600 uppercase">Fitur Unggulan</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-3">Semua yang tim Anda butuhkan</h2>
+        <p class="text-slate-500 mt-4">Dari pengarsipan sederhana hingga workflow kompleks — DocuCloud menangani semuanya dengan elegan.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="f in features" :key="f.title">
+          <div class="card-hover bg-white dark:bg-slate-900 rounded-2xl p-7 border border-slate-200 dark:border-slate-800">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-5" :style="`background:${f.bg}`">
+              <i :data-lucide="f.icon" class="w-6 h-6" :style="`color:${f.color}`"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2" x-text="f.title"></h3>
+            <p class="text-sm text-slate-500 leading-relaxed" x-text="f.desc"></p>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="py-24 px-6 bg-slate-50 dark:bg-slate-900/50">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="text-xs font-bold tracking-widest text-indigo-600 uppercase">Cara Kerja</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-3">Mulai dalam 3 langkah</h2>
+      </div>
+
+      <div class="relative">
+        <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-800 -translate-x-1/2"></div>
+
+        <template x-for="(step, i) in steps" :key="i">
+          <div class="relative mb-12 md:flex items-center" :class="i%2===0 ? 'md:flex-row' : 'md:flex-row-reverse'">
+            <div class="md:w-1/2 px-6" :class="i%2===0 ? 'md:text-right' : 'md:text-left'">
+              <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 inline-block max-w-md">
+                <div class="flex items-center gap-3 mb-3" :class="i%2===0 ? 'md:flex-row-reverse' : ''">
+                  <div class="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center text-white font-bold" x-text="'0'+(i+1)"></div>
+                  <h3 class="text-xl font-bold" x-text="step.title"></h3>
+                </div>
+                <p class="text-sm text-slate-500" x-text="step.desc"></p>
+              </div>
+            </div>
+            <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 w-12 h-12 gradient-bg rounded-full items-center justify-center text-white font-bold z-10 shadow-lg" x-text="i+1"></div>
+            <div class="md:w-1/2"></div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="text-xs font-bold tracking-widest text-indigo-600 uppercase">Harga</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-3">Pilih paket yang tepat</h2>
+        <p class="text-slate-500 mt-4">Mulai gratis, upgrade kapan saja sesuai kebutuhan tim.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <template x-for="p in plans" :key="p.name">
+          <div :class="p.popular ? 'gradient-bg text-white scale-105 shadow-2xl' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'"
+               class="card-hover rounded-2xl p-8 relative">
+            <div x-show="p.popular" class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-slate-900 text-xs font-bold px-3 py-1 rounded-full">PALING POPULER</div>
+            <h3 class="text-xl font-bold" x-text="p.name"></h3>
+            <p class="text-sm opacity-80 mt-1" x-text="p.tagline"></p>
+            <div class="mt-6 flex items-baseline gap-1">
+              <span class="text-4xl font-black" x-text="p.price"></span>
+              <span class="text-sm opacity-70">/bulan</span>
+            </div>
+            <ul class="mt-6 space-y-3">
+              <template x-for="feat in p.features" :key="feat">
+                <li class="flex items-start gap-2 text-sm">
+                  <i data-lucide="check" class="w-4 h-4 flex-shrink-0 mt-0.5" :class="p.popular ? 'text-white' : 'text-green-500'"></i>
+                  <span x-text="feat"></span>
+                </li>
+              </template>
+            </ul>
+            <button @click="showAuth = true; authTab='register'"
+                    :class="p.popular ? 'bg-white text-indigo-600 hover:bg-slate-100' : 'gradient-bg text-white'"
+                    class="w-full mt-8 py-3 rounded-xl font-semibold text-sm">
+              Pilih Paket
+            </button>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section id="testimonials" class="py-24 px-6 bg-slate-50 dark:bg-slate-900/50">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="text-xs font-bold tracking-widest text-indigo-600 uppercase">Testimoni</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-3">Dipuji oleh ribuan tim</h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <template x-for="t in testimonials" :key="t.name">
+          <div class="card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
+            <div class="flex gap-1 mb-4">
+              <template x-for="i in 5" :key="i"><i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i></template>
+            </div>
+            <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300" x-text="`&quot;${t.quote}&quot;`"></p>
+            <div class="flex items-center gap-3 mt-5 pt-5 border-t border-slate-100 dark:border-slate-800">
+              <div class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold" x-text="t.name[0]"></div>
+              <div>
+                <p class="text-sm font-semibold" x-text="t.name"></p>
+                <p class="text-xs text-slate-500" x-text="t.role"></p>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-24 px-6">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-12">
+        <span class="text-xs font-bold tracking-widest text-indigo-600 uppercase">FAQ</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-3">Pertanyaan umum</h2>
+      </div>
+
+      <div class="space-y-3">
+        <template x-for="(f, i) in faqs" :key="i">
+          <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <button @click="openFaq = openFaq===i ? -1 : i" class="w-full flex items-center justify-between p-5 text-left">
+              <span class="font-semibold" x-text="f.q"></span>
+              <i :data-lucide="openFaq===i ? 'chevron-up' : 'chevron-down'" class="w-5 h-5 text-slate-400"></i>
+            </button>
+            <div x-show="openFaq===i" x-collapse class="px-5 pb-5 text-sm text-slate-500 leading-relaxed" x-text="f.a"></div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20 px-6">
+    <div class="max-w-5xl mx-auto gradient-bg rounded-3xl p-12 md:p-16 text-center text-white relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+      <div class="relative">
+        <h2 class="text-3xl md:text-5xl font-black">Siap modernisasi arsip Anda?</h2>
+        <p class="mt-4 opacity-90 max-w-xl mx-auto">Bergabunglah dengan 500+ perusahaan yang sudah beralih ke DocuCloud. Gratis 14 hari, tanpa kartu kredit.</p>
+        <button @click="showAuth = true; authTab='register'" class="mt-8 shine px-8 py-4 bg-white text-indigo-600 rounded-xl font-bold hover:bg-slate-100">
+          Mulai Sekarang — Gratis
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 py-12 px-6">
+    <div class="max-w-7xl mx-auto grid md:grid-cols-5 gap-8">
+      <div class="md:col-span-2">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center">
+            <i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i>
+          </div>
+          <span class="font-bold text-lg">DocuCloud</span>
+        </div>
+        <p class="text-sm text-slate-500 max-w-xs">Platform pengarsipan dokumen modern terintegrasi Google Drive untuk tim profesional.</p>
+        <div class="flex gap-3 mt-5">
+          <template x-for="s in ['twitter','linkedin','github','youtube']" :key="s">
+            <a href="#" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition">
+              <i :data-lucide="s" class="w-4 h-4"></i>
+            </a>
+          </template>
+        </div>
+      </div>
+      <template x-for="col in footerCols" :key="col.title">
+        <div>
+          <h4 class="font-bold text-sm mb-4" x-text="col.title"></h4>
+          <ul class="space-y-2">
+            <template x-for="link in col.links" :key="link">
+              <li><a href="#" class="text-sm text-slate-500 hover:text-indigo-600" x-text="link"></a></li>
+            </template>
+          </ul>
+        </div>
+      </template>
+    </div>
+    <div class="max-w-7xl mx-auto mt-10 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-slate-500">
+      <p>© 2026 DocuCloud. Hak cipta dilindungi.</p>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-indigo-600">Privasi</a>
+        <a href="#" class="hover:text-indigo-600">Ketentuan</a>
+        <a href="#" class="hover:text-indigo-600">Keamanan</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</template>
+
+<!-- ================== PUBLIC DOCUMENT VIEW ================== -->
+<template x-if="view === 'demo-doc'">
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950">
+  <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="#" @click.prevent="view='home'" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center">
+          <i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-bold">DocuCloud</span>
+        <span class="text-xs text-slate-400 ml-2">/ Dokumen Publik</span>
+      </a>
+      <div class="flex items-center gap-2">
+        <button @click="showAuth = true; authTab='login'" class="text-sm px-4 py-2 hover:text-indigo-600">Masuk</button>
+        <button @click="showAuth = true; authTab='register'" class="text-sm px-4 py-2 gradient-bg text-white rounded-lg">Daftar</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-5xl mx-auto p-6">
+    <!-- Access Banner -->
+    <div class="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4 mb-6 flex items-start gap-3">
+      <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-amber-900 dark:text-amber-300">Anda melihat dokumen publik dengan akses terbatas</p>
+        <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Dokumen ini dibagikan oleh pemilik. Untuk mengunduh atau mengedit, minta akses terlebih dahulu.</p>
+      </div>
+      <button @click="showRequestAccess = true" class="text-xs font-semibold px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700">Minta Akses Penuh</button>
+    </div>
+
+    <!-- Document Header -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-6">
+      <div class="flex items-start gap-4">
+        <div class="w-14 h-14 rounded-xl bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="file-text" class="w-7 h-7 text-red-500"></i>
+        </div>
+        <div class="flex-1">
+          <h1 class="text-2xl font-bold">Panduan_Onboarding_Karyawan_2026.pdf</h1>
+          <div class="flex items-center flex-wrap gap-4 mt-3 text-xs text-slate-500">
+            <span class="flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Dibagikan oleh Budi Santoso</span>
+            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> 16 Juli 2026</span>
+            <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> 4.2 MB</span>
+            <span class="flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> 127 kali dilihat</span>
+            <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-500/20 text-blue-600 rounded-full font-medium">HRD</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mt-5 pt-5 border-t border-slate-100 dark:border-slate-800">
+        <button @click="showRequestAccess = true" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700">
+          <i data-lucide="download" class="w-4 h-4"></i> Unduh
+        </button>
+        <button @click="copyLink()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700">
+          <i data-lucide="link" class="w-4 h-4"></i> Salin Link
+        </button>
+        <button class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700">
+          <i data-lucide="flag" class="w-4 h-4"></i> Laporkan
+        </button>
+      </div>
+    </div>
+
+    <!-- Document Preview -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+      <div class="watermark"></div>
+      <div class="relative p-10 md:p-16 prose prose-slate dark:prose-invert max-w-none">
+        <div class="text-center border-b pb-6 mb-6">
+          <p class="text-xs uppercase tracking-widest text-slate-400">Dokumen Internal</p>
+          <h1 class="text-3xl font-black mt-2">Panduan Onboarding Karyawan</h1>
+          <p class="text-sm text-slate-500 mt-1">PT DocuCloud Indonesia — Edisi 2026</p>
+        </div>
+
+        <h2 class="text-xl font-bold mt-6">1. Selamat Datang</h2>
+        <p class="text-sm leading-relaxed">Selamat bergabung dengan tim DocuCloud! Panduan ini akan membantu Anda memahami budaya, proses, dan tools yang kami gunakan sehari-hari. Pastikan Anda membaca hingga selesai.</p>
+
+        <h2 class="text-xl font-bold mt-6">2. Hari Pertama</h2>
+        <ul class="text-sm leading-relaxed list-disc pl-5 space-y-1">
+          <li>Registrasi akun email perusahaan & akses SSO</li>
+          <li>Pengambilan laptop dan peralatan kerja dari IT</li>
+          <li>Perkenalan dengan buddy & tim langsung</li>
+          <li>Sesi orientasi budaya perusahaan (1 jam)</li>
+        </ul>
+
+        <h2 class="text-xl font-bold mt-6">3. Tools Wajib</h2>
+        <p class="text-sm leading-relaxed">Seluruh dokumen internal dikelola melalui <strong>DocuCloud</strong>. Anda akan mendapatkan akses dalam 24 jam pertama. Ikuti pelatihan singkat di modul <em>Getting Started</em>.</p>
+
+        <div class="mt-10 pt-6 border-t text-center text-xs text-slate-400">
+          Halaman 1 dari 24 — Preview publik terbatas
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Documents -->
+    <div class="mt-8">
+      <h3 class="font-bold mb-4">Dokumen Terkait</h3>
+      <div class="grid md:grid-cols-3 gap-4">
+        <template x-for="d in relatedDocs" :key="d.name">
+          <div class="card-hover bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 cursor-pointer">
+            <i :data-lucide="d.icon" class="w-8 h-8 mb-3" :style="`color:${d.color}`"></i>
+            <p class="text-sm font-semibold" x-text="d.name"></p>
+            <p class="text-xs text-slate-500 mt-1" x-text="d.size"></p>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ================== AUTH MODAL ================== -->
+<div x-show="showAuth" x-transition class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div @click.away="showAuth=false" class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+    <div class="gradient-bg p-6 text-white relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+      <div class="relative">
+        <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-3">
+          <i data-lucide="cloud-cog" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-2xl font-bold" x-text="authTab==='login' ? 'Selamat datang kembali' : 'Mulai perjalanan Anda'"></h3>
+        <p class="text-sm opacity-90 mt-1" x-text="authTab==='login' ? 'Masuk ke dashboard DocuCloud' : 'Gratis 14 hari, tanpa kartu kredit'"></p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-slate-200 dark:border-slate-800">
+      <button @click="authTab='login'" :class="authTab==='login' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'" class="flex-1 py-3 text-sm font-semibold border-b-2">Masuk</button>
+      <button @click="authTab='register'" :class="authTab==='register' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'" class="flex-1 py-3 text-sm font-semibold border-b-2">Daftar</button>
+    </div>
+
+    <div class="p-6">
+      <!-- Login Form -->
+      <template x-if="authTab==='login'">
+        <form @submit.prevent="doLogin()" class="space-y-4">
+          <div>
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Email</label>
+            <input x-model="auth.email" type="email" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="nama@perusahaan.com">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Password</label>
+            <input x-model="auth.password" type="password" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="••••••••">
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <label class="flex items-center gap-1.5"><input type="checkbox" class="rounded"> Ingat saya</label>
+            <a href="#" class="text-indigo-600 hover:underline">Lupa password?</a>
+          </div>
+          <button type="submit" class="w-full py-3 gradient-bg text-white rounded-lg font-semibold">Masuk ke Dashboard</button>
+        </form>
+      </template>
+
+      <!-- Register Form -->
+      <template x-if="authTab==='register'">
+        <form @submit.prevent="doRegister()" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Nama Depan</label>
+              <input type="text" required class="w-full mt-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Nama Belakang</label>
+              <input type="text" required class="w-full mt-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Email Kerja</label>
+            <input type="email" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Nama Perusahaan</label>
+            <input type="text" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Password</label>
+            <input type="password" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <label class="flex items-start gap-2 text-xs text-slate-500">
+            <input type="checkbox" required class="mt-0.5 rounded">
+            <span>Saya setuju dengan <a href="#" class="text-indigo-600 underline">Ketentuan Layanan</a> dan <a href="#" class="text-indigo-600 underline">Kebijakan Privasi</a>.</span>
+          </label>
+          <button type="submit" class="w-full py-3 gradient-bg text-white rounded-lg font-semibold">Buat Akun Gratis</button>
+        </form>
+      </template>
+
+      <div class="flex items-center gap-3 my-5">
+        <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
+        <span class="text-xs text-slate-400">atau</span>
+        <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
+      </div>
+
+      <button class="w-full py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700">
+        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Lanjutkan dengan Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================== REQUEST ACCESS MODAL ================== -->
+<div x-show="showRequestAccess" x-transition class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div @click.away="showRequestAccess=false" class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <div class="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center mb-3">
+          <i data-lucide="key-round" class="w-6 h-6 text-white"></i>
+        </div>
+        <h3 class="text-xl font-bold">Minta Akses Penuh</h3>
+        <p class="text-sm text-slate-500 mt-1">Kirim permintaan ke pemilik dokumen.</p>
+      </div>
+      <button @click="showRequestAccess=false"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form @submit.prevent="submitRequest()" class="space-y-4 mt-4">
+      <div>
+        <label class="text-xs font-semibold">Nama Anda</label>
+        <input type="text" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="text-xs font-semibold">Email</label>
+        <input type="email" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="text-xs font-semibold">Jenis Akses</label>
+        <select class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">
+          <option>Lihat saja</option><option>Komentar</option><option>Unduh & Edit</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-semibold">Pesan (opsional)</label>
+        <textarea rows="3" class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Saya butuh dokumen ini untuk..."></textarea>
+      </div>
+      <button type="submit" class="w-full py-3 gradient-bg text-white rounded-lg font-semibold">Kirim Permintaan</button>
+    </form>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3">
+  <i :data-lucide="toast.icon" class="w-5 h-5" :class="toast.type==='success' ? 'text-green-400' : 'text-red-400'"></i>
+  <span x-text="toast.message" class="text-sm"></span>
+</div>
+
+<script>
+function publicSite() {
+  return {
+    view: 'home',
+    darkMode: false,
+    scrolled: false,
+    showAuth: false,
+    authTab: 'login',
+    showRequestAccess: false,
+    openFaq: -1,
+    auth: { email:'', password:'' },
+    toast: { show:false, message:'', type:'success', icon:'check-circle' },
+
+    stats: [
+      {value:'500+', label:'Perusahaan'},
+      {value:'2.4M', label:'Dokumen Diarsipkan'},
+      {value:'99.9%', label:'Uptime Server'},
+      {value:'180+', label:'Negara Terjangkau'},
+    ],
+
+    features: [
+      {icon:'cloud-upload', title:'Upload Cerdas', desc:'Drag & drop ratusan file sekaligus. AI otomatis mengkategorikan dan mengekstrak metadata.', bg:'#dbeafe', color:'#2563eb'},
+      {icon:'search', title:'Pencarian Semantik', desc:'Cari dokumen berdasarkan isi, bukan hanya nama. Didukung OCR untuk file scan.', bg:'#dcfce7', color:'#16a34a'},
+      {icon:'shield-check', title:'Keamanan Enterprise', desc:'Enkripsi AES-256, 2FA, audit trail, dan kepatuhan GDPR/ISO 27001.', bg:'#fef3c7', color:'#d97706'},
+      {icon:'users', title:'Kolaborasi Real-time', desc:'Komentar, mention, dan approval workflow langsung di dalam dokumen.', bg:'#ede9fe', color:'#7c3aed'},
+      {icon:'git-branch', title:'Version Control', desc:'Riwayat versi lengkap. Bandingkan perubahan dan rollback kapan saja.', bg:'#fee2e2', color:'#dc2626'},
+      {icon:'zap', title:'Otomasi Workflow', desc:'Template approval, notifikasi otomatis, dan integrasi 50+ aplikasi bisnis.', bg:'#ccfbf1', color:'#0d9488'},
+      {icon:'scan', title:'OCR & AI Tagging', desc:'Ubah scan PDF jadi teks yang bisa dicari. AI menandai dokumen otomatis.', bg:'#fce7f3', color:'#db2777'},
+      {icon:'bar-chart-3', title:'Analitik Lengkap', desc:'Dashboard penggunaan, audit akses, dan laporan kepatuhan siap pakai.', bg:'#e0e7ff', color:'#4f46e5'},
+      {icon:'link-2', title:'Integrasi Drive', desc:'Sinkronisasi dua arah dengan Google Drive, OneDrive, dan Dropbox.', bg:'#fed7aa', color:'#ea580c'},
+    ],
+
+    steps: [
+      {title:'Hubungkan Cloud Anda', desc:'Login dengan Google Workspace atau Microsoft 365. Seluruh dokumen akan tersinkron otomatis dalam hitungan menit.'},
+      {title:'Atur Struktur Arsip', desc:'Buat folder, kategori, dan tag sesuai kebutuhan. Import struktur existing atau gunakan template industri.'},
+      {title:'Undang Tim & Mulai', desc:'Undang anggota tim, atur permission, dan nikmati pengarsipan modern yang efisien.'},
+    ],
+
+    plans: [
+      {name:'Starter', tagline:'Untuk tim kecil', price:'Gratis', popular:false,
+       features:['5 pengguna','5 GB storage','Upload hingga 50MB','Integrasi Google Drive','Dukungan email']},
+      {name:'Business', tagline:'Untuk perusahaan berkembang', price:'Rp 149rb', popular:true,
+       features:['Pengguna tak terbatas','1 TB storage','Upload hingga 5GB','OCR & AI tagging','Approval workflow','Analitik lanjutan','Dukungan prioritas 24/7']},
+      {name:'Enterprise', tagline:'Untuk organisasi besar', price:'Custom', popular:false,
+       features:['Semua fitur Business','Storage tak terbatas','SSO & SAML','Audit trail lengkap','SLA 99.99%','Dedicated CSM','On-premise option']},
+    ],
+
+    testimonials: [
+      {name:'Andi Wijaya', role:'CEO, TechStartup ID', quote:'DocuCloud memangkas waktu pencarian dokumen kami hingga 80%. Tim legal sangat terbantu dengan fitur approval workflow.'},
+      {name:'Siti Rahayu', role:'HR Manager, Manufacturing Co.', quote:'Onboarding karyawan baru jadi jauh lebih cepat. Semua SOP terpusat dan mudah diakses dari mana saja.'},
+      {name:'Budi Prakoso', role:'CTO, FinTech Group', quote:'Keamanannya setara enterprise bank. Audit trail-nya sangat membantu untuk compliance OJK.'},
+    ],
+
+    faqs: [
+      {q:'Apakah ada versi gratis?', a:'Ya! Paket Starter kami gratis selamanya untuk tim hingga 5 orang dengan storage 5 GB. Tidak perlu kartu kredit untuk mendaftar.'},
+      {q:'Bagaimana dengan keamanan data?', a:'Kami menggunakan enkripsi AES-256 untuk data at-rest dan TLS 1.3 untuk data in-transit. Server berlokasi di Indonesia dan Singapura dengan sertifikasi ISO 27001.'},
+      {q:'Bisakah integrasi dengan Google Drive?', a:'Tentu. DocuCloud mendukung sinkronisasi dua arah dengan Google Drive, OneDrive, dan Dropbox. Perubahan di salah satu platform otomatis tecermin di tempat lain.'},
+      {q:'Apakah ada batasan ukuran file?', a:'Paket Starter mendukung hingga 50MB per file. Business hingga 5GB, dan Enterprise tidak memiliki batasan.'},
+      {q:'Bisakah migrasi dari sistem existing?', a:'Kami menyediakan tool migrasi otomatis dan tim support yang akan membantu Anda pindah dari SharePoint, Box, Dropbox, atau sistem on-premise.'},
+      {q:'Apakah tersedia untuk mobile?', a:'Ya, kami memiliki aplikasi native untuk iOS dan Android dengan fitur offline mode, scan dokumen, dan approval on-the-go.'},
+    ],
+
+    footerCols: [
+      {title:'Produk', links:['Fitur','Harga','Integrasi','Keamanan','Changelog','Roadmap']},
+      {title:'Perusahaan', links:['Tentang','Karir','Blog','Press Kit','Partner','Kontak']},
+      {title:'Sumber Daya', links:['Dokumentasi','API Reference','Panduan','Webinar','Studi Kasus','Status']},
+    ],
+
+    relatedDocs: [
+      {name:'SOP_Cuti_Karyawan.pdf', size:'1.2 MB', icon:'file-text', color:'#ef4444'},
+      {name:'Formulir_Data_Diri.docx', size:'340 KB', icon:'file-text', color:'#3b82f6'},
+      {name:'Struktur_Organisasi_2026.png', size:'2.8 MB', icon:'image', color:'#8b5cf6'},
+    ],
+
+    init() {
+      window.addEventListener('scroll', () => this.scrolled = window.scrollY > 20);
+      this.$nextTick(() => lucide.createIcons());
+      this.$watch('view', () => { this.$nextTick(() => lucide.createIcons()); window.scrollTo(0,0); });
+      this.$watch('showAuth', () => this.$nextTick(() => lucide.createIcons()));
+      this.$watch('showRequestAccess', () => this.$nextTick(() => lucide.createIcons()));
+      this.$watch('authTab', () => this.$nextTick(() => lucide.createIcons()));
+      this.$watch('openFaq', () => this.$nextTick(() => lucide.createIcons()));
+    },
+
+    showToast(msg, type='success') {
+      this.toast = {show:true, message:msg, type, icon: type==='success'?'check-circle':'alert-circle'};
+      setTimeout(()=>this.toast.show=false, 3000);
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    loadDemoDoc() { /* just switches view */ },
+
+    copyLink() {
+      navigator.clipboard?.writeText(window.location.href);
+      this.showToast('Link disalin ke clipboard');
+    },
+
+    doLogin() {
+      this.showAuth = false;
+      this.showToast('Login berhasil! Mengalihkan ke dashboard...');
+      setTimeout(() => window.location.href = 'index.html', 1500);
+    },
+
+    doRegister() {
+      this.showAuth = false;
+      this.showToast('Akun berhasil dibuat! Cek email untuk verifikasi.');
+    },
+
+    submitRequest() {
+      this.showRequestAccess = false;
+      this.showToast('Permintaan akses terkirim ke pemilik dokumen');
+    },
+  }
+}
+</script>
+</body>
+</html>
