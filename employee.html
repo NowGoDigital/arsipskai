@@ -1,1 +1,858 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DocuCloud — Portal Karyawan</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Inter', sans-serif; }
+  [x-cloak] { display: none !important; }
+  .scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 10px; }
+  .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
+  .gradient-text { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .3; animation: float 20s infinite ease-in-out; }
+  @keyframes float { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-60px) scale(1.1)} 66%{transform:translate(-30px,40px) scale(.9)} }
+  .fade-in { animation: fadeIn .5s ease both; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .card-hover { transition: all .25s ease; }
+  .card-hover:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -10px rgba(102,126,234,.25); }
+  .shine { position: relative; overflow: hidden; }
+  .shine::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent); transition: left .6s ease; }
+  .shine:hover::after { left: 120%; }
+  .pulse-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .watermark { position: absolute; inset: 0; pointer-events: none; background-image: repeating-linear-gradient(45deg, transparent, transparent 100px, rgba(100,116,139,.07) 100px, rgba(100,116,139,.07) 101px); }
+  .spinner { border: 3px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen"
+      x-data="employeePortal()" x-init="init()" x-cloak :class="{'dark': darkMode}">
 
+<!-- ================== LOGIN SCREEN ================== -->
+<template x-if="view === 'login'">
+<div class="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+  <div class="blob bg-indigo-500 w-96 h-96 top-0 -left-20"></div>
+  <div class="blob bg-purple-500 w-96 h-96 bottom-0 right-0" style="animation-delay:-7s"></div>
+  <div class="blob bg-pink-400 w-72 h-72 top-1/2 left-1/3" style="animation-delay:-14s"></div>
+
+  <div class="relative w-full max-w-5xl grid lg:grid-cols-2 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+    <!-- LEFT: Branding -->
+    <div class="gradient-bg p-10 text-white relative overflow-hidden hidden lg:flex flex-col justify-between">
+      <div class="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 left-0 w-60 h-60 bg-white/10 rounded-full blur-3xl"></div>
+
+      <div class="relative">
+        <div class="flex items-center gap-3 mb-10">
+          <div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+            <i data-lucide="cloud-cog" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold">DocuCloud</h1>
+            <p class="text-xs opacity-80">Portal Karyawan</p>
+          </div>
+        </div>
+
+        <h2 class="text-4xl font-black leading-tight mb-4">Selamat datang di<br>pusat dokumen perusahaan.</h2>
+        <p class="text-sm opacity-90 leading-relaxed">Akses ribuan dokumen internal, SOP, kebijakan, dan materi pelatihan dari satu tempat yang aman dan terorganisir.</p>
+      </div>
+
+      <div class="relative space-y-3">
+        <template x-for="feat in loginFeatures" :key="feat.title">
+          <div class="flex items-start gap-3 bg-white/10 rounded-xl p-3 backdrop-blur">
+            <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+              <i :data-lucide="feat.icon" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <p class="text-sm font-semibold" x-text="feat.title"></p>
+              <p class="text-xs opacity-80" x-text="feat.desc"></p>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <p class="relative text-xs opacity-70">© 2026 PT DocuCloud Indonesia. All rights reserved.</p>
+    </div>
+
+    <!-- RIGHT: Form -->
+    <div class="p-8 md:p-10">
+      <div class="flex justify-between items-center mb-8">
+        <div class="lg:hidden flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center">
+            <i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i>
+          </div>
+          <span class="font-bold">DocuCloud</span>
+        </div>
+        <button @click="darkMode = !darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg ml-auto lg:ml-0">
+          <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <template x-if="authMode === 'login'">
+        <div class="fade-in">
+          <h3 class="text-2xl font-bold">Masuk ke akun Anda</h3>
+          <p class="text-sm text-slate-500 mt-1 mb-6">Gunakan username & password yang telah disetujui admin.</p>
+
+          <form @submit.prevent="doLogin()" class="space-y-4">
+            <div>
+              <label class="text-xs font-semibold">Username / Email</label>
+              <div class="relative mt-1">
+                <i data-lucide="user" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input x-model="loginForm.username" type="text" required class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="nama.karyawan">
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Password</label>
+              <div class="relative mt-1">
+                <i data-lucide="lock" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input x-model="loginForm.password" :type="showPwd ? 'text' : 'password'" required class="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="••••••••">
+                <button type="button" @click="showPwd = !showPwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <i :data-lucide="showPwd ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <label class="flex items-center gap-1.5"><input type="checkbox" class="rounded"> Ingat saya</label>
+              <a href="#" class="text-indigo-600 hover:underline">Lupa password?</a>
+            </div>
+            <button type="submit" :disabled="loginLoading" class="shine w-full py-3 gradient-bg text-white rounded-lg font-semibold flex items-center justify-center gap-2">
+              <template x-if="loginLoading"><div class="spinner"></div></template>
+              <template x-if="!loginLoading"><i data-lucide="log-in" class="w-4 h-4"></i></template>
+              <span x-text="loginLoading ? 'Memverifikasi...' : 'Masuk'"></span>
+            </button>
+          </form>
+
+          <div class="mt-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl">
+            <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+              <strong>Demo:</strong> Username <code class="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">budi.santoso</code> / Password <code class="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">password123</code> (sudah disetujui admin)
+            </p>
+          </div>
+
+          <p class="text-center text-sm text-slate-500 mt-6">
+            Belum punya akun?
+            <button @click="authMode = 'register'; resetForms()" class="text-indigo-600 font-semibold hover:underline">Daftar di sini</button>
+          </p>
+        </div>
+      </template>
+
+      <!-- Register Form -->
+      <template x-if="authMode === 'register'">
+        <div class="fade-in">
+          <h3 class="text-2xl font-bold">Daftar akun baru</h3>
+          <p class="text-sm text-slate-500 mt-1 mb-6">Akun Anda perlu <strong>disetujui admin</strong> sebelum bisa digunakan.</p>
+
+          <form @submit.prevent="doRegister()" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-semibold">Nama Depan</label>
+                <input x-model="regForm.firstName" type="text" required class="w-full mt-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="text-xs font-semibold">Nama Belakang</label>
+                <input x-model="regForm.lastName" type="text" required class="w-full mt-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-semibold">NIK Karyawan</label>
+              <input x-model="regForm.employeeId" type="text" required placeholder="EMP-XXXXX" class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Departemen</label>
+              <select x-model="regForm.department" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">-- Pilih departemen --</option>
+                <option>HRD</option><option>Keuangan</option><option>Marketing</option>
+                <option>Operasional</option><option>IT</option><option>Legal</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Email Perusahaan</label>
+              <input x-model="regForm.email" type="email" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Username</label>
+              <input x-model="regForm.username" type="text" required class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Password</label>
+              <input x-model="regForm.password" type="password" required minlength="6" class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <p class="text-xs text-slate-400 mt-1">Minimal 6 karakter</p>
+            </div>
+            <label class="flex items-start gap-2 text-xs text-slate-500 pt-1">
+              <input x-model="regForm.agree" type="checkbox" required class="mt-0.5 rounded">
+              <span>Saya menyetujui kebijakan penggunaan portal dan memahami bahwa akun saya perlu diverifikasi oleh admin.</span>
+            </label>
+            <button type="submit" :disabled="regLoading" class="shine w-full py-3 gradient-bg text-white rounded-lg font-semibold flex items-center justify-center gap-2 mt-2">
+              <template x-if="regLoading"><div class="spinner"></div></template>
+              <template x-if="!regLoading"><i data-lucide="user-plus" class="w-4 h-4"></i></template>
+              <span x-text="regLoading ? 'Mendaftarkan...' : 'Daftar & Tunggu Persetujuan'"></span>
+            </button>
+          </form>
+
+          <p class="text-center text-sm text-slate-500 mt-5">
+            Sudah punya akun?
+            <button @click="authMode = 'login'; resetForms()" class="text-indigo-600 font-semibold hover:underline">Masuk di sini</button>
+          </p>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ================== PENDING APPROVAL SCREEN ================== -->
+<template x-if="view === 'pending'">
+<div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <div class="blob bg-amber-400 w-96 h-96 top-20 -right-20"></div>
+  <div class="blob bg-orange-400 w-80 h-80 bottom-0 -left-10" style="animation-delay:-7s"></div>
+
+  <div class="relative max-w-lg w-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-10 text-center border border-slate-200 dark:border-slate-800 fade-in">
+    <div class="relative mx-auto w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center mb-6">
+      <i data-lucide="hourglass" class="w-10 h-10 text-amber-600"></i>
+      <span class="absolute top-0 right-0 w-5 h-5 bg-amber-500 rounded-full pulse-dot border-2 border-white dark:border-slate-900"></span>
+    </div>
+
+    <h2 class="text-2xl font-bold">Akun Sedang Ditinjau</h2>
+    <p class="text-sm text-slate-500 mt-2 leading-relaxed">
+      Terima kasih, <span class="font-semibold" x-text="currentUser?.firstName"></span>! Pendaftaran Anda telah berhasil dikirim dan saat ini sedang menunggu <strong>persetujuan dari admin</strong>.
+    </p>
+
+    <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 text-left space-y-3">
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-500">Status:</span>
+        <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-semibold">Menunggu Approval</span>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-500">Username:</span>
+        <span class="font-medium" x-text="currentUser?.username"></span>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-500">NIK:</span>
+        <span class="font-medium" x-text="currentUser?.employeeId"></span>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-500">Didaftarkan:</span>
+        <span class="font-medium" x-text="currentUser?.registeredAt"></span>
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl text-left">
+      <div class="flex gap-2">
+        <i data-lucide="info" class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5"></i>
+        <div class="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+          <strong>Langkah selanjutnya:</strong> Admin akan meninjau data Anda dalam 1×24 jam. Anda akan menerima email konfirmasi saat akun telah diaktifkan. Hubungi <a href="mailto:admin@docucloud.id" class="underline font-semibold">admin@docucloud.id</a> jika belum ada kabar.
+        </div>
+      </div>
+    </div>
+
+    <button @click="view='login'; authMode='login'; resetForms()" class="mt-6 w-full py-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700">
+      Kembali ke Halaman Login
+    </button>
+  </div>
+</div>
+</template>
+
+<!-- ================== REJECTED SCREEN ================== -->
+<template x-if="view === 'rejected'">
+<div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <div class="blob bg-red-400 w-96 h-96 top-0 right-0"></div>
+
+  <div class="relative max-w-lg w-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-10 text-center border border-slate-200 dark:border-slate-800 fade-in">
+    <div class="mx-auto w-20 h-20 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center mb-6">
+      <i data-lucide="x-circle" class="w-10 h-10 text-red-600"></i>
+    </div>
+    <h2 class="text-2xl font-bold">Pendaftaran Ditolak</h2>
+    <p class="text-sm text-slate-500 mt-2 leading-relaxed">Mohon maaf, pendaftaran akun Anda ditolak oleh admin dengan alasan:</p>
+    <div class="mt-4 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-800 dark:text-red-300 italic" x-text="currentUser?.rejectionReason || 'Data tidak dapat diverifikasi.'"></div>
+    <p class="text-xs text-slate-500 mt-4">Silakan hubungi HRD untuk informasi lebih lanjut, atau daftar ulang dengan data yang benar.</p>
+    <button @click="view='login'; authMode='register'; resetForms()" class="mt-6 w-full py-3 gradient-bg text-white rounded-lg font-semibold">Daftar Ulang</button>
+  </div>
+</div>
+</template>
+
+<!-- ================== EMPLOYEE DASHBOARD ================== -->
+<template x-if="view === 'dashboard'">
+<div class="min-h-screen flex flex-col">
+  <!-- Topbar -->
+  <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center">
+          <i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i>
+        </div>
+        <div class="hidden sm:block">
+          <h1 class="font-bold text-sm leading-tight">DocuCloud</h1>
+          <p class="text-xs text-slate-500 leading-tight">Portal Karyawan</p>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="flex-1 max-w-2xl relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input x-model="searchQuery" @input="filterDocs()" type="text" placeholder="Cari dokumen, SOP, kebijakan, panduan..."
+               class="w-full pl-11 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <kbd class="hidden md:block absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-white dark:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600">⌘K</kbd>
+      </div>
+
+      <button @click="darkMode = !darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+        <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
+      </button>
+
+      <!-- User Menu -->
+      <div class="relative">
+        <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-2 pl-1 pr-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700">
+          <div class="w-7 h-7 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-bold" x-text="(currentUser?.firstName[0] || '') + (currentUser?.lastName[0] || '')"></div>
+          <span class="hidden md:block text-sm font-medium" x-text="currentUser?.firstName"></span>
+          <i data-lucide="chevron-down" class="w-3 h-3"></i>
+        </button>
+        <div x-show="userMenuOpen" @click.away="userMenuOpen=false" x-transition class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 overflow-hidden">
+          <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+            <p class="text-sm font-semibold" x-text="currentUser?.firstName + ' ' + currentUser?.lastName"></p>
+            <p class="text-xs text-slate-500" x-text="currentUser?.email"></p>
+            <p class="text-xs text-indigo-600 mt-0.5" x-text="currentUser?.department + ' Dept.'"></p>
+          </div>
+          <button class="w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4"></i> Riwayat Akses
+          </button>
+          <button class="w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2">
+            <i data-lucide="bookmark" class="w-4 h-4"></i> Dokumen Favorit
+          </button>
+          <button class="w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2">
+            <i data-lucide="settings" class="w-4 h-4"></i> Pengaturan
+          </button>
+          <div class="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
+            <button @click="doLogout()" class="w-full px-4 py-2 text-sm text-left hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 flex items-center gap-2">
+              <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8">
+    <!-- Welcome -->
+    <div class="mb-6 fade-in">
+      <h2 class="text-2xl md:text-3xl font-bold">
+        Halo, <span class="gradient-text" x-text="currentUser?.firstName"></span> 👋
+      </h2>
+      <p class="text-sm text-slate-500 mt-1">Temukan dokumen yang Anda butuhkan dengan cepat dan aman.</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <template x-for="s in quickStats" :key="s.label">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center" :style="`background:${s.bg}`">
+              <i :data-lucide="s.icon" class="w-4 h-4" :style="`color:${s.color}`"></i>
+            </div>
+          </div>
+          <p class="text-xl font-bold mt-2" x-text="s.value"></p>
+          <p class="text-xs text-slate-500" x-text="s.label"></p>
+        </div>
+      </template>
+    </div>
+
+    <div class="grid lg:grid-cols-4 gap-6">
+      <!-- LEFT: Filter sidebar -->
+      <aside class="lg:col-span-1">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sticky top-24">
+          <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Filter
+          </h3>
+
+          <div class="mb-5">
+            <p class="text-xs font-semibold uppercase text-slate-500 mb-2">Kategori</p>
+            <div class="space-y-1">
+              <button @click="filterCat = ''" :class="filterCat==='' ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''" class="w-full text-left px-3 py-1.5 text-sm rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+                Semua Kategori
+              </button>
+              <template x-for="cat in categories" :key="cat.name">
+                <button @click="filterCat = cat.name" :class="filterCat===cat.name ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600' : ''" class="w-full flex items-center justify-between px-3 py-1.5 text-sm rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" :style="`background:${cat.color}`"></span>
+                    <span x-text="cat.name"></span>
+                  </span>
+                  <span class="text-xs text-slate-400" x-text="cat.count"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div class="mb-5">
+            <p class="text-xs font-semibold uppercase text-slate-500 mb-2">Tipe File</p>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="t in ['Semua','PDF','Dokumen','Gambar','Spreadsheet']" :key="t">
+                <button @click="filterType = t" :class="filterType===t ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'" class="px-3 py-1 rounded-lg text-xs font-medium">
+                  <span x-text="t"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs font-semibold uppercase text-slate-500 mb-2">Urutkan</p>
+            <select x-model="sortBy" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none">
+              <option value="newest">Terbaru</option>
+              <option value="popular">Paling Sering Diakses</option>
+              <option value="name">Nama A-Z</option>
+              <option value="size">Ukuran Terbesar</option>
+            </select>
+          </div>
+
+          <button @click="resetFilters()" class="w-full mt-5 py-2 text-xs text-slate-500 hover:text-indigo-600 border border-slate-200 dark:border-slate-700 rounded-lg">
+            Reset Filter
+          </button>
+        </div>
+      </aside>
+
+      <!-- RIGHT: Documents -->
+      <div class="lg:col-span-3">
+        <!-- Recent / Featured -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold flex items-center gap-2">
+              <i data-lucide="flame" class="w-4 h-4 text-orange-500"></i> Paling Sering Diakses
+            </h3>
+            <button class="text-xs text-indigo-600 hover:underline">Lihat Semua</button>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <template x-for="doc in featuredDocs" :key="doc.id">
+              <div @click="openDoc(doc)" class="card-hover bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                <div class="aspect-[4/3] rounded-lg flex items-center justify-center mb-3 relative" :style="`background:${doc.color}15`">
+                  <i :data-lucide="doc.icon" class="w-10 h-10" :style="`color:${doc.color}`"></i>
+                  <span class="absolute top-2 right-2 text-xs bg-white/90 dark:bg-slate-800/90 px-1.5 py-0.5 rounded font-medium" x-text="doc.views + ' views'"></span>
+                </div>
+                <p class="text-sm font-semibold truncate" x-text="doc.name"></p>
+                <p class="text-xs text-slate-500 mt-1" x-text="doc.category + ' • ' + doc.size"></p>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- All Documents -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold flex items-center gap-2">
+              <i data-lucide="folder-open" class="w-4 h-4 text-indigo-500"></i>
+              Semua Dokumen
+              <span class="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full font-normal" x-text="filteredDocs.length + ' hasil'"></span>
+            </h3>
+            <div class="flex gap-1 bg-white dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+              <button @click="viewMode='grid'" :class="viewMode==='grid' ? 'bg-indigo-600 text-white' : ''" class="p-1.5 rounded"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              <button @click="viewMode='list'" :class="viewMode==='list' ? 'bg-indigo-600 text-white' : ''" class="p-1.5 rounded"><i data-lucide="list" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div x-show="filteredDocs.length === 0" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-10 text-center">
+            <i data-lucide="search-x" class="w-14 h-14 mx-auto text-slate-300"></i>
+            <p class="mt-3 font-semibold">Dokumen tidak ditemukan</p>
+            <p class="text-sm text-slate-500 mt-1">Coba ubah kata kunci atau filter pencarian Anda.</p>
+          </div>
+
+          <!-- Grid -->
+          <div x-show="viewMode==='grid' && filteredDocs.length > 0" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            <template x-for="doc in filteredDocs" :key="doc.id">
+              <div @click="openDoc(doc)" class="card-hover bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                <div class="aspect-square rounded-lg flex items-center justify-center mb-3 relative" :style="`background:${doc.color}15`">
+                  <i :data-lucide="doc.icon" class="w-12 h-12" :style="`color:${doc.color}`"></i>
+                  <button @click.stop="toggleBookmark(doc)" class="absolute top-2 right-2 w-7 h-7 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow">
+                    <i :data-lucide="doc.bookmarked ? 'bookmark' : 'bookmark-plus'" class="w-3.5 h-3.5" :class="doc.bookmarked ? 'fill-indigo-600 text-indigo-600' : ''"></i>
+                  </button>
+                </div>
+                <p class="text-sm font-semibold truncate" x-text="doc.name"></p>
+                <div class="flex items-center justify-between mt-2">
+                  <span class="text-xs text-slate-500" x-text="doc.size"></span>
+                  <span class="text-xs text-slate-400" x-text="doc.date"></span>
+                </div>
+                <div class="flex items-center gap-1 mt-2">
+                  <span class="w-1.5 h-1.5 rounded-full" :style="`background:${catColor(doc.category)}`"></span>
+                  <span class="text-xs text-slate-500" x-text="doc.category"></span>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- List -->
+          <div x-show="viewMode==='list' && filteredDocs.length > 0" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 uppercase">
+                <tr>
+                  <th class="text-left px-4 py-3">Nama Dokumen</th>
+                  <th class="text-left px-4 py-3 hidden md:table-cell">Kategori</th>
+                  <th class="text-left px-4 py-3 hidden sm:table-cell">Ukuran</th>
+                  <th class="text-left px-4 py-3 hidden lg:table-cell">Tanggal</th>
+                  <th class="text-right px-4 py-3">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="doc in filteredDocs" :key="doc.id">
+                  <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td class="px-4 py-3">
+                      <button @click="openDoc(doc)" class="flex items-center gap-3 text-left">
+                        <i :data-lucide="doc.icon" class="w-5 h-5 flex-shrink-0" :style="`color:${doc.color}`"></i>
+                        <span class="font-medium" x-text="doc.name"></span>
+                      </button>
+                    </td>
+                    <td class="px-4 py-3 hidden md:table-cell">
+                      <span class="flex items-center gap-1.5 text-xs">
+                        <span class="w-1.5 h-1.5 rounded-full" :style="`background:${catColor(doc.category)}`"></span>
+                        <span x-text="doc.category"></span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-slate-500 hidden sm:table-cell" x-text="doc.size"></td>
+                    <td class="px-4 py-3 text-slate-500 hidden lg:table-cell" x-text="doc.date"></td>
+                    <td class="px-4 py-3">
+                      <div class="flex justify-end gap-1">
+                        <button @click="openDoc(doc)" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded" title="Baca"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                        <button @click="downloadDoc(doc)" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded" title="Unduh"><i data-lucide="download" class="w-4 h-4"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 py-5 text-center text-xs text-slate-500">
+    © 2026 DocuCloud • <a href="#" class="hover:text-indigo-600">Kebijakan Privasi</a> • <a href="#" class="hover:text-indigo-600">Bantuan IT</a>
+  </footer>
+</div>
+</template>
+
+<!-- ================== DOCUMENT VIEWER MODAL ================== -->
+<div x-show="activeDoc" x-transition class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div @click.away="activeDoc=null" x-show="activeDoc" class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" :style="`background:${activeDoc?.color}20`">
+          <i :data-lucide="activeDoc?.icon" class="w-5 h-5" :style="`color:${activeDoc?.color}`"></i>
+        </div>
+        <div class="min-w-0">
+          <h3 class="font-bold truncate" x-text="activeDoc?.name"></h3>
+          <p class="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
+            <span x-text="activeDoc?.size"></span>
+            <span>•</span>
+            <span x-text="activeDoc?.date"></span>
+            <span>•</span>
+            <span class="flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> <span x-text="(activeDoc?.views || 0) + ' views'"></span></span>
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <button @click="toggleBookmark(activeDoc)" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg" :title="activeDoc?.bookmarked ? 'Hapus dari favorit' : 'Tambah ke favorit'">
+          <i :data-lucide="activeDoc?.bookmarked ? 'bookmark' : 'bookmark-plus'" class="w-4 h-4" :class="activeDoc?.bookmarked ? 'fill-indigo-600 text-indigo-600' : ''"></i>
+        </button>
+        <button @click="downloadDoc(activeDoc)" class="px-3 py-1.5 gradient-bg text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Unduh
+        </button>
+        <button @click="activeDoc=null" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-auto">
+      <div class="relative bg-slate-50 dark:bg-slate-950 p-6 md:p-10">
+        <div class="watermark"></div>
+        <div class="relative max-w-3xl mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-lg p-8 md:p-12 border border-slate-200 dark:border-slate-800">
+          <div class="text-center border-b border-slate-200 dark:border-slate-800 pb-6 mb-6">
+            <p class="text-xs uppercase tracking-widest text-slate-400" x-text="activeDoc?.category"></p>
+            <h1 class="text-2xl md:text-3xl font-black mt-2" x-text="activeDoc?.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ')"></h1>
+            <p class="text-sm text-slate-500 mt-1" x-text="'Dokumen Internal — ' + activeDoc?.date"></p>
+          </div>
+          <div class="prose prose-slate dark:prose-invert max-w-none text-sm leading-relaxed">
+            <p><strong>Ringkasan:</strong> Dokumen ini berisi informasi penting terkait operasional perusahaan. Silakan baca dengan seksama dan hubungi atasan langsung bila ada pertanyaan.</p>
+            <h3 class="mt-5 font-bold">Isi Dokumen</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Pendahuluan dan latar belakang kebijakan</li>
+              <li>Ruang lingkup dan pihak yang terlibat</li>
+              <li>Prosedur pelaksanaan langkah demi langkah</li>
+              <li>Hak dan kewajiban karyawan</li>
+              <li>Sanksi pelanggaran dan mekanisme pelaporan</li>
+              <li>Lampiran formulir terkait</li>
+            </ul>
+            <p class="mt-4 text-slate-500 italic">Ini adalah preview dokumen. Untuk membaca versi lengkap, silakan unduh file aslinya.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between flex-wrap gap-2">
+      <p class="text-xs text-slate-500 flex items-center gap-1.5">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-green-500"></i>
+        Aktivitas membaca dan mengunduh Anda tercatat dalam audit log perusahaan.
+      </p>
+      <div class="flex gap-2">
+        <button @click="reportDoc(activeDoc)" class="text-xs px-3 py-1.5 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg flex items-center gap-1">
+          <i data-lucide="flag" class="w-3 h-3"></i> Laporkan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 max-w-sm">
+  <i :data-lucide="toast.icon" class="w-5 h-5 flex-shrink-0" :class="toast.type==='success' ? 'text-green-400' : toast.type==='error' ? 'text-red-400' : 'text-amber-400'"></i>
+  <span x-text="toast.message" class="text-sm"></span>
+</div>
+
+<script>
+function employeePortal() {
+  return {
+    // State
+    view: 'login',
+    authMode: 'login',
+    darkMode: false,
+    showPwd: false,
+    userMenuOpen: false,
+    loginLoading: false,
+    regLoading: false,
+    searchQuery: '',
+    filterCat: '',
+    filterType: 'Semua',
+    sortBy: 'newest',
+    viewMode: 'grid',
+    activeDoc: null,
+    currentUser: null,
+    toast: { show:false, message:'', type:'success', icon:'check-circle' },
+
+    loginForm: { username:'', password:'' },
+    regForm: { firstName:'', lastName:'', employeeId:'', department:'', email:'', username:'', password:'', agree:false },
+
+    loginFeatures: [
+      {icon:'search', title:'Pencarian Cepat', desc:'Temukan dokumen apapun dalam hitungan detik.'},
+      {icon:'book-open', title:'Baca Langsung', desc:'Preview dokumen tanpa perlu unduh terlebih dulu.'},
+      {icon:'shield-check', title:'Aman & Teraudit', desc:'Setiap aktivitas tercatat untuk keamanan perusahaan.'},
+    ],
+
+    categories: [
+      {name:'Hukum', count:42, color:'#ef4444'},
+      {name:'Keuangan', count:38, color:'#f59e0b'},
+      {name:'HRD', count:27, color:'#10b981'},
+      {name:'Marketing', count:56, color:'#3b82f6'},
+      {name:'Operasional', count:85, color:'#8b5cf6'},
+      {name:'IT', count:19, color:'#06b6d4'},
+    ],
+
+    quickStats: [
+      {label:'Total Dokumen', value:'1,284', icon:'file-text', bg:'#dbeafe', color:'#2563eb'},
+      {label:'Baru Diupdate', value:'42', icon:'sparkles', bg:'#dcfce7', color:'#16a34a'},
+      {label:'Saya Unduh', value:'12', icon:'download', bg:'#fef3c7', color:'#d97706'},
+      {label:'Favorit Saya', value:'8', icon:'bookmark', bg:'#ede9fe', color:'#7c3aed'},
+    ],
+
+    documents: [
+      {id:1, name:'Panduan_Onboarding_Karyawan_2026.pdf', type:'PDF', size:'4.2 MB', date:'16 Jul 2026', icon:'file-text', color:'#ef4444', category:'HRD', views:428, bookmarked:false, featured:true},
+      {id:2, name:'SOP_Cuti_dan_Izin.docx', type:'Dokumen', size:'1.1 MB', date:'15 Jul 2026', icon:'file-text', color:'#10b981', category:'HRD', views:312, bookmarked:false, featured:true},
+      {id:3, name:'Kode_Etik_Perusahaan_v3.pdf', type:'PDF', size:'2.8 MB', date:'14 Jul 2026', icon:'file-text', color:'#ef4444', category:'Hukum', views:287, bookmarked:false, featured:true},
+      {id:4, name:'Template_Laporan_Bulanan.xlsx', type:'Spreadsheet', size:'840 KB', date:'13 Jul 2026', icon:'table', color:'#10b981', category:'Keuangan', views:256, bookmarked:false, featured:false},
+      {id:5, name:'Brand_Guidelines_2026.pdf', type:'PDF', size:'12 MB', date:'12 Jul 2026', icon:'file-text', color:'#ef4444', category:'Marketing', views:198, bookmarked:false, featured:false},
+      {id:6, name:'Logo_Perusahaan_v3.png', type:'Gambar', size:'3.1 MB', date:'11 Jul 2026', icon:'image', color:'#8b5cf6', category:'Marketing', views:176, bookmarked:false, featured:false},
+      {id:7, name:'Formulir_Pengajuan_Reimburse.pdf', type:'PDF', size:'520 KB', date:'10 Jul 2026', icon:'file-text', color:'#ef4444', category:'Keuangan', views:445, bookmarked:false, featured:false},
+      {id:8, name:'Kebijakan_WFH_2026.docx', type:'Dokumen', size:'780 KB', date:'09 Jul 2026', icon:'file-text', color:'#10b981', category:'HRD', views:521, bookmarked:false, featured:false},
+      {id:9, name:'Panduan_Keamanan_IT.pdf', type:'PDF', size:'3.4 MB', date:'08 Jul 2026', icon:'file-text', color:'#ef4444', category:'IT', views:167, bookmarked:false, featured:false},
+      {id:10, name:'Prosedur_Pengadaan_Barang.pdf', type:'PDF', size:'1.9 MB', date:'07 Jul 2026', icon:'file-text', color:'#ef4444', category:'Operasional', views:134, bookmarked:false, featured:false},
+      {id:11, name:'Struktur_Organisasi_2026.png', type:'Gambar', size:'2.8 MB', date:'06 Jul 2026', icon:'image', color:'#8b5cf6', category:'HRD', views:289, bookmarked:false, featured:false},
+      {id:12, name:'Template_Presentasi.pptx', type:'Dokumen', size:'5.6 MB', date:'05 Jul 2026', icon:'presentation', color:'#f59e0b', category:'Marketing', views:234, bookmarked:false, featured:false},
+      {id:13, name:'Daftar_Harga_Produk_2026.xlsx', type:'Spreadsheet', size:'1.2 MB', date:'04 Jul 2026', icon:'table', color:'#10b981', category:'Keuangan', views:189, bookmarked:false, featured:false},
+      {id:14, name:'Kontrak_Template_Vendor.pdf', type:'PDF', size:'940 KB', date:'03 Jul 2026', icon:'file-text', color:'#ef4444', category:'Hukum', views:112, bookmarked:false, featured:false},
+      {id:15, name:'Manual_Penggunaan_ERP.pdf', type:'PDF', size:'8.2 MB', date:'02 Jul 2026', icon:'file-text', color:'#ef4444', category:'IT', views:98, bookmarked:false, featured:false},
+    ],
+
+    // Seed akun demo yang sudah disetujui admin
+    seedUsers: [
+      {username:'budi.santoso', password:'password123', firstName:'Budi', lastName:'Santoso', email:'budi.santoso@docucloud.id', employeeId:'EMP-10234', department:'Marketing', status:'approved', registeredAt:'10 Jul 2026'}
+    ],
+
+    init() {
+      // Load users dari localStorage atau gunakan seed
+      if (!localStorage.getItem('dc_users')) {
+        localStorage.setItem('dc_users', JSON.stringify(this.seedUsers));
+      }
+      // Auto-login jika ada session
+      const session = sessionStorage.getItem('dc_session');
+      if (session) {
+        const user = JSON.parse(session);
+        const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
+        const found = users.find(u => u.username === user.username);
+        if (found && found.status === 'approved') {
+          this.currentUser = found;
+          this.view = 'dashboard';
+        }
+      }
+      this.$nextTick(() => lucide.createIcons());
+      // Watchers
+      ['view','authMode','activeDoc','userMenuOpen','darkMode','viewMode','filterCat','filterType','sortBy','searchQuery'].forEach(k => {
+        this.$watch(k, () => this.$nextTick(() => lucide.createIcons()));
+      });
+    },
+
+    showToast(msg, type='success') {
+      const icons = {success:'check-circle', error:'alert-circle', warn:'alert-triangle'};
+      this.toast = {show:true, message:msg, type, icon: icons[type] || 'check-circle'};
+      setTimeout(() => this.toast.show = false, 3500);
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    resetForms() {
+      this.loginForm = { username:'', password:'' };
+      this.regForm = { firstName:'', lastName:'', employeeId:'', department:'', email:'', username:'', password:'', agree:false };
+      this.showPwd = false;
+    },
+
+    getUsers() { return JSON.parse(localStorage.getItem('dc_users') || '[]'); },
+    saveUsers(users) { localStorage.setItem('dc_users', JSON.stringify(users)); },
+
+    async doLogin() {
+      this.loginLoading = true;
+      await new Promise(r => setTimeout(r, 900)); // simulasi network
+      const users = this.getUsers();
+      const user = users.find(u =>
+        (u.username === this.loginForm.username || u.email === this.loginForm.username) &&
+        u.password === this.loginForm.password
+      );
+      this.loginLoading = false;
+
+      if (!user) {
+        this.showToast('Username atau password salah!', 'error');
+        return;
+      }
+      if (user.status === 'pending') {
+        this.currentUser = user;
+        this.view = 'pending';
+        this.showToast('Akun Anda masih menunggu persetujuan admin.', 'warn');
+        return;
+      }
+      if (user.status === 'rejected') {
+        this.currentUser = user;
+        this.view = 'rejected';
+        return;
+      }
+      // Approved
+      this.currentUser = user;
+      sessionStorage.setItem('dc_session', JSON.stringify(user));
+      this.view = 'dashboard';
+      this.showToast(`Selamat datang kembali, ${user.firstName}!`);
+    },
+
+    async doRegister() {
+      if (!this.regForm.agree) {
+        this.showToast('Anda harus menyetujui kebijakan penggunaan.', 'error');
+        return;
+      }
+      this.regLoading = true;
+      await new Promise(r => setTimeout(r, 1000));
+
+      const users = this.getUsers();
+      if (users.some(u => u.username === this.regForm.username)) {
+        this.regLoading = false;
+        this.showToast('Username sudah digunakan!', 'error');
+        return;
+      }
+      if (users.some(u => u.email === this.regForm.email)) {
+        this.regLoading = false;
+        this.showToast('Email sudah terdaftar!', 'error');
+        return;
+      }
+
+      const newUser = {
+        ...this.regForm,
+        status: 'pending',
+        registeredAt: new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}),
+        rejectionReason: ''
+      };
+      users.push(newUser);
+      this.saveUsers(users);
+      this.currentUser = newUser;
+      this.regLoading = false;
+      this.view = 'pending';
+      this.showToast('Pendaftaran berhasil! Menunggu persetujuan admin.');
+    },
+
+    doLogout() {
+      sessionStorage.removeItem('dc_session');
+      this.currentUser = null;
+      this.userMenuOpen = false;
+      this.view = 'login';
+      this.authMode = 'login';
+      this.resetForms();
+      this.showToast('Anda telah keluar.');
+    },
+
+    catColor(name) { return this.categories.find(c => c.name === name)?.color || '#94a3b8'; },
+
+    get featuredDocs() { return this.documents.filter(d => d.featured || d.views > 250).slice(0, 3); },
+
+    get filteredDocs() {
+      let docs = this.documents.filter(d => {
+        const matchSearch = !this.searchQuery ||
+          d.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+          d.category.toLowerCase().includes(this.searchQuery.toLowerCase());
+        const matchCat = !this.filterCat || d.category === this.filterCat;
+        const matchType = this.filterType === 'Semua' || d.type === this.filterType;
+        return matchSearch && matchCat && matchType;
+      });
+      if (this.sortBy === 'newest') docs.sort((a,b) => b.id - a.id);
+      if (this.sortBy === 'popular') docs.sort((a,b) => b.views - a.views);
+      if (this.sortBy === 'name') docs.sort((a,b) => a.name.localeCompare(b.name));
+      if (this.sortBy === 'size') docs.sort((a,b) => parseFloat(b.size) - parseFloat(a.size));
+      return docs;
+    },
+
+    filterDocs() { /* reactivity handles */ },
+    resetFilters() { this.filterCat=''; this.filterType='Semua'; this.sortBy='newest'; this.searchQuery=''; },
+
+    openDoc(doc) {
+      doc.views = (doc.views || 0) + 1;
+      this.activeDoc = doc;
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    downloadDoc(doc) {
+      if (!doc) return;
+      this.showToast(`Mengunduh ${doc.name}...`);
+      // Simulasi download
+      setTimeout(() => {
+        const blob = new Blob([`Ini adalah simulasi konten file: ${doc.name}`], {type:'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = doc.name;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showToast(`${doc.name} berhasil diunduh.`);
+      }, 800);
+    },
+
+    toggleBookmark(doc) {
+      if (!doc) return;
+      doc.bookmarked = !doc.bookmarked;
+      this.showToast(doc.bookmarked ? 'Ditambahkan ke favorit' : 'Dihapus dari favorit');
+    },
+
+    reportDoc(doc) {
+      if (!doc) return;
+      this.showToast('Laporan terkirim ke admin. Terima kasih.');
+    },
+  }
+}
+</script>
+</body>
+</html>
