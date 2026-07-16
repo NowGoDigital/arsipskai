@@ -1,1 +1,790 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DocuCloud — Admin Approval Center</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Inter', sans-serif; }
+  [x-cloak] { display: none !important; }
+  .scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 10px; }
+  .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
+  .gradient-text { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .fade-in { animation: fadeIn .4s ease both; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .3; animation: float 20s infinite ease-in-out; }
+  @keyframes float { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-60px) scale(1.1)} 66%{transform:translate(-30px,40px) scale(.9)} }
+  .pulse-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+  .badge-pulse { animation: badgePulse 1.5s infinite; }
+  @keyframes badgePulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)} 50%{box-shadow:0 0 0 8px rgba(239,68,68,0)} }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200"
+      x-data="adminApproval()" x-init="init()" x-cloak :class="{'dark': darkMode}">
 
+<!-- ================== ADMIN LOGIN ================== -->
+<template x-if="!isAdminLoggedIn">
+<div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <div class="blob bg-red-500 w-96 h-96 top-0 -left-20"></div>
+  <div class="blob bg-indigo-500 w-96 h-96 bottom-0 right-0" style="animation-delay:-7s"></div>
+
+  <div class="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 border border-slate-200 dark:border-slate-800">
+    <div class="text-center mb-6">
+      <div class="mx-auto w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center mb-4">
+        <i data-lucide="shield-check" class="w-7 h-7 text-white"></i>
+      </div>
+      <h1 class="text-2xl font-bold">Admin Approval Center</h1>
+      <p class="text-sm text-slate-500 mt-1">Login khusus administrator DocuCloud</p>
+    </div>
+
+    <form @submit.prevent="doAdminLogin()" class="space-y-4">
+      <div>
+        <label class="text-xs font-semibold">Admin Username</label>
+        <div class="relative mt-1">
+          <i data-lucide="user-cog" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input x-model="adminLogin.username" type="text" required class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="admin">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold">Password</label>
+        <div class="relative mt-1">
+          <i data-lucide="lock" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input x-model="adminLogin.password" :type="adminLogin.showPwd ? 'text' : 'password'" required class="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="••••••••">
+          <button type="button" @click="adminLogin.showPwd = !adminLogin.showPwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+            <i :data-lucide="adminLogin.showPwd ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      <div x-show="adminLogin.error" class="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg text-xs text-red-700 dark:text-red-400 shake" x-text="adminLogin.error"></div>
+      <button type="submit" class="w-full py-3 gradient-bg text-white rounded-lg font-semibold flex items-center justify-center gap-2">
+        <i data-lucide="log-in" class="w-4 h-4"></i> Masuk sebagai Admin
+      </button>
+    </form>
+
+    <div class="mt-5 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg">
+      <p class="text-xs text-amber-800 dark:text-amber-300">
+        <strong>Demo:</strong> Username <code class="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">admin</code> / Password <code class="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">admin123</code>
+      </p>
+    </div>
+
+    <button @click="darkMode = !darkMode" class="absolute top-4 right-4 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+      <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
+    </button>
+  </div>
+</div>
+</template>
+
+<!-- ================== ADMIN DASHBOARD ================== -->
+<template x-if="isAdminLoggedIn">
+<div class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside :class="sidebarOpen ? 'w-64' : 'w-20'" class="transition-all duration-300 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
+    <div class="h-16 flex items-center px-5 border-b border-slate-200 dark:border-slate-800">
+      <div class="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0">
+        <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+      </div>
+      <div x-show="sidebarOpen" class="ml-3">
+        <h1 class="font-bold text-sm">Admin Center</h1>
+        <p class="text-xs text-slate-500">Approval System</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto scrollbar">
+      <template x-for="item in adminMenu" :key="item.id">
+        <button @click="activeTab = item.id"
+                :class="activeTab === item.id ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition relative">
+          <i :data-lucide="item.icon" class="w-5 h-5 flex-shrink-0"></i>
+          <span x-show="sidebarOpen" x-text="item.label" class="text-sm font-medium flex-1 text-left"></span>
+          <span x-show="sidebarOpen && item.count > 0" x-text="item.count" :class="item.id==='pending' ? 'bg-red-500 badge-pulse' : 'bg-slate-400'" class="text-xs text-white rounded-full px-2 py-0.5"></span>
+        </button>
+      </template>
+    </nav>
+
+    <div class="p-3 border-t border-slate-200 dark:border-slate-800">
+      <div x-show="sidebarOpen" class="flex items-center gap-3 p-2">
+        <div class="w-9 h-9 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-sm">AD</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold truncate">Super Admin</p>
+          <p class="text-xs text-slate-500 truncate">admin@docucloud.id</p>
+        </div>
+      </div>
+      <button @click="doAdminLogout()" class="w-full mt-2 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg flex items-center justify-center gap-1.5">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+        <span x-show="sidebarOpen">Keluar</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Topbar -->
+    <header class="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 flex items-center px-6 gap-4">
+      <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <h2 class="font-bold text-lg" x-text="adminMenu.find(m=>m.id===activeTab)?.label"></h2>
+
+      <div class="ml-auto flex items-center gap-2">
+        <button @click="simulateNewRegistration()" class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold hover:bg-amber-200 dark:hover:bg-amber-500/20">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Simulasi Pendaftaran Baru
+        </button>
+        <button @click="exportUsers()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title="Export CSV">
+          <i data-lucide="download" class="w-5 h-5"></i>
+        </button>
+        <button @click="darkMode = !darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+          <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-5 h-5"></i>
+        </button>
+        <button @click="showNotif = !showNotif" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative">
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span x-show="pendingCount > 0" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full pulse-dot"></span>
+        </button>
+
+        <!-- Notif dropdown -->
+        <div x-show="showNotif" @click.away="showNotif=false" x-transition class="absolute right-6 top-16 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden z-20">
+          <div class="p-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+            <h4 class="font-semibold text-sm">Notifikasi</h4>
+            <span class="text-xs text-slate-500" x-text="pendingCount + ' pending'"></span>
+          </div>
+          <div class="max-h-80 overflow-y-auto scrollbar">
+            <template x-for="u in pendingUsers.slice(0,5)" :key="u.username">
+              <div class="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 cursor-pointer" @click="showNotif=false; viewUserDetail(u)">
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400 text-xs font-bold flex-shrink-0" x-text="u.firstName[0] + u.lastName[0]"></div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm"><span class="font-semibold" x-text="u.firstName + ' ' + u.lastName"></span> mendaftar</p>
+                    <p class="text-xs text-slate-500 truncate" x-text="u.department + ' • ' + u.registeredAt"></p>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <div x-show="pendingCount===0" class="p-8 text-center text-sm text-slate-500">
+              <i data-lucide="check-circle" class="w-10 h-10 mx-auto text-green-400 mb-2"></i>
+              <p>Semua pendaftaran sudah diproses!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 overflow-y-auto scrollbar p-6">
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <template x-for="s in statsCards" :key="s.label">
+          <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center" :style="`background:${s.bg}`">
+                <i :data-lucide="s.icon" class="w-5 h-5" :style="`color:${s.color}`"></i>
+              </div>
+              <span x-show="s.id === 'pending' && s.value > 0" class="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-semibold pulse-dot">Perlu Aksi</span>
+            </div>
+            <p class="text-2xl font-bold" x-text="s.value"></p>
+            <p class="text-xs text-slate-500 mt-1" x-text="s.label"></p>
+          </div>
+        </template>
+      </div>
+
+      <!-- Tabs for user list -->
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <!-- Tab header + search -->
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center gap-3">
+          <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 overflow-x-auto scrollbar">
+            <template x-for="tab in ['Semua','Pending','Approved','Rejected']" :key="tab">
+              <button @click="statusFilter = tab.toLowerCase()"
+                      :class="statusFilter===tab.toLowerCase() ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : ''"
+                      class="px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+                <span x-text="tab"></span>
+                <span class="text-xs bg-slate-200 dark:bg-slate-600 rounded-full px-1.5"
+                      x-text="tab==='Semua' ? users.length : users.filter(u=>u.status===tab.toLowerCase()).length"></span>
+              </button>
+            </template>
+          </div>
+
+          <div class="flex-1 relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input x-model="userSearch" type="text" placeholder="Cari nama, username, NIK, departemen..."
+                   class="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <select x-model="deptFilter" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none">
+            <option value="">Semua Departemen</option>
+            <template x-for="d in departments" :key="d"><option x-text="d"></option></template>
+          </select>
+        </div>
+
+        <!-- Bulk action bar -->
+        <div x-show="selectedUsers.length > 0" class="px-4 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 border-b border-indigo-200 dark:border-indigo-500/30 flex items-center gap-3 fade-in">
+          <span class="text-sm font-semibold" x-text="selectedUsers.length + ' user dipilih'"></span>
+          <button @click="bulkAction('approved')" class="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-green-700">
+            <i data-lucide="check" class="w-3 h-3"></i> Approve Semua
+          </button>
+          <button @click="openBulkRejectModal()" class="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-red-700">
+            <i data-lucide="x" class="w-3 h-3"></i> Reject Semua
+          </button>
+          <button @click="selectedUsers = []" class="text-xs text-slate-600 dark:text-slate-400 hover:underline ml-auto">Batal pilihan</button>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 uppercase">
+              <tr>
+                <th class="text-left px-4 py-3 w-10">
+                  <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll($event)" class="rounded">
+                </th>
+                <th class="text-left px-4 py-3">User</th>
+                <th class="text-left px-4 py-3 hidden md:table-cell">NIK / Departemen</th>
+                <th class="text-left px-4 py-3 hidden lg:table-cell">Terdaftar</th>
+                <th class="text-left px-4 py-3">Status</th>
+                <th class="text-right px-4 py-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="user in displayedUsers" :key="user.username">
+                <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                  <td class="px-4 py-3">
+                    <input type="checkbox" :checked="selectedUsers.includes(user.username)" @change="toggleSelect(user.username)" class="rounded">
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" x-text="user.firstName[0] + user.lastName[0]"></div>
+                      <div class="min-w-0">
+                        <p class="font-semibold truncate" x-text="user.firstName + ' ' + user.lastName"></p>
+                        <p class="text-xs text-slate-500 truncate" x-text="'@' + user.username + ' • ' + user.email"></p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 hidden md:table-cell">
+                    <p class="text-xs font-mono" x-text="user.employeeId"></p>
+                    <p class="text-xs text-slate-500" x-text="user.department"></p>
+                  </td>
+                  <td class="px-4 py-3 text-xs text-slate-500 hidden lg:table-cell" x-text="user.registeredAt"></td>
+                  <td class="px-4 py-3">
+                    <span :class="{
+                      'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300': user.status==='pending',
+                      'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300': user.status==='approved',
+                      'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300': user.status==='rejected'
+                    }" class="px-2.5 py-1 rounded-full text-xs font-semibold capitalize" x-text="user.status"></span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex justify-end gap-1">
+                      <button @click="viewUserDetail(user)" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded" title="Detail">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                      </button>
+                      <template x-if="user.status === 'pending'">
+                        <div class="flex gap-1">
+                          <button @click="approveUser(user)" class="p-1.5 hover:bg-green-100 dark:hover:bg-green-500/20 text-green-600 rounded" title="Approve">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                          </button>
+                          <button @click="openRejectModal(user)" class="p-1.5 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 rounded" title="Reject">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                          </button>
+                        </div>
+                      </template>
+                      <template x-if="user.status === 'approved'">
+                        <button @click="revokeUser(user)" class="p-1.5 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 rounded" title="Cabut Akses">
+                          <i data-lucide="user-x" class="w-4 h-4"></i>
+                        </button>
+                      </template>
+                      <template x-if="user.status === 'rejected'">
+                        <button @click="approveUser(user)" class="p-1.5 hover:bg-green-100 dark:hover:bg-green-500/20 text-green-600 rounded" title="Approve Ulang">
+                          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                      </template>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+              <tr x-show="displayedUsers.length === 0">
+                <td colspan="6" class="px-4 py-10 text-center">
+                  <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i>
+                  <p class="mt-2 text-sm text-slate-500">Tidak ada user ditemukan</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="px-4 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+          <span x-text="`Menampilkan ${displayedUsers.length} dari ${users.length} user`"></span>
+        </div>
+      </div>
+
+      <!-- Activity Log Section -->
+      <div x-show="activeTab === 'logs'" class="mt-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4"></i> Activity Log Admin
+          </h3>
+          <button @click="clearLogs()" class="text-xs text-red-600 hover:underline">Bersihkan Log</button>
+        </div>
+        <div class="space-y-3 max-h-96 overflow-y-auto scrollbar">
+          <template x-for="log in adminLogs" :key="log.id">
+            <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :style="`background:${log.iconBg}`">
+                <i :data-lucide="log.icon" class="w-4 h-4" :style="`color:${log.iconColor}`"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm"><span class="font-semibold" x-text="log.admin"></span> <span x-text="log.action"></span> <span class="font-medium" x-text="log.target"></span></p>
+                <p x-show="log.reason" class="text-xs text-slate-500 mt-0.5 italic" x-text="`Alasan: ${log.reason}`"></p>
+                <p class="text-xs text-slate-400 mt-1" x-text="log.time"></p>
+              </div>
+            </div>
+          </template>
+          <div x-show="adminLogs.length === 0" class="text-center py-6 text-sm text-slate-500">Belum ada aktivitas tercatat.</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</template>
+
+<!-- ================== USER DETAIL MODAL ================== -->
+<div x-show="detailUser" x-transition class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div @click.away="detailUser=null" x-show="detailUser" class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+    <div class="gradient-bg p-6 text-white relative">
+      <button @click="detailUser=null" class="absolute top-4 right-4 p-1.5 hover:bg-white/20 rounded-lg">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black" x-text="(detailUser?.firstName[0] || '') + (detailUser?.lastName[0] || '')"></div>
+        <div>
+          <h3 class="text-xl font-bold" x-text="(detailUser?.firstName || '') + ' ' + (detailUser?.lastName || '')"></h3>
+          <p class="text-sm opacity-90" x-text="'@' + (detailUser?.username || '')"></p>
+          <span :class="{
+            'bg-yellow-400/30 text-yellow-100': detailUser?.status==='pending',
+            'bg-green-400/30 text-green-100': detailUser?.status==='approved',
+            'bg-red-400/30 text-red-100': detailUser?.status==='rejected'
+          }" class="inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-semibold capitalize" x-text="detailUser?.status"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-6 space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+          <p class="text-xs text-slate-500">NIK Karyawan</p>
+          <p class="text-sm font-semibold font-mono" x-text="detailUser?.employeeId"></p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+          <p class="text-xs text-slate-500">Departemen</p>
+          <p class="text-sm font-semibold" x-text="detailUser?.department"></p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 col-span-2">
+          <p class="text-xs text-slate-500">Email</p>
+          <p class="text-sm font-semibold" x-text="detailUser?.email"></p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+          <p class="text-xs text-slate-500">Terdaftar</p>
+          <p class="text-sm font-semibold" x-text="detailUser?.registeredAt"></p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+          <p class="text-xs text-slate-500">Password</p>
+          <p class="text-sm font-semibold font-mono">••••••••</p>
+        </div>
+      </div>
+
+      <div x-show="detailUser?.rejectionReason" class="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg">
+        <p class="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">Alasan Penolakan:</p>
+        <p class="text-sm text-red-800 dark:text-red-300 italic" x-text="detailUser?.rejectionReason"></p>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <template x-if="detailUser?.status === 'pending'">
+          <>
+            <button @click="approveUser(detailUser); detailUser=null" class="flex-1 py-2.5 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-700">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Approve
+            </button>
+            <button @click="openRejectModal(detailUser)" class="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-700">
+              <i data-lucide="x-circle" class="w-4 h-4"></i> Reject
+            </button>
+          </>
+        </template>
+        <template x-if="detailUser?.status === 'approved'">
+          <button @click="revokeUser(detailUser); detailUser=null" class="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-semibold">Cabut Akses</button>
+        </template>
+        <template x-if="detailUser?.status === 'rejected'">
+          <button @click="approveUser(detailUser); detailUser=null" class="flex-1 py-2.5 bg-green-600 text-white rounded-lg font-semibold">Approve Ulang</button>
+        </template>
+        <button @click="detailUser=null" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg font-semibold">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================== REJECT MODAL ================== -->
+<div x-show="rejectModal.show" x-transition class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div @click.away="rejectModal.show=false" x-show="rejectModal.show" class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+    <div class="flex items-start gap-3 mb-4">
+      <div class="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
+        <i data-lucide="x-circle" class="w-6 h-6 text-red-600"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold">Tolak Pendaftaran</h3>
+        <p class="text-sm text-slate-500 mt-0.5" x-text="`User: ${rejectModal.targetName || 'Multiple users'}`"></p>
+      </div>
+    </div>
+    <div>
+      <label class="text-xs font-semibold">Alasan Penolakan <span class="text-red-500">*</span></label>
+      <textarea x-model="rejectModal.reason" rows="4" required placeholder="Contoh: NIK tidak valid, email tidak sesuai domain perusahaan, dll."
+                class="w-full mt-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
+      <div class="flex flex-wrap gap-1.5 mt-2">
+        <template x-for="r in quickRejectReasons" :key="r">
+          <button @click="rejectModal.reason = r" class="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
+            <span x-text="r"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button @click="rejectModal.show=false" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg font-semibold text-sm">Batal</button>
+      <button @click="confirmReject()" :disabled="!rejectModal.reason.trim()"
+              :class="rejectModal.reason.trim() ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-300 cursor-not-allowed'"
+              class="flex-1 py-2.5 text-white rounded-lg font-semibold text-sm">
+        Konfirmasi Reject
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 max-w-sm">
+  <i :data-lucide="toast.icon" class="w-5 h-5 flex-shrink-0" :class="toast.type==='success' ? 'text-green-400' : toast.type==='error' ? 'text-red-400' : 'text-amber-400'"></i>
+  <span x-text="toast.message" class="text-sm"></span>
+</div>
+
+<script>
+function adminApproval() {
+  return {
+    // Auth
+    isAdminLoggedIn: false,
+    adminLogin: { username:'', password:'', showPwd:false, error:'' },
+    darkMode: false,
+    sidebarOpen: true,
+    activeTab: 'overview',
+    showNotif: false,
+
+    // Data
+    users: [],
+    adminLogs: [],
+    selectedUsers: [],
+    userSearch: '',
+    statusFilter: 'pending',
+    deptFilter: '',
+    detailUser: null,
+
+    rejectModal: { show:false, reason:'', targetUsername:null, targetName:'', isBulk:false, bulkUsernames:[] },
+    toast: { show:false, message:'', type:'success', icon:'check-circle' },
+
+    quickRejectReasons: ['NIK tidak valid', 'Email tidak sesuai', 'Data tidak lengkap', 'Bukan karyawan aktif', 'Duplikasi pendaftaran'],
+
+    departments: ['HRD','Keuangan','Marketing','Operasional','IT','Legal'],
+
+    // Seed data untuk demo (karyawan yang sudah daftar sebelumnya)
+    seedUsers: [
+      {username:'budi.santoso', password:'password123', firstName:'Budi', lastName:'Santoso', email:'budi.santoso@docucloud.id', employeeId:'EMP-10234', department:'Marketing', status:'approved', registeredAt:'10 Jul 2026', rejectionReason:''},
+      {username:'siti.rahayu', password:'password123', firstName:'Siti', lastName:'Rahayu', email:'siti.rahayu@docucloud.id', employeeId:'EMP-10235', department:'HRD', status:'pending', registeredAt:'15 Jul 2026', rejectionReason:''},
+      {username:'andi.pratama', password:'password123', firstName:'Andi', lastName:'Pratama', email:'andi.pratama@docucloud.id', employeeId:'EMP-10236', department:'IT', status:'pending', registeredAt:'16 Jul 2026', rejectionReason:''},
+      {username:'dewi.lestari', password:'password123', firstName:'Dewi', lastName:'Lestari', email:'dewi.lestari@docucloud.id', employeeId:'EMP-10237', department:'Keuangan', status:'pending', registeredAt:'16 Jul 2026', rejectionReason:''},
+      {username:'rio.wijaya', password:'password123', firstName:'Rio', lastName:'Wijaya', email:'rio.wijaya@external.com', employeeId:'EMP-99999', department:'Marketing', status:'rejected', registeredAt:'12 Jul 2026', rejectionReason:'Email tidak menggunakan domain perusahaan'},
+    ],
+
+    init() {
+      // Load users
+      if (!localStorage.getItem('dc_users')) {
+        localStorage.setItem('dc_users', JSON.stringify(this.seedUsers));
+      } else {
+        this.users = JSON.parse(localStorage.getItem('dc_users'));
+      }
+      this.users = JSON.parse(localStorage.getItem('dc_users'));
+
+      // Load logs
+      this.adminLogs = JSON.parse(localStorage.getItem('dc_admin_logs') || '[]');
+
+      // Session check
+      if (sessionStorage.getItem('dc_admin_session') === 'true') {
+        this.isAdminLoggedIn = true;
+      }
+
+      this.$nextTick(() => lucide.createIcons());
+
+      // Watchers
+      ['isAdminLoggedIn','activeTab','detailUser','showNotif','rejectModal.show','statusFilter','deptFilter','userSearch','darkMode','sidebarOpen'].forEach(k => {
+        this.$watch(k, () => this.$nextTick(() => lucide.createIcons()));
+      });
+      this.$watch('selectedUsers', () => this.$nextTick(() => lucide.createIcons()), {deep:true});
+    },
+
+    saveUsers() { localStorage.setItem('dc_users', JSON.stringify(this.users)); },
+    saveLogs() { localStorage.setItem('dc_admin_logs', JSON.stringify(this.adminLogs)); },
+
+    doAdminLogin() {
+      this.adminLogin.error = '';
+      if (this.adminLogin.username === 'admin' && this.adminLogin.password === 'admin123') {
+        this.isAdminLoggedIn = true;
+        sessionStorage.setItem('dc_admin_session', 'true');
+        this.showToast('Selamat datang, Super Admin!');
+        // Auto-redirect ke tab pending kalau ada
+        if (this.pendingCount > 0) this.activeTab = 'pending';
+      } else {
+        this.adminLogin.error = 'Username atau password admin salah!';
+        this.$nextTick(() => lucide.createIcons());
+      }
+    },
+
+    doAdminLogout() {
+      sessionStorage.removeItem('dc_admin_session');
+      this.isAdminLoggedIn = false;
+      this.adminLogin = { username:'', password:'', showPwd:false, error:'' };
+      this.showToast('Anda telah keluar dari admin panel.');
+    },
+
+    showToast(msg, type='success') {
+      const icons = {success:'check-circle', error:'alert-circle', warn:'alert-triangle', info:'info'};
+      this.toast = {show:true, message:msg, type, icon: icons[type] || 'check-circle'};
+      setTimeout(() => this.toast.show = false, 3500);
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    get adminMenu() {
+      return [
+        {id:'overview', label:'Overview', icon:'layout-dashboard', count:0},
+        {id:'pending', label:'Menunggu Approval', icon:'hourglass', count: this.pendingCount},
+        {id:'approved', label:'User Aktif', icon:'user-check', count: this.users.filter(u=>u.status==='approved').length},
+        {id:'rejected', label:'Ditolak', icon:'user-x', count: this.users.filter(u=>u.status==='rejected').length},
+        {id:'logs', label:'Activity Log', icon:'history', count:0},
+      ];
+    },
+
+    get pendingUsers() { return this.users.filter(u => u.status === 'pending'); },
+    get pendingCount() { return this.pendingUsers.length; },
+
+    get statsCards() {
+      return [
+        {id:'total', label:'Total Pendaftaran', value: this.users.length, icon:'users', bg:'#dbeafe', color:'#2563eb'},
+        {id:'pending', label:'Menunggu Approval', value: this.pendingCount, icon:'hourglass', bg:'#fef3c7', color:'#d97706'},
+        {id:'approved', label:'User Aktif', value: this.users.filter(u=>u.status==='approved').length, icon:'user-check', bg:'#dcfce7', color:'#16a34a'},
+        {id:'rejected', label:'Ditolak', value: this.users.filter(u=>u.status==='rejected').length, icon:'user-x', bg:'#fee2e2', color:'#dc2626'},
+      ];
+    },
+
+    get displayedUsers() {
+      return this.users.filter(u => {
+        const matchStatus = this.statusFilter === 'semua' || u.status === this.statusFilter;
+        const matchDept = !this.deptFilter || u.department === this.deptFilter;
+        const q = this.userSearch.toLowerCase();
+        const matchSearch = !q ||
+          u.firstName.toLowerCase().includes(q) ||
+          u.lastName.toLowerCase().includes(q) ||
+          u.username.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          u.employeeId.toLowerCase().includes(q) ||
+          u.department.toLowerCase().includes(q);
+        return matchStatus && matchDept && matchSearch;
+      });
+    },
+
+    get isAllSelected() {
+      return this.displayedUsers.length > 0 && this.displayedUsers.every(u => this.selectedUsers.includes(u.username));
+    },
+
+    toggleSelect(username) {
+      const idx = this.selectedUsers.indexOf(username);
+      if (idx === -1) this.selectedUsers.push(username);
+      else this.selectedUsers.splice(idx, 1);
+    },
+
+    toggleSelectAll(event) {
+      if (event.target.checked) {
+        this.displayedUsers.forEach(u => {
+          if (!this.selectedUsers.includes(u.username)) this.selectedUsers.push(u.username);
+        });
+      } else {
+        this.selectedUsers = [];
+      }
+    },
+
+    viewUserDetail(user) {
+      this.detailUser = user;
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    addLog(action, target, reason='', type='info') {
+      const logMap = {
+        'approve': {icon:'check-circle', iconBg:'#dcfce7', iconColor:'#16a34a', actionText:'menyetujui'},
+        'reject': {icon:'x-circle', iconBg:'#fee2e2', iconColor:'#dc2626', actionText:'menolak'},
+        'revoke': {icon:'user-x', iconBg:'#fef3c7', iconColor:'#d97706', actionText:'mencabut akses'},
+      };
+      const l = logMap[type] || {icon:'info', iconBg:'#dbeafe', iconColor:'#2563eb', actionText:action};
+      this.adminLogs.unshift({
+        id: Date.now(),
+        admin: 'Super Admin',
+        action: l.actionText,
+        target,
+        reason,
+        icon: l.icon,
+        iconBg: l.iconBg,
+        iconColor: l.iconColor,
+        time: new Date().toLocaleString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
+      });
+      this.saveLogs();
+    },
+
+    approveUser(user) {
+      if (!user) return;
+      user.status = 'approved';
+      user.rejectionReason = '';
+      this.saveUsers();
+      this.addLog('approve', user.firstName + ' ' + user.lastName + ' (@' + user.username + ')', '', 'approve');
+      this.showToast(`${user.firstName} ${user.lastName} berhasil disetujui!`);
+    },
+
+    openRejectModal(user) {
+      this.rejectModal = {
+        show: true,
+        reason: '',
+        targetUsername: user.username,
+        targetName: user.firstName + ' ' + user.lastName,
+        isBulk: false,
+        bulkUsernames: []
+      };
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    openBulkRejectModal() {
+      if (this.selectedUsers.length === 0) return;
+      const names = this.selectedUsers.map(un => {
+        const u = this.users.find(x => x.username === un);
+        return u ? u.firstName + ' ' + u.lastName : un;
+      }).join(', ');
+      this.rejectModal = {
+        show: true,
+        reason: '',
+        targetUsername: null,
+        targetName: names,
+        isBulk: true,
+        bulkUsernames: [...this.selectedUsers]
+      };
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    confirmReject() {
+      if (!this.rejectModal.reason.trim()) return;
+
+      if (this.rejectModal.isBulk) {
+        this.rejectModal.bulkUsernames.forEach(un => {
+          const u = this.users.find(x => x.username === un);
+          if (u) {
+            u.status = 'rejected';
+            u.rejectionReason = this.rejectModal.reason;
+            this.addLog('reject', u.firstName + ' ' + u.lastName + ' (@' + u.username + ')', this.rejectModal.reason, 'reject');
+          }
+        });
+        this.showToast(`${this.rejectModal.bulkUsernames.length} user berhasil ditolak.`);
+        this.selectedUsers = [];
+      } else {
+        const u = this.users.find(x => x.username === this.rejectModal.targetUsername);
+        if (u) {
+          u.status = 'rejected';
+          u.rejectionReason = this.rejectModal.reason;
+          this.addLog('reject', u.firstName + ' ' + u.lastName + ' (@' + u.username + ')', this.rejectModal.reason, 'reject');
+          this.showToast(`${u.firstName} ${u.lastName} ditolak.`);
+        }
+        if (this.detailUser && this.detailUser.username === this.rejectModal.targetUsername) {
+          this.detailUser = null;
+        }
+      }
+
+      this.saveUsers();
+      this.rejectModal.show = false;
+    },
+
+    revokeUser(user) {
+      if (!confirm(`Cabut akses ${user.firstName} ${user.lastName}? User harus mendaftar ulang.`)) return;
+      user.status = 'rejected';
+      user.rejectionReason = 'Akses dicabut oleh admin.';
+      this.saveUsers();
+      this.addLog('revoke', user.firstName + ' ' + user.lastName + ' (@' + user.username + ')', 'Akses dicabut manual', 'revoke');
+      this.showToast(`Akses ${user.firstName} dicabut.`);
+    },
+
+    simulateNewRegistration() {
+      const firstNames = ['Rizky','Putri','Fajar','Maya','Hendra','Novi','Agus','Lina'];
+      const lastNames = ['Pratama','Sari','Hidayat','Kusuma','Nugroho','Wulandari','Setiawan','Anggraini'];
+      const depts = this.departments;
+      const fn = firstNames[Math.floor(Math.random()*firstNames.length)];
+      const ln = lastNames[Math.floor(Math.random()*lastNames.length)];
+      const dept = depts[Math.floor(Math.random()*depts.length)];
+      const un = (fn + '.' + ln).toLowerCase();
+      const empId = 'EMP-' + (10300 + Math.floor(Math.random()*900));
+
+      if (this.users.some(u => u.username === un)) {
+        this.showToast('Username sudah ada, coba lagi.', 'warn');
+        return;
+      }
+
+      const newUser = {
+        username: un,
+        password: 'password123',
+        firstName: fn,
+        lastName: ln,
+        email: un + '@docucloud.id',
+        employeeId: empId,
+        department: dept,
+        status: 'pending',
+        registeredAt: new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}),
+        rejectionReason: ''
+      };
+      this.users.push(newUser);
+      this.saveUsers();
+      this.showToast(`🔔 Pendaftaran baru: ${fn} ${ln} dari ${dept}`, 'info');
+      this.activeTab = 'pending';
+    },
+
+    exportUsers() {
+      const headers = ['Username','Nama','Email','NIK','Departemen','Status','Terdaftar','Alasan Reject'];
+      const rows = this.users.map(u => [
+        u.username,
+        u.firstName + ' ' + u.lastName,
+        u.email,
+        u.employeeId,
+        u.department,
+        u.status,
+        u.registeredAt,
+        u.rejectionReason || '-'
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `docucloud_users_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      this.showToast('Data user berhasil di-export ke CSV.');
+    },
+
+    clearLogs() {
+      if (!confirm('Hapus seluruh activity log?')) return;
+      this.adminLogs = [];
+      this.saveLogs();
+      this.showToast('Activity log dibersihkan.');
+    },
+  }
+}
+</script>
+</body>
+</html>
