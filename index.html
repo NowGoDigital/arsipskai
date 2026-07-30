@@ -617,39 +617,100 @@
 <div x-show="previewFile" x-transition class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
   <div @click.away="previewFile=null" class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
     <div class="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 min-w-0">
         <div>
-          <h3 class="font-bold" x-text="previewFile?.name"></h3>
-          <p class="text-xs text-slate-500" x-text="`${previewFile?.size} • ${previewFile?.date}`"></p>
+          <h3 class="font-bold truncate" x-text="previewFile?.name"></h3>
+          <p class="text-xs text-slate-500" x-text="`${previewFile?.size} • ${previewFile?.date} • ${previewFile?.type}`"></p>
         </div>
-        <span x-show="previewFile?.source === 'drive'" class="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+        <span x-show="previewFile?.source === 'drive'" class="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full flex-shrink-0">
           <svg class="w-3 h-3" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
-          Google Drive
+          Drive
+        </span>
+        <span x-show="previewFile?.source === 'indexeddb'" class="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full flex-shrink-0">
+          <i data-lucide="database" class="w-3 h-3"></i> DB
         </span>
       </div>
-      <div class="flex gap-1">
+      <div class="flex gap-1 flex-shrink-0">
         <button x-show="previewFile?.source === 'drive' && driveConnected" @click="openInDrive(previewFile)" class="p-2 hover:bg-blue-50 text-blue-500 rounded-lg" title="Buka di Google Drive">
           <i data-lucide="external-link" class="w-4 h-4"></i>
         </button>
-        <button @click="downloadFile(previewFile)" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="download" class="w-4 h-4"></i></button>
-        <button @click="shareFile(previewFile)" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="share-2" class="w-4 h-4"></i></button>
-        <button @click="previewFile=null" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <button @click="downloadFile(previewFile)" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title="Download">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </button>
+        <button @click="shareFile(previewFile)" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title="Share">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+        </button>
+        <button @click="previewFile=null" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
       </div>
     </div>
-    <div class="flex-1 overflow-auto p-6 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-      <!-- Drive preview iframe -->
+    
+    <div class="flex-1 overflow-auto p-6 flex items-center justify-center bg-slate-50 dark:bg-slate-950 min-h-[400px]">
+      
+      <!-- Drive Preview: iframe -->
       <template x-if="previewFile?.source === 'drive' && previewFile?.driveId">
-        <iframe :src="`https://drive.google.com/file/d/${previewFile.driveId}/preview`" class="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-700"></iframe>
+        <iframe :src="`https://drive.google.com/file/d/${previewFile.driveId}/preview`" class="w-full h-[500px] rounded-lg border border-slate-200 dark:border-slate-700"></iframe>
       </template>
-      <template x-if="previewFile?.source !== 'drive'">
+
+      <!-- IndexedDB Preview: PDF -->
+      <template x-if="previewFile?.source === 'indexeddb' && previewFile?.blobUrl && previewFile?.type === 'PDF'">
+        <iframe :src="previewFile.blobUrl" class="w-full h-[500px] rounded-lg border border-slate-200 dark:border-slate-700"></iframe>
+      </template>
+
+      <!-- IndexedDB Preview: Gambar -->
+      <template x-if="previewFile?.source === 'indexeddb' && previewFile?.blobUrl && previewFile?.type === 'Gambar'">
+        <img :src="previewFile.blobUrl" :alt="previewFile?.name" class="max-w-full max-h-[500px] rounded-lg shadow-lg">
+      </template>
+
+      <!-- IndexedDB Preview: Video -->
+      <template x-if="previewFile?.source === 'indexeddb' && previewFile?.blobUrl && previewFile?.type === 'Video'">
+        <video :src="previewFile.blobUrl" controls class="max-w-full max-h-[500px] rounded-lg shadow-lg"></video>
+      </template>
+
+      <!-- IndexedDB Preview: Audio -->
+      <template x-if="previewFile?.source === 'indexeddb' && previewFile?.blobUrl && previewFile?.type === 'Audio'">
+        <div class="text-center w-full max-w-md">
+          <i data-lucide="music" class="w-24 h-24 mx-auto mb-4 text-orange-500"></i>
+          <p class="font-semibold mb-4" x-text="previewFile?.name"></p>
+          <audio :src="previewFile.blobUrl" controls class="w-full"></audio>
+        </div>
+      </template>
+
+      <!-- IndexedDB Preview: Text (txt, md, csv) -->
+      <template x-if="previewFile?.source === 'indexeddb' && previewFile?.blobUrl && previewFile?.textContent !== undefined">
+        <pre class="w-full h-[500px] overflow-auto p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-mono whitespace-pre-wrap" x-text="previewFile.textContent"></pre>
+      </template>
+
+      <!-- IndexedDB: Tidak bisa di-preview (Word, Excel, PPT, dll) -->
+      <template x-if="previewFile?.source === 'indexeddb' && !previewFile?.blobUrl && previewFile?._blob">
         <div class="text-center">
-          <i :data-lucide="previewFile?.icon" class="w-24 h-24 mx-auto mb-4" :style="`color:${previewFile?.color}`"></i>
-          <p class="text-slate-500">Preview file: <span class="font-medium" x-text="previewFile?.name"></span></p>
-          <p class="text-xs text-slate-400 mt-2">Upload ke Google Drive untuk preview langsung</p>
-          <button x-show="driveConnected" @click="uploadFileToDrive(previewFile); previewFile = null" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm flex items-center gap-2 mx-auto hover:bg-blue-700 transition">
-            <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
-            Upload ke Drive untuk Preview
-          </button>
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4" :style="`background:${previewFile?.color}20`">
+            <i :data-lucide="previewFile?.icon" class="w-12 h-12" :style="`color:${previewFile?.color}`"></i>
+          </div>
+          <p class="text-slate-500 font-medium" x-text="previewFile?.name"></p>
+          <p class="text-xs text-slate-400 mt-2 mb-4">Tipe file ini belum bisa di-preview langsung</p>
+          <div class="flex gap-2 justify-center">
+            <button @click="downloadFile(previewFile)" class="px-4 py-2 gradient-bg text-white rounded-lg text-sm flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i> Download
+            </button>
+            <button x-show="driveConnected" @click="uploadFileToDrive(previewFile, previewFile._blob)" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm flex items-center gap-2 hover:bg-blue-700">
+              <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
+              Preview via Drive
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Default: File sample/local tanpa blob -->
+      <template x-if="!previewFile?.blobUrl && !previewFile?.driveId && !previewFile?._blob">
+        <div class="text-center">
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4" :style="`background:${previewFile?.color}20`">
+            <i :data-lucide="previewFile?.icon" class="w-12 h-12" :style="`color:${previewFile?.color}`"></i>
+          </div>
+          <p class="text-slate-500 font-medium" x-text="previewFile?.name"></p>
+          <p class="text-xs text-slate-400 mt-2">File sample/default — tidak ada konten untuk di-preview</p>
+          <p class="text-xs text-slate-400">Upload ulang file untuk preview penuh</p>
         </div>
       </template>
     </div>
@@ -1161,14 +1222,15 @@ function docuCloud() {
         this.loadingProgress = 85;
 
         // 5. Update stats
-        this.updateStats();
-        this.updateStorageDisplay();
-        this.recalcCategoryCounts();
+this.updateStats();
+this.updateStorageDisplay();
+this.recalcCategoryCounts();
 
-        // 6. Init Google API in background
-        this.loadingMessage = 'Menyiapkan integrasi...';
-        this.initGoogleApi();
-        this.loadingProgress = 100;
+// 6. Init Google API + auto-restore Drive
+this.loadingMessage = 'Menyiapkan integrasi...';
+await this.initGoogleApi();
+await this.restoreDriveConnection();
+this.loadingProgress = 100;
 
         // Hide loading after short delay
         setTimeout(() => {
@@ -1290,36 +1352,101 @@ function docuCloud() {
     },
 
     // ╔══════════════════════════════════════════════════════════╗
-    // ║                   LOCAL STORAGE METHODS                  ║
-    // ╚══════════════════════════════════════════════════════════╝
+// ║                    INDEXEDDB METHODS                     ║
+// ╚══════════════════════════════════════════════════════════╝
 
-    loadCategoriesFromStorage() {
-      const saved = localStorage.getItem('dc_categories');
-      if (saved) {
-        try {
-          this.categories = JSON.parse(saved);
-        } catch(e) {
-          this.categories = JSON.parse(JSON.stringify(this.defaultCategories));
-        }
-      } else {
-        this.categories = JSON.parse(JSON.stringify(this.defaultCategories));
+async initIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+
+    request.onerror = () => reject(request.error);
+
+    request.onsuccess = () => {
+      this.db = request.result;
+      resolve(this.db);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        const store = db.createObjectStore(this.DB_STORE, { keyPath: 'id' });
+        store.createIndex('category', 'category', { unique: false });
+        store.createIndex('source', 'source', { unique: false });
+        store.createIndex('date', 'date', { unique: false });
       }
-    },
+    };
+  });
+},
 
-    saveCategoriesToStorage() {
-      localStorage.setItem('dc_categories', JSON.stringify(this.categories));
-    },
+// Simpan file + blob ke IndexedDB
+async saveFileToDB(fileData) {
+  return new Promise((resolve, reject) => {
+    try {
+      const tx = this.db.transaction(this.DB_STORE, 'readwrite');
+      const store = tx.objectStore(this.DB_STORE);
+      
+      // Data yang disimpan ke DB (tanpa blobUrl karena temporary)
+      const dataToSave = { ...fileData };
+      delete dataToSave.blobUrl; // blobUrl harus di-regenerate saat load
+      
+      const request = store.put(dataToSave);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      
+      tx.onerror = () => reject(tx.error);
+    } catch (err) {
+      reject(err);
+    }
+  });
+},
 
-    loadDriveConfig() {
-      const saved = localStorage.getItem('dc_drive_config');
-      if (saved) {
-        try {
-          const cfg = JSON.parse(saved);
-          this.driveConfig.clientId = cfg.clientId || '';
-          this.driveConfig.apiKey = cfg.apiKey || '';
-        } catch(e) {}
-      }
-    },
+// Load semua file dari IndexedDB
+async loadFilesFromDB() {
+  return new Promise((resolve, reject) => {
+    try {
+      const tx = this.db.transaction(this.DB_STORE, 'readonly');
+      const store = tx.objectStore(this.DB_STORE);
+      const request = store.getAll();
+      
+      request.onsuccess = () => {
+        const storedFiles = request.result || [];
+        // Sort by createdAt (newest first)
+        storedFiles.sort((a, b) => {
+          const dateA = a.createdAt || '';
+          const dateB = b.createdAt || '';
+          return dateB > dateA ? 1 : -1;
+        });
+        
+        // Generate blob URL untuk file yang punya blob
+        storedFiles.forEach(file => {
+          if (file._blob && file._blob instanceof Blob) {
+            file.blobUrl = URL.createObjectURL(file._blob);
+          }
+        });
+        
+        this.files = storedFiles;
+        resolve(storedFiles);
+      };
+      request.onerror = () => reject(request.error);
+    } catch (err) {
+      reject(err);
+    }
+  });
+},
+
+async deleteFileFromDB(id) {
+  return new Promise((resolve, reject) => {
+    try {
+      const tx = this.db.transaction(this.DB_STORE, 'readwrite');
+      const store = tx.objectStore(this.DB_STORE);
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    } catch (err) {
+      reject(err);
+    }
+  });
+},
 
     // ╔══════════════════════════════════════════════════════════╗
     // ║                   UTILITY FUNCTIONS                      ║
@@ -1372,13 +1499,25 @@ function docuCloud() {
     // ╚══════════════════════════════════════════════════════════╝
 
     async openFile(file) {
-      // If file is from IndexedDB and has blob, create blob URL for preview
-      if (file.source === 'indexeddb' && file._blob && !file.blobUrl) {
-        file.blobUrl = URL.createObjectURL(file._blob);
-      }
-      this.previewFile = file;
-      this.$nextTick(() => lucide.createIcons());
-    },
+  // Generate blob URL jika file punya blob tapi belum punya blobUrl
+  if (file._blob && file._blob instanceof Blob && !file.blobUrl) {
+    file.blobUrl = URL.createObjectURL(file._blob);
+    
+    // Untuk file teks, baca content-nya
+    const textTypes = ['text/plain', 'text/csv', 'text/markdown', 'application/json'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    const textExts = ['txt', 'md', 'csv', 'json', 'log', 'html', 'css', 'js'];
+    
+    if (textTypes.includes(file._blob.type) || textExts.includes(ext)) {
+      try {
+        file.textContent = await file._blob.text();
+      } catch(e) {}
+    }
+  }
+  
+  this.previewFile = file;
+  this.$nextTick(() => lucide.createIcons());
+},
 
     async downloadFile(file) {
       if (file.source === 'drive' && file.driveId) {
@@ -1430,38 +1569,43 @@ function docuCloud() {
     },
 
     async handleUpload(e) {
-      const uploadedFiles = Array.from(e.target.files);
-      if (uploadedFiles.length === 0) return;
+  const uploadedFiles = Array.from(e.target.files);
+  if (uploadedFiles.length === 0) return;
 
-      for (const rawFile of uploadedFiles) {
-        const fileMeta = this.buildFileMetadata(rawFile);
+  for (const rawFile of uploadedFiles) {
+    const fileMeta = this.buildFileMetadata(rawFile);
 
-        // Save to IndexedDB with blob
-        const fileData = {
-          ...fileMeta,
-          _blob: rawFile,
-          _sizeBytes: rawFile.size,
-          createdAt: new Date().toISOString(),
-        };
+    // Data file dengan blob
+    const fileData = {
+      ...fileMeta,
+      _blob: rawFile,           // ← Blob file asli
+      _sizeBytes: rawFile.size,
+      createdAt: new Date().toISOString(),
+    };
 
-        try {
-          await this.saveFileToDB(fileData);
-          this.files.unshift(fileData);
+    // Generate blob URL untuk preview langsung
+    fileData.blobUrl = URL.createObjectURL(rawFile);
 
-          // Auto-sync to Drive if enabled
-          if (this.uploadSyncDrive && this.driveConnected) {
-            await this.uploadFileToDrive(fileData, rawFile);
-          }
-        } catch(err) {
-          this.showToast(`Gagal menyimpan ${rawFile.name}: ${err.message}`, 'error');
-        }
+    try {
+      // Simpan ke IndexedDB
+      await this.saveFileToDB(fileData);
+      this.files.unshift(fileData);
+
+      // Auto-sync ke Drive jika dicentang
+      if (this.uploadSyncDrive && this.driveConnected) {
+        await this.uploadFileToDrive(fileData, rawFile);
       }
+    } catch(err) {
+      console.error('Save error:', err);
+      this.showToast(`Gagal menyimpan ${rawFile.name}: ${err.message}`, 'error');
+    }
+  }
 
-      this.recalcCategoryCounts();
-      this.showToast(`${uploadedFiles.length} file berhasil diupload dan disimpan`);
-      this.showUpload = false;
-      this.$nextTick(() => lucide.createIcons());
-    },
+  this.recalcCategoryCounts();
+  this.showToast(`${uploadedFiles.length} file berhasil diupload dan disimpan`);
+  this.showUpload = false;
+  this.$nextTick(() => lucide.createIcons());
+},
 
     async handleDrop(e) {
       this.isDragging = false;
@@ -1648,13 +1792,22 @@ function docuCloud() {
           client_id: this.driveConfig.clientId.trim(),
           scope: this.driveConfig.scopes,
           callback: async (tokenResponse) => {
-            try {
-              if (tokenResponse.error) throw new Error(tokenResponse.error);
-              gapi.client.setToken(tokenResponse);
-              await this.fetchDriveUserInfo();
-              await this.fetchDriveStorageInfo();
-              await this.ensureDocuCloudFolder();
-              await this.syncDriveFiles();
+  try {
+    if (tokenResponse.error) throw new Error(tokenResponse.error);
+    gapi.client.setToken(tokenResponse);
+    
+    // 💾 SIMPAN TOKEN KE LOCALSTORAGE untuk auto-restore
+    const expiresAt = Date.now() + (tokenResponse.expires_in * 1000);
+    localStorage.setItem('dc_drive_token', JSON.stringify({
+      accessToken: tokenResponse.access_token,
+      expiresAt: expiresAt,
+      scope: tokenResponse.scope,
+    }));
+    
+    await this.fetchDriveUserInfo();
+    await this.fetchDriveStorageInfo();
+    await this.ensureDocuCloudFolder();
+    await this.syncDriveFiles();
 
               this.driveConnected = true;
               this.driveSetupStep = 3;
@@ -1690,20 +1843,81 @@ function docuCloud() {
     },
 
     disconnectDrive() {
-      const token = gapi?.client?.getToken?.();
-      if (token) {
-        google.accounts.oauth2.revoke(token.access_token);
-        gapi.client.setToken('');
-      }
-      this.driveConnected = false;
-      this.driveUser = null;
-      this.driveFiles = [];
-      this.driveTokenClient = null;
-      this.driveFolderId = null;
-      this.driveLastSync = '-';
-      this.showToast('Google Drive telah diputus', 'info');
-    },
+  const token = gapi?.client?.getToken?.();
+  if (token) {
+    try {
+      google.accounts.oauth2.revoke(token.access_token);
+    } catch(e) {}
+    gapi.client.setToken('');
+  }
+  // Hapus token tersimpan
+  localStorage.removeItem('dc_drive_token');
+  
+  this.driveConnected = false;
+  this.driveUser = null;
+  this.driveFiles = [];
+  this.driveTokenClient = null;
+  this.driveFolderId = null;
+  this.driveLastSync = '-';
+  this.showToast('Google Drive telah diputus', 'info');
+},
 
+// Restore koneksi Drive otomatis dari token tersimpan
+async restoreDriveConnection() {
+  try {
+    const savedToken = localStorage.getItem('dc_drive_token');
+    if (!savedToken) return false;
+
+    const tokenData = JSON.parse(savedToken);
+    
+    // Cek apakah token sudah expired (buffer 5 menit)
+    const now = Date.now();
+    const expiresAt = tokenData.expiresAt || 0;
+    if (now >= expiresAt - 300000) {
+      // Token expired, hapus
+      localStorage.removeItem('dc_drive_token');
+      return false;
+    }
+
+    // Pastikan gapi sudah init
+    if (!this.driveGapiInited) {
+      await this.initGoogleApi();
+    }
+
+    if (typeof gapi === 'undefined' || !this.driveGapiInited) return false;
+
+    // Set token ke gapi
+    gapi.client.setToken({
+      access_token: tokenData.accessToken,
+      expires_in: Math.floor((expiresAt - now) / 1000),
+    });
+
+    // Coba fetch user info untuk validasi token
+    try {
+      await this.fetchDriveUserInfo();
+      await this.fetchDriveStorageInfo();
+      await this.ensureDocuCloudFolder();
+      await this.syncDriveFiles();
+
+      this.driveConnected = true;
+      this.driveSetupStep = 3;
+      this.showToast('Google Drive otomatis terhubung kembali', 'info');
+      return true;
+    } catch (err) {
+      // Token tidak valid, hapus
+      localStorage.removeItem('dc_drive_token');
+      gapi.client.setToken('');
+      return false;
+    }
+  } catch (err) {
+    console.warn('Restore Drive failed:', err);
+    return false;
+  }
+},
+
+
+
+   
     async fetchDriveUserInfo() {
       const res = await gapi.client.drive.about.get({ fields: 'user,storageQuota' });
       const data = res.result;
