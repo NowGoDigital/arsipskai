@@ -1216,7 +1216,7 @@ function docuCloud() {
     // ║                    INDEXEDDB METHODS                     ║
     // ╚══════════════════════════════════════════════════════════╝
 
-    async initWithedDB() {
+    async initIndexedDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
 
