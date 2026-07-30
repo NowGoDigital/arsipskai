@@ -1003,6 +1003,7 @@
 <script>
 function docuCloud() {
   return {
+    // ===== UI STATE =====
     sidebarOpen: true,
     darkMode: false,
     activeMenu: 'dashboard',
@@ -1018,11 +1019,21 @@ function docuCloud() {
     uploadSyncDrive: false,
     previewFile: null,
     breadcrumbs: [],
-    usedStorage: '8.4 GB',
-    storagePercent: 56,
+    usedStorage: '0 B',
+    storagePercent: 0,
     toast: { show: false, message: '', type: 'success', icon: 'check-circle' },
+    isDragging: false,
+    isLoading: true,
+    loadingMessage: 'Memuat database...',
+    loadingProgress: 0,
 
-    // Kategori
+    // ===== INDEXEDDB =====
+    db: null,
+    DB_NAME: 'DocuCloudDB',
+    DB_STORE: 'files',
+    DB_VERSION: 1,
+
+    // ===== KATEGORI =====
     showNewCategory: false,
     showDeleteCategory: false,
     newCategoryName: '',
@@ -1036,7 +1047,7 @@ function docuCloud() {
       '#f43f5e','#78716c','#64748b','#0f172a'
     ],
 
-    // ===== GOOGLE DRIVE STATE =====
+    // ===== GOOGLE DRIVE =====
     driveConnected: false,
     driveUser: null,
     driveFiles: [],
@@ -1064,28 +1075,30 @@ function docuCloud() {
       scopes: 'https://www.googleapis.com/auth/drive',
       discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
     },
-    // DocuCloud folder in Drive
     driveFolderId: null,
 
+    // ===== MENU & DATA =====
     menu: [
       {id:'dashboard', label:'Dashboard', icon:'layout-dashboard'},
-      {id:'files', label:'Semua File', icon:'folder', badge:'248'},
+      {id:'files', label:'Semua File', icon:'folder', badge:''},
       {id:'shared', label:'Dibagikan', icon:'users', badge:'12'},
       {id:'trash', label:'Sampah', icon:'trash-2'},
       {id:'settings', label:'Pengaturan', icon:'settings'},
     ],
 
-    categories: [
-      {name:'Hukum', count:42, color:'#ef4444'},
-      {name:'Keuangan', count:38, color:'#f59e0b'},
-      {name:'HRD', count:27, color:'#10b981'},
-      {name:'Marketing', count:56, color:'#3b82f6'},
-      {name:'Operasional', count:85, color:'#8b5cf6'},
+    categories: [],
+
+    defaultCategories: [
+      {name:'Hukum', count:0, color:'#ef4444'},
+      {name:'Keuangan', count:0, color:'#f59e0b'},
+      {name:'HRD', count:0, color:'#10b981'},
+      {name:'Marketing', count:0, color:'#3b82f6'},
+      {name:'Operasional', count:0, color:'#8b5cf6'},
     ],
 
     stats: [
-      {label:'Total Dokumen', value:'1,284', icon:'file-text', bg:'#dbeafe', color:'#2563eb', trend:12},
-      {label:'Diupload Bulan Ini', value:'142', icon:'upload', bg:'#dcfce7', color:'#16a34a', trend:8},
+      {label:'Total Dokumen', value:'0', icon:'file-text', bg:'#dbeafe', color:'#2563eb', trend:12},
+      {label:'Diupload Bulan Ini', value:'0', icon:'upload', bg:'#dcfce7', color:'#16a34a', trend:8},
       {label:'Dibagikan', value:'89', icon:'share-2', bg:'#fef3c7', color:'#d97706', trend:-3},
       {label:'Pengguna Aktif', value:'24', icon:'users', bg:'#ede9fe', color:'#7c3aed', trend:15},
     ],
@@ -1099,18 +1112,7 @@ function docuCloud() {
       {id:4, user:'Dewi L.', action:'menghapus', file:'Draft_Lama.docx', icon:'trash-2', bg:'#fee2e2', color:'#dc2626', time:'Kemarin'},
     ],
 
-    files: [
-      {id:1, name:'Kontrak_Kerjasama_2026.pdf', type:'PDF', size:'2.4 MB', date:'16 Jul 2026', icon:'file-text', color:'#ef4444', category:'Hukum', source:'local'},
-      {id:2, name:'Laporan_Keuangan_Q2.xlsx', type:'Spreadsheet', size:'1.8 MB', date:'15 Jul 2026', icon:'table', color:'#10b981', category:'Keuangan', source:'local'},
-      {id:3, name:'Proposal_Marketing.pptx', type:'Dokumen', size:'5.2 MB', date:'14 Jul 2026', icon:'presentation', color:'#f59e0b', category:'Marketing', source:'local'},
-      {id:4, name:'SOP_Onboarding_Karyawan.docx', type:'Dokumen', size:'840 KB', date:'13 Jul 2026', icon:'file-text', color:'#3b82f6', category:'HRD', source:'local'},
-      {id:5, name:'Logo_Perusahaan_v3.png', type:'Gambar', size:'3.1 MB', date:'12 Jul 2026', icon:'image', color:'#8b5cf6', category:'Marketing', source:'local'},
-      {id:6, name:'Invoice_Client_A001.pdf', type:'PDF', size:'420 KB', date:'11 Jul 2026', icon:'file-text', color:'#ef4444', category:'Keuangan', source:'local'},
-      {id:7, name:'Meeting_Notes_Juli.docx', type:'Dokumen', size:'156 KB', date:'10 Jul 2026', icon:'file-text', color:'#3b82f6', category:'Operasional', source:'local'},
-      {id:8, name:'Budget_2026_Final.xlsx', type:'Spreadsheet', size:'2.9 MB', date:'09 Jul 2026', icon:'table', color:'#10b981', category:'Keuangan', source:'local'},
-      {id:9, name:'Brand_Guidelines.pdf', type:'PDF', size:'12 MB', date:'08 Jul 2026', icon:'file-text', color:'#ef4444', category:'Marketing', source:'local'},
-      {id:10, name:'Foto_Team_Building.jpg', type:'Gambar', size:'8.4 MB', date:'07 Jul 2026', icon:'image', color:'#8b5cf6', category:'HRD', source:'local'},
-    ],
+    files: [],
 
     get filteredFiles() {
       return this.files.filter(f => {
@@ -1130,34 +1132,185 @@ function docuCloud() {
 
     catColor(name) { return this.categories.find(c=>c.name===name)?.color || '#94a3b8'; },
 
-    // ============================
-    // INIT
-    // ============================
-    init() {
-      this.$nextTick(() => lucide.createIcons());
-      this.$watch('activeMenu', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('viewMode', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('showUpload', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('previewFile', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('showNewCategory', (val) => {
-        this.$nextTick(() => lucide.createIcons());
-        if (val) this.$nextTick(() => { if (this.$refs.catNameInput) this.$refs.catNameInput.focus(); });
-      });
-      this.$watch('showDeleteCategory', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('newCategoryColor', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('deleteCategoryAction', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('categories', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('showDriveSetup', (val) => {
-        this.$nextTick(() => lucide.createIcons());
-        if (val) this.initGoogleApi();
-      });
-      this.$watch('showDriveBrowser', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('driveFiles', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('driveBrowserMode', () => { this.driveSelectedFiles = []; this.$nextTick(() => lucide.createIcons()); });
-      this.$watch('driveSetupStep', () => this.$nextTick(() => lucide.createIcons()));
-      this.$watch('driveAuthError', () => this.$nextTick(() => lucide.createIcons()));
+    // ╔══════════════════════════════════════════════════════════╗
+    // ║                     INITIALIZATION                       ║
+    // ╚══════════════════════════════════════════════════════════╝
+    async init() {
+      try {
+        this.isLoading = true;
+        this.loadingMessage = 'Memuat database lokal...';
+        this.loadingProgress = 10;
 
-      // Load saved Drive config
+        // 1. Init IndexedDB
+        await this.initIndexedDB();
+        this.loadingProgress = 30;
+
+        // 2. Load categories from localStorage
+        this.loadingMessage = 'Memuat kategori...';
+        this.loadCategoriesFromStorage();
+        this.loadingProgress = 45;
+
+        // 3. Load files from IndexedDB
+        this.loadingMessage = 'Memuat file tersimpan...';
+        await this.loadFilesFromDB();
+        this.loadingProgress = 70;
+
+        // 4. Load Drive config
+        this.loadingMessage = 'Memuat konfigurasi Drive...';
+        this.loadDriveConfig();
+        this.loadingProgress = 85;
+
+        // 5. Update stats
+        this.updateStats();
+        this.updateStorageDisplay();
+        this.recalcCategoryCounts();
+
+        // 6. Init Google API in background
+        this.loadingMessage = 'Menyiapkan integrasi...';
+        this.initGoogleApi();
+        this.loadingProgress = 100;
+
+        // Hide loading after short delay
+        setTimeout(() => {
+          this.isLoading = false;
+          this.$nextTick(() => lucide.createIcons());
+        }, 500);
+
+        // Watchers
+        this.$nextTick(() => lucide.createIcons());
+        this.$watch('activeMenu', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('viewMode', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('showUpload', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('previewFile', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('showNewCategory', (val) => {
+          this.$nextTick(() => lucide.createIcons());
+          if (val) this.$nextTick(() => { if (this.$refs.catNameInput) this.$refs.catNameInput.focus(); });
+        });
+        this.$watch('showDeleteCategory', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('newCategoryColor', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('deleteCategoryAction', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('categories', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('files', () => {
+          this.$nextTick(() => lucide.createIcons());
+          this.updateStats();
+          this.updateStorageDisplay();
+        });
+        this.$watch('showDriveSetup', (val) => {
+          this.$nextTick(() => lucide.createIcons());
+          if (val) this.initGoogleApi();
+        });
+        this.$watch('showDriveBrowser', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('driveFiles', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('driveBrowserMode', () => { this.driveSelectedFiles = []; this.$nextTick(() => lucide.createIcons()); });
+        this.$watch('driveSetupStep', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('driveAuthError', () => this.$nextTick(() => lucide.createIcons()));
+
+      } catch (err) {
+        console.error('Init error:', err);
+        this.isLoading = false;
+        this.showToast('Error saat memuat: ' + err.message, 'error');
+      }
+    },
+
+    // ╔══════════════════════════════════════════════════════════╗
+    // ║                    INDEXEDDB METHODS                     ║
+    // ╚══════════════════════════════════════════════════════════╝
+
+    async initWithedDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+
+        request.onerror = () => reject(request.error);
+
+        request.onsuccess = () => {
+          this.db = request.result;
+          resolve(this.db);
+        };
+
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(this.DB_STORE)) {
+            const store = db.createObjectStore(this.DB_STORE, { keyPath: 'id' });
+            store.createIndex('category', 'category', { unique: false });
+            store.createIndex('source', 'source', { unique: false });
+            store.createIndex('date', 'date', { unique: false });
+          }
+        };
+      });
+    },
+
+    async saveFileToDB(fileData) {
+      return new Promise((resolve, reject) => {
+        const tx = this.db.transaction(this.DB_STORE, 'readwrite');
+        const store = tx.objectStore(this.DB_STORE);
+        const request = store.put(fileData);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    async loadFilesFromDB() {
+      return new Promise((resolve, reject) => {
+        const tx = this.db.transaction(this.DB_STORE, 'readonly');
+        const store = tx.objectStore(this.DB_STORE);
+        const request = store.getAll();
+        request.onsuccess = () => {
+          const storedFiles = request.result || [];
+          // Sort by date (newest first)
+          storedFiles.sort((a, b) => {
+            const dateA = a.createdAt || a.date || '';
+            const dateB = b.createdAt || b.date || '';
+            return dateB > dateA ? 1 : -1;
+          });
+          this.files = storedFiles;
+          resolve(storedFiles);
+        };
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    async deleteFileFromDB(id) {
+      return new Promise((resolve, reject) => {
+        const tx = this.db.transaction(this.DB_STORE, 'readwrite');
+        const store = tx.objectStore(this.DB_STORE);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    async clearAllFromDB() {
+      return new Promise((resolve, reject) => {
+        const tx = this.db.transaction(this.DB_STORE, 'readwrite');
+        const store = tx.objectStore(this.DB_STORE);
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    // ╔══════════════════════════════════════════════════════════╗
+    // ║                   LOCAL STORAGE METHODS                  ║
+    // ╚══════════════════════════════════════════════════════════╝
+
+    loadCategoriesFromStorage() {
+      const saved = localStorage.getItem('dc_categories');
+      if (saved) {
+        try {
+          this.categories = JSON.parse(saved);
+        } catch(e) {
+          this.categories = JSON.parse(JSON.stringify(this.defaultCategories));
+        }
+      } else {
+        this.categories = JSON.parse(JSON.stringify(this.defaultCategories));
+      }
+    },
+
+    saveCategoriesToStorage() {
+      localStorage.setItem('dc_categories', JSON.stringify(this.categories));
+    },
+
+    loadDriveConfig() {
       const saved = localStorage.getItem('dc_drive_config');
       if (saved) {
         try {
@@ -1166,10 +1319,11 @@ function docuCloud() {
           this.driveConfig.apiKey = cfg.apiKey || '';
         } catch(e) {}
       }
-
-      // Auto-init Google API in background
-      this.initGoogleApi();
     },
+
+    // ╔══════════════════════════════════════════════════════════╗
+    // ║                   UTILITY FUNCTIONS                      ║
+    // ╚══════════════════════════════════════════════════════════╝
 
     showToast(msg, type='success') {
       this.toast = {show:true, message:msg, type, icon: type==='success'?'check-circle':type==='info'?'info':'alert-circle'};
@@ -1177,73 +1331,227 @@ function docuCloud() {
       this.$nextTick(() => lucide.createIcons());
     },
 
+    updateStats() {
+      const total = this.files.length;
+      const thisMonth = this.files.filter(f => {
+        const d = f.createdAt ? new Date(f.createdAt) : new Date();
+        const now = new Date();
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
+
+      this.stats[0].value = total.toLocaleString('id-ID');
+      this.stats[1].value = thisMonth.toLocaleString('id-ID');
+
+      // Update badge
+      const filesMenu = this.menu.find(m => m.id === 'files');
+      if (filesMenu) filesMenu.badge = total.toString();
+    },
+
+    updateStorageDisplay() {
+      let totalBytes = 0;
+      this.files.forEach(f => {
+        if (f._sizeBytes) totalBytes += f._sizeBytes;
+      });
+      this.usedStorage = this.formatBytes(totalBytes);
+      // Assume 15GB limit for display
+      this.storagePercent = Math.min(100, Math.round((totalBytes / (15 * 1073741824)) * 100));
+    },
+
+    formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    },
+
     filterFiles() {},
 
-    openFile(file) { this.previewFile = file; this.$nextTick(()=>lucide.createIcons()); },
-    downloadFile(file) {
+    // ╔══════════════════════════════════════════════════════════╗
+    // ║                    FILE OPERATIONS                       ║
+    // ╚══════════════════════════════════════════════════════════╝
+
+    async openFile(file) {
+      // If file is from IndexedDB and has blob, create blob URL for preview
+      if (file.source === 'indexeddb' && file._blob && !file.blobUrl) {
+        file.blobUrl = URL.createObjectURL(file._blob);
+      }
+      this.previewFile = file;
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    async downloadFile(file) {
       if (file.source === 'drive' && file.driveId) {
-        this.downloadFromDrive(file);
-      } else {
+        await this.downloadFromDrive(file);
+      } else if (file.source === 'indexeddb' && file._blob) {
+        // Download from IndexedDB blob
+        const url = URL.createObjectURL(file._blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
         this.showToast(`Mengunduh ${file.name}...`);
-      }
-    },
-    shareFile(file) { this.showToast(`Link berbagi ${file.name} disalin`); },
-    deleteFile(file) {
-      if(confirm(`Hapus ${file.name}?`)) {
-        this.files = this.files.filter(f => f.id !== file.id);
-        this.recalcCategoryCounts();
-        this.showToast(`${file.name} dipindahkan ke sampah`);
+      } else {
+        this.showToast(`File "${file.name}" adalah file sample, tidak bisa diunduh`, 'info');
       }
     },
 
-    handleUpload(e) {
-      const uploadedFiles = Array.from(e.target.files);
-      uploadedFiles.forEach(f => {
-        const newFile = {
-          id: Date.now()+Math.random(),
-          name: f.name,
-          type: f.type.includes('image')?'Gambar':f.name.endsWith('.pdf')?'PDF':'Dokumen',
-          size: (f.size/1024/1024).toFixed(1)+' MB',
-          date: new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}),
-          icon: f.type.includes('image')?'image':'file-text',
-          color: f.type.includes('image')?'#8b5cf6':'#3b82f6',
-          category: this.uploadCategory,
-          source: 'local',
-          _rawFile: f
-        };
-        this.files.unshift(newFile);
+    shareFile(file) {
+      if (file.source === 'drive' && file.driveWebView) {
+        navigator.clipboard.writeText(file.driveWebView);
+        this.showToast('Link Google Drive disalin ke clipboard');
+      } else {
+        this.showToast(`Link berbagi ${file.name} disalin`);
+      }
+    },
 
-        // Auto-sync to Drive if enabled
-        if (this.uploadSyncDrive && this.driveConnected && this.driveTokenClient) {
-          this.uploadFileToDrive(newFile, f);
-        }
-      });
+    async deleteFile(file) {
+      if (!confirm(`Hapus "${file.name}"?`)) return;
+
+      // Delete from IndexedDB
+      try {
+        await this.deleteFileFromDB(file.id);
+      } catch(e) {
+        console.warn('Delete from DB failed:', e);
+      }
+
+      // Revoke blob URL if exists
+      if (file.blobUrl) {
+        URL.revokeObjectURL(file.blobUrl);
+      }
+
+      // Remove from array
+      this.files = this.files.filter(f => f.id !== file.id);
       this.recalcCategoryCounts();
-      this.showToast(`${uploadedFiles.length} file berhasil diupload`);
-      this.$nextTick(()=>lucide.createIcons());
+      this.showToast(`"${file.name}" dipindahkan ke sampah`);
     },
 
-    uploadLocal() { this.showUpload = false; this.showToast('Upload lokal selesai'); },
-    uploadToDrive() {
-      if(!this.driveConnected) { this.showUpload = false; this.showDriveSetup = true; return; }
+    async handleUpload(e) {
+      const uploadedFiles = Array.from(e.target.files);
+      if (uploadedFiles.length === 0) return;
+
+      for (const rawFile of uploadedFiles) {
+        const fileMeta = this.buildFileMetadata(rawFile);
+
+        // Save to IndexedDB with blob
+        const fileData = {
+          ...fileMeta,
+          _blob: rawFile,
+          _sizeBytes: rawFile.size,
+          createdAt: new Date().toISOString(),
+        };
+
+        try {
+          await this.saveFileToDB(fileData);
+          this.files.unshift(fileData);
+
+          // Auto-sync to Drive if enabled
+          if (this.uploadSyncDrive && this.driveConnected) {
+            await this.uploadFileToDrive(fileData, rawFile);
+          }
+        } catch(err) {
+          this.showToast(`Gagal menyimpan ${rawFile.name}: ${err.message}`, 'error');
+        }
+      }
+
+      this.recalcCategoryCounts();
+      this.showToast(`${uploadedFiles.length} file berhasil diupload dan disimpan`);
       this.showUpload = false;
-      this.showToast('Pilih file terlebih dahulu, lalu upload akan otomatis sync ke Drive', 'info');
+      this.$nextTick(() => lucide.createIcons());
     },
 
-    createFolder() {
-      if(!this.newFolderName) return;
-      this.files.unshift({
-        id: Date.now(), name: this.newFolderName, type:'Folder', size:'-',
-        date: new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}),
-        icon:'folder', color:'#f59e0b', category:'Operasional', source:'local'
-      });
-      this.showToast(`Folder "${this.newFolderName}" dibuat`);
+    async handleDrop(e) {
+      this.isDragging = false;
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) return;
+
+      // Simulate input event
+      const dt = new DataTransfer();
+      files.forEach(f => dt.items.add(f));
+      const fakeEvent = { target: { files: dt.files } };
+      await this.handleUpload(fakeEvent);
+    },
+
+    buildFileMetadata(rawFile) {
+      const ext = rawFile.name.split('.').pop().toLowerCase();
+      let type = 'Dokumen';
+      let icon = 'file-text';
+      let color = '#3b82f6';
+
+      if (rawFile.type.startsWith('image/') || ['jpg','jpeg','png','gif','svg','webp'].includes(ext)) {
+        type = 'Gambar'; icon = 'image'; color = '#8b5cf6';
+      } else if (ext === 'pdf') {
+        type = 'PDF'; icon = 'file-text'; color = '#ef4444';
+      } else if (['xls','xlsx','csv'].includes(ext)) {
+        type = 'Spreadsheet'; icon = 'table'; color = '#10b981';
+      } else if (['ppt','pptx'].includes(ext)) {
+        type = 'Dokumen'; icon = 'presentation'; color = '#f59e0b';
+      } else if (['doc','docx','txt','md'].includes(ext)) {
+        type = 'Dokumen'; icon = 'file-text'; color = '#3b82f6';
+      } else if (['mp4','avi','mov','mkv','webm'].includes(ext)) {
+        type = 'Video'; icon = 'video'; color = '#ec4899';
+      } else if (['mp3','wav','ogg','m4a'].includes(ext)) {
+        type = 'Audio'; icon = 'music'; color = '#f97316';
+      } else if (['zip','rar','7z','tar','gz'].includes(ext)) {
+        type = 'Archive'; icon = 'archive'; color = '#78716c';
+      }
+
+      return {
+        id: 'file_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+        name: rawFile.name,
+        type: type,
+        size: this.formatBytes(rawFile.size),
+        date: new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}),
+        icon: icon,
+        color: color,
+        category: this.uploadCategory,
+        source: 'indexeddb',
+      };
+    },
+
+    uploadLocal() {
+      this.showToast('Pilih file terlebih dahulu, lalu klik "Pilih File"', 'info');
+    },
+
+    uploadToDrive() {
+      if (!this.driveConnected) {
+        this.showUpload = false;
+        this.showDriveSetup = true;
+        return;
+      }
+      this.showToast('Upload file lokal dulu, centang "Sinkronkan ke Google Drive"', 'info');
+    },
+
+    async createFolder() {
+      if (!this.newFolderName.trim()) return;
+      const folderData = {
+        id: 'folder_' + Date.now(),
+        name: this.newFolderName.trim(),
+        type: 'Folder',
+        size: '-',
+        date: new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}),
+        icon: 'folder',
+        color: '#f59e0b',
+        category: 'Operasional',
+        source: 'indexeddb',
+        _sizeBytes: 0,
+        createdAt: new Date().toISOString(),
+      };
+      await this.saveFileToDB(folderData);
+      this.files.unshift(folderData);
+      this.showToast(`Folder "${folderData.name}" dibuat`);
       this.showNewFolder = false;
       this.newFolderName = '';
-      this.$nextTick(()=>lucide.createIcons());
+      this.$nextTick(() => lucide.createIcons());
     },
 
-    // ===== KATEGORI =====
+    // ╔══════════════════════════════════════════════════════════╗
+    // ║                   CATEGORY MANAGEMENT                    ║
+    // ╚══════════════════════════════════════════════════════════╝
+
     addCategory() {
       const name = this.newCategoryName.trim();
       if (!name) return;
@@ -1252,6 +1560,7 @@ function docuCloud() {
         return;
       }
       this.categories.push({ name, count: 0, color: this.newCategoryColor || '#64748b' });
+      this.saveCategoriesToStorage();
       this.showToast(`Kategori "${name}" berhasil dibuat`);
       this.showNewCategory = false;
       this.newCategoryName = '';
@@ -1261,15 +1570,24 @@ function docuCloud() {
     deleteCategory() {
       if (!this.categoryToDelete) return;
       const catName = this.categoryToDelete.name;
-      const fileCount = this.categoryToDelete.count;
+
       if (this.deleteCategoryAction === 'move' && this.moveToCategory) {
         this.files.forEach(f => { if (f.category === catName) f.category = this.moveToCategory; });
-        this.showToast(`Kategori "${catName}" dihapus, ${fileCount} dokumen dipindahkan ke "${this.moveToCategory}"`);
+        this.showToast(`Kategori "${catName}" dihapus, dokumen dipindahkan ke "${this.moveToCategory}"`);
       } else {
         this.files.forEach(f => { if (f.category === catName) f.category = ''; });
-        this.showToast(`Kategori "${catName}" dihapus, ${fileCount} dokumen tanpa kategori`);
+        this.showToast(`Kategori "${catName}" dihapus`);
       }
+
+      // Save updated files to IndexedDB
+      this.files.forEach(async f => {
+        if (f.source === 'indexeddb') {
+          try { await this.saveFileToDB(f); } catch(e) {}
+        }
+      });
+
       this.categories = this.categories.filter(c => c.name !== catName);
+      this.saveCategoriesToStorage();
       if (this.filterCategory === catName) this.filterCategory = '';
       this.recalcCategoryCounts();
       this.showDeleteCategory = false;
@@ -1279,21 +1597,21 @@ function docuCloud() {
     },
 
     recalcCategoryCounts() {
-      this.categories.forEach(cat => { cat.count = this.files.filter(f => f.category === cat.name).length; });
+      this.categories.forEach(cat => {
+        cat.count = this.files.filter(f => f.category === cat.name).length;
+      });
+      this.saveCategoriesToStorage();
     },
 
-    // ╔══════════════════════════════════════════════════════════════════╗
-    // ║                GOOGLE DRIVE INTEGRATION                         ║
-    // ╚══════════════════════════════════════════════════════════════════╝
+    // ╔══════════════════════════════════════════════════════════╗
+    // ║                GOOGLE DRIVE INTEGRATION                  ║
+    // ╚══════════════════════════════════════════════════════════╝
 
-    // ---------- INIT GOOGLE API ----------
     async initGoogleApi() {
       try {
-        // Wait for gapi to load
         if (typeof gapi === 'undefined') {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
-
         if (typeof gapi !== 'undefined' && !this.driveGapiInited) {
           await new Promise((resolve) => {
             gapi.load('client', async () => {
@@ -1305,125 +1623,72 @@ function docuCloud() {
             });
           });
         }
-
-        // Init Google Identity Services
         if (typeof google !== 'undefined' && !this.driveGisInited) {
           this.driveGisInited = true;
         }
-
         this.driveSetupStep = 1;
       } catch (err) {
         console.warn('Google API init deferred:', err.message);
-        // Will retry when user opens setup modal
       }
     },
 
-    // ---------- SIGN IN TO DRIVE ----------
     async signInToDrive() {
-  // Validasi Client ID
-  if (!this.driveConfig.clientId.trim()) {
-    this.driveAuthError = 'Isi Client ID terlebih dahulu di Step 1';
-    this.$nextTick(() => lucide.createIcons());
-    return;
-  }
+      if (!this.driveConfig.clientId.trim()) {
+        this.driveAuthError = 'Masukkan Client ID terlebih dahulu';
+        this.$nextTick(() => lucide.createIcons());
+        return;
+      }
+      this.driveLoading = true;
+      this.driveAuthError = '';
 
-  this.driveLoading = true;
-  this.driveAuthError = '';
-  this.$nextTick(() => lucide.createIcons());
+      try {
+        if (!this.driveGapiInited) await this.initGoogleApi();
 
-  try {
-    // Pastikan gapi sudah diinisialisasi
-    if (typeof gapi === 'undefined') {
-      // Load gapi script jika belum ada
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://apis.google.com/js/api.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Gagal memuat Google API'));
-        document.head.appendChild(script);
-      });
-    }
+        this.driveTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: this.driveConfig.clientId.trim(),
+          scope: this.driveConfig.scopes,
+          callback: async (tokenResponse) => {
+            try {
+              if (tokenResponse.error) throw new Error(tokenResponse.error);
+              gapi.client.setToken(tokenResponse);
+              await this.fetchDriveUserInfo();
+              await this.fetchDriveStorageInfo();
+              await this.ensureDocuCloudFolder();
+              await this.syncDriveFiles();
 
-    // Inisialisasi gapi client
-    if (!this.driveGapiInited) {
-      await new Promise((resolve) => {
-        gapi.load('client', async () => {
-          await gapi.client.init({
-            discoveryDocs: this.driveConfig.discoveryDocs,
-          });
-          this.driveGapiInited = true;
-          resolve();
+              this.driveConnected = true;
+              this.driveSetupStep = 3;
+
+              if (this.driveConfig.saveConfig) {
+                localStorage.setItem('dc_drive_config', JSON.stringify({
+                  clientId: this.driveConfig.clientId,
+                  apiKey: this.driveConfig.apiKey,
+                }));
+              }
+              this.driveLoading = false;
+              this.showToast('Google Drive berhasil terhubung!', 'success');
+            } catch (err) {
+              this.driveAuthError = err.message || 'Gagal mengambil data dari Drive';
+              this.driveLoading = false;
+              this.$nextTick(() => lucide.createIcons());
+            }
+          },
+          error_callback: (err) => {
+            this.driveAuthError = err.message || 'Autentikasi dibatalkan';
+            this.driveLoading = false;
+            this.$nextTick(() => lucide.createIcons());
+          }
         });
-      });
-    }
 
-    // Pastikan Google Identity Services tersedia
-    if (typeof google === 'undefined' || !google.accounts?.oauth2) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Gagal memuat Google Identity Services'));
-        document.head.appendChild(script);
-      });
-    }
-
-    // Buat token client
-    this.driveTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: this.driveConfig.clientId.trim(),
-      scope: this.driveConfig.scopes,
-      callback: async (tokenResponse) => {
-        try {
-          if (tokenResponse.error) {
-            throw new Error(tokenResponse.error);
-          }
-
-          gapi.client.setToken(tokenResponse);
-          
-          // Ambil info user
-          await this.fetchDriveUserInfo();
-          await this.fetchDriveStorageInfo();
-          await this.ensureDocuCloudFolder();
-          await this.syncDriveFiles();
-
-          this.driveConnected = true;
-          this.driveSetupStep = 3;
-          this.driveLoading = false;
-
-          // Simpan konfigurasi
-          if (this.driveConfig.saveConfig) {
-            localStorage.setItem('dc_drive_config', JSON.stringify({
-              clientId: this.driveConfig.clientId,
-              apiKey: this.driveConfig.apiKey,
-            }));
-          }
-
-          this.showToast('Google Drive berhasil terhubung!', 'success');
-          this.$nextTick(() => lucide.createIcons());
-        } catch (err) {
-          this.driveAuthError = 'Gagal mengambil data: ' + (err.message || err);
-          this.driveLoading = false;
-          this.$nextTick(() => lucide.createIcons());
-        }
-      },
-      error_callback: (err) => {
-        this.driveAuthError = err.message || 'Autentikasi dibatalkan oleh pengguna';
+        this.driveSetupStep = 2;
+        this.driveTokenClient.requestAccessToken({ prompt: 'consent' });
+      } catch (err) {
+        this.driveAuthError = 'Error: ' + err.message;
         this.driveLoading = false;
         this.$nextTick(() => lucide.createIcons());
       }
-    });
+    },
 
-    // Minta token akses (ini akan trigger popup Google)
-    this.driveTokenClient.requestAccessToken({ prompt: 'consent' });
-
-  } catch (err) {
-    this.driveAuthError = 'Error: ' + (err.message || err);
-    this.driveLoading = false;
-    this.$nextTick(() => lucide.createIcons());
-  }
-},
-
-    // ---------- DISCONNECT DRIVE ----------
     disconnectDrive() {
       const token = gapi?.client?.getToken?.();
       if (token) {
@@ -1439,7 +1704,6 @@ function docuCloud() {
       this.showToast('Google Drive telah diputus', 'info');
     },
 
-    // ---------- FETCH USER INFO ----------
     async fetchDriveUserInfo() {
       const res = await gapi.client.drive.about.get({ fields: 'user,storageQuota' });
       const data = res.result;
@@ -1450,7 +1714,6 @@ function docuCloud() {
       };
     },
 
-    // ---------- FETCH STORAGE INFO ----------
     async fetchDriveStorageInfo() {
       try {
         const res = await gapi.client.drive.about.get({ fields: 'storageQuota' });
@@ -1467,25 +1730,18 @@ function docuCloud() {
       }
     },
 
-    // ---------- ENSURE DOCUCLOUD FOLDER ----------
     async ensureDocuCloudFolder() {
       try {
-        // Search for existing DocuCloud folder
         const searchRes = await gapi.client.drive.files.list({
           q: "name='DocuCloud' and mimeType='application/vnd.google-apps.folder' and trashed=false",
           fields: 'files(id,name)',
           spaces: 'drive',
         });
-
         if (searchRes.result.files && searchRes.result.files.length > 0) {
           this.driveFolderId = searchRes.result.files[0].id;
         } else {
-          // Create DocuCloud folder
           const createRes = await gapi.client.drive.files.create({
-            resource: {
-              name: 'DocuCloud',
-              mimeType: 'application/vnd.google-apps.folder',
-            },
+            resource: { name: 'DocuCloud', mimeType: 'application/vnd.google-apps.folder' },
             fields: 'id',
           });
           this.driveFolderId = createRes.result.id;
@@ -1495,12 +1751,10 @@ function docuCloud() {
       }
     },
 
-    // ---------- SYNC FILES FROM DRIVE ----------
     async syncDriveFiles() {
       if (!this.driveConnected) return;
       this.driveLoading = true;
       this.driveSyncing = true;
-
       try {
         const res = await gapi.client.drive.files.list({
           pageSize: 100,
@@ -1509,117 +1763,56 @@ function docuCloud() {
           q: "trashed=false",
           spaces: 'drive',
         });
-
-        this.driveFiles = (res.result.files || []).map(f => ({
-          ...f,
-          size: f.size || '0',
-        }));
-
+        this.driveFiles = (res.result.files || []).map(f => ({ ...f, size: f.size || '0' }));
         this.driveLastSync = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
         await this.fetchDriveStorageInfo();
       } catch(err) {
         this.showToast('Gagal memuat file dari Drive: ' + (err.result?.error?.message || err.message), 'error');
       }
-
       this.driveLoading = false;
       this.driveSyncing = false;
       this.$nextTick(() => lucide.createIcons());
     },
 
-    // ---------- UPLOAD FILE TO DRIVE ----------
     async uploadFileToDrive(file, rawFile = null) {
-      if (!this.driveConnected) {
-        this.showDriveSetup = true;
-        return;
-      }
-
+      if (!this.driveConnected) { this.showDriveSetup = true; return; }
       this.driveUploadProgress = 1;
       this.driveSyncing = true;
 
       try {
-        // If we have the raw File object, upload it
-        if (rawFile) {
-          await this.uploadRawFileToDrive(rawFile);
-        } else {
-          // Create a placeholder text file for demo files
-          const content = `DocuCloud Document\n\nName: ${file.name}\nCategory: ${file.category}\nSize: ${file.size}\nDate: ${file.date}\n\nThis is a placeholder file created by DocuCloud.`;
-          const blob = new Blob([content], { type: 'text/plain' });
-
-          await this.uploadBlobToDrive(file.name, blob);
+        let blobToUpload = rawFile;
+        if (!blobToUpload) {
+          if (file._blob) {
+            blobToUpload = file._blob;
+          } else {
+            const content = `DocuCloud Document\n\nName: ${file.name}\nCategory: ${file.category}\nSize: ${file.size}\nDate: ${file.date}`;
+            blobToUpload = new Blob([content], { type: 'text/plain' });
+          }
         }
-
-        // Update file in local list
-        const localFile = this.files.find(f => f.id === file.id);
-        if (localFile) {
-          localFile.source = 'drive';
-        }
-
+        await this.uploadBlobToDrive(file.name, blobToUpload);
         this.driveUploadProgress = 100;
         setTimeout(() => { this.driveUploadProgress = 0; }, 1500);
-
         this.showToast(`"${file.name}" berhasil diupload ke Google Drive!`, 'success');
         await this.syncDriveFiles();
       } catch(err) {
         this.driveUploadProgress = 0;
         this.showToast('Upload ke Drive gagal: ' + (err.result?.error?.message || err.message), 'error');
       }
-
       this.driveSyncing = false;
     },
 
-    // ---------- UPLOAD RAW FILE ----------
-    async uploadRawFileToDrive(file) {
-      const metadata = {
-        name: file.name,
-        parents: this.driveFolderId ? [this.driveFolderId] : undefined,
-      };
-
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      form.append('file', file);
-
-      const token = gapi.client.getToken().access_token;
-
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        if (this.driveUploadProgress < 90) {
-          this.driveUploadProgress += Math.random() * 15;
-        }
-      }, 200);
-
-      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: new Headers({ 'Authorization': 'Bearer ' + token }),
-        body: form,
-      });
-
-      clearInterval(progressInterval);
-      this.driveUploadProgress = 95;
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error?.message || 'Upload failed');
-      }
-
-      this.driveUploadProgress = 100;
-      return await response.json();
-    },
-
-    // ---------- UPLOAD BLOB ----------
     async uploadBlobToDrive(name, blob) {
       const metadata = {
         name: name,
         parents: this.driveFolderId ? [this.driveFolderId] : undefined,
       };
-
       const form = new FormData();
       form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
       form.append('file', blob);
-
       const token = gapi.client.getToken().access_token;
 
       const progressInterval = setInterval(() => {
-        if (this.driveUploadProgress < 90) this.driveUploadProgress += 20;
+        if (this.driveUploadProgress < 90) this.driveUploadProgress += 10;
       }, 200);
 
       const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
@@ -1627,24 +1820,19 @@ function docuCloud() {
         headers: new Headers({ 'Authorization': 'Bearer ' + token }),
         body: form,
       });
-
       clearInterval(progressInterval);
 
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.error?.message || 'Upload failed');
       }
-
       return await response.json();
     },
 
-    // ---------- DOWNLOAD FROM DRIVE ----------
     async downloadFromDrive(file) {
       try {
         this.showToast(`Mengunduh ${file.name}...`, 'info');
         const token = gapi.client.getToken().access_token;
-
-        // For Google Docs/Sheets/Slides, export; otherwise download directly
         let url;
         if (file.mimeType?.startsWith('application/vnd.google-apps.')) {
           const exportMime = {
@@ -1657,11 +1845,7 @@ function docuCloud() {
         } else {
           url = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
         }
-
-        const response = await fetch(url, {
-          headers: new Headers({ 'Authorization': 'Bearer ' + token }),
-        });
-
+        const response = await fetch(url, { headers: new Headers({ 'Authorization': 'Bearer ' + token }) });
         const blob = await response.blob();
         const downloadUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1671,29 +1855,23 @@ function docuCloud() {
         a.click();
         window.URL.revokeObjectURL(downloadUrl);
         a.remove();
-
         this.showToast(`${file.name} berhasil diunduh`);
       } catch(err) {
         this.showToast('Download gagal: ' + err.message, 'error');
       }
     },
 
-    // ---------- IMPORT FROM DRIVE TO LOCAL ----------
     toggleDriveFileSelect(fileId) {
       const idx = this.driveSelectedFiles.indexOf(fileId);
-      if (idx === -1) {
-        this.driveSelectedFiles.push(fileId);
-      } else {
-        this.driveSelectedFiles.splice(idx, 1);
-      }
+      if (idx === -1) this.driveSelectedFiles.push(fileId);
+      else this.driveSelectedFiles.splice(idx, 1);
       this.$nextTick(() => lucide.createIcons());
     },
 
     async importSelectedFromDrive() {
       const selectedFiles = this.driveFiles.filter(f => this.driveSelectedFiles.includes(f.id));
-
       for (const dFile of selectedFiles) {
-        this.files.unshift({
+        const fileData = {
           id: 'drive_' + dFile.id,
           name: dFile.name,
           type: this.getDriveFileType(dFile.mimeType),
@@ -1706,9 +1884,11 @@ function docuCloud() {
           driveId: dFile.id,
           driveMimeType: dFile.mimeType,
           driveWebView: dFile.webViewLink,
-        });
+          createdAt: new Date().toISOString(),
+        };
+        await this.saveFileToDB(fileData);
+        this.files.unshift(fileData);
       }
-
       this.recalcCategoryCounts();
       this.showToast(`${selectedFiles.length} file diimpor dari Google Drive`);
       this.driveSelectedFiles = [];
@@ -1716,22 +1896,15 @@ function docuCloud() {
       this.activeMenu = 'files';
     },
 
-    // ---------- OPEN DRIVE FILE ----------
     openDriveFile(file) {
-      if (file.webViewLink) {
-        window.open(file.webViewLink, '_blank');
-      }
+      if (file.webViewLink) window.open(file.webViewLink, '_blank');
     },
 
     openInDrive(file) {
-      if (file.driveId) {
-        window.open(`https://drive.google.com/file/d/${file.driveId}/view`, '_blank');
-      } else if (file.driveWebView) {
-        window.open(file.driveWebView, '_blank');
-      }
+      if (file.driveId) window.open(`https://drive.google.com/file/d/${file.driveId}/view`, '_blank');
+      else if (file.driveWebView) window.open(file.driveWebView, '_blank');
     },
 
-    // ---------- DRIVE HELPERS ----------
     getDriveFileIcon(mimeType) {
       if (!mimeType) return 'file';
       if (mimeType.includes('image')) return 'image';
@@ -1772,33 +1945,12 @@ function docuCloud() {
     formatDriveSize(bytes) {
       const b = parseInt(bytes) || 0;
       if (b === 0) return '-';
-      if (b < 1024) return b + ' B';
-      if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-      if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
-      return (b/1073741824).toFixed(1) + ' GB';
+      return this.formatBytes(b);
     },
 
     formatDriveDate(dateStr) {
       if (!dateStr) return '-';
       return new Date(dateStr).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
-    },
-
-    formatBytes(bytes) {
-      if (!bytes || bytes === 0) return '0 B';
-      const k = 1073741824; // GB
-      if (bytes >= k) return (bytes/k).toFixed(1) + ' GB';
-      const m = 1048576;
-      if (bytes >= m) return (bytes/m).toFixed(0) + ' MB';
-      return (bytes/1024).toFixed(0) + ' KB';
-    },
-
-    // ---------- LEGACY COMPAT ----------
-    connectDrive() {
-      if (this.driveConnected) {
-        this.disconnectDrive();
-      } else {
-        this.showDriveSetup = true;
-      }
     },
   }
 }
