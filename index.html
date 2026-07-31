@@ -60,6 +60,8 @@
     aside { display: none !important; }
   }
 </style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200"
       x-data="docuCloud()" x-init="init()" x-cloak
@@ -119,7 +121,7 @@
       <template x-for="cat in categories" :key="cat.name">
         <div class="cat-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition"
              @click="filterCategory = cat.name; activeMenu = 'files'">
-          <span class="w-2 h-2 rounded-full flex-shrink-0" :style="`background:${cat.color}`"></span>
+          <i :class="`fa ${cat.icon} w-4 h-4 flex-shrink-0 text-gray-500`" :style="`color:${cat.color}`"></i>
           <span x-show="sidebarOpen" x-text="cat.name" class="flex-1 truncate"></span>
           <span x-show="sidebarOpen" x-text="cat.count" class="cat-count text-[11px] text-slate-400 transition-opacity"></span>
           <button x-show="sidebarOpen"
@@ -1159,10 +1161,13 @@ function docuCloud() {
     ],
     categories: [],
     defaultCategories: [
-      {name:'Hukum', count:0, color:'#ef4444'}, {name:'Keuangan', count:0, color:'#f59e0b'},
-      {name:'HRD', count:0, color:'#10b981'}, {name:'Marketing', count:0, color:'#3b82f6'},
-      {name:'Operasional', count:0, color:'#8b5cf6'},
-    ],
+      {name:'Hukum', count:0, color:'#ef4444', icon:'fa-balance-scale'},
+      {name:'Keuangan', count:0, color:'#f59e0b', icon:'fa-wallet'},
+      {name:'HRD', count:0, color:'#10b981', icon:'fa-users'},
+      {name:'Marketing', count:0, color:'#3b82f6', icon:'fa-bullseye'},
+      {name:'Operasional', count:0, color:'#8b5cf6', icon:'fa-cog'},
+     ], 
+     
     stats: [
       {label:'Total Dokumen', value:'0', icon:'file-text', bg:'#dbeafe', color:'#2563eb', trend:12},
       {label:'Upload Bulan Ini', value:'0', icon:'upload', bg:'#dcfce7', color:'#16a34a', trend:8},
