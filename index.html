@@ -361,43 +361,44 @@
           </button>
         </div>
 
-        <div class="grid lg:grid-cols-3 gap-4">
-          <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200 dark:border-slate-800">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="font-semibold text-sm">Aktivitas</h3>
-              <select class="text-xs bg-slate-100 dark:bg-slate-800 rounded px-3 py-1.5 border-0">
-                <option>7 Hari</option><option>30 Hari</option><option>Tahun ini</option>
-              </select>
-            </div>
-            <div class="flex items-end gap-2 h-40">
-              <template x-for="(v,i) in chart" :key="i">
-                <div class="flex-1 flex flex-col items-center gap-2">
-                  <div class="w-full bg-slate-100 dark:bg-slate-800 rounded relative" :style="`height:${v*100}%`">
-                    <div class="absolute bottom-0 w-full gradient-bg rounded" :style="`height:${v*100}%`"></div>
-                  </div>
-                  <span class="text-xs text-slate-500" x-text="['Sen','Sel','Rab','Kam','Jum','Sab','Min'][i]"></span>
-                </div>
-              </template>
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+  <div class="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200 dark:border-slate-800">
+    <!-- Chart (tetap sama) -->
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold text-sm">Aktivitas</h3>
+      <select class="text-xs bg-slate-100 dark:bg-slate-800 rounded px-3 py-1.5 border-0">
+        <option>7 Hari</option><option>30 Hari</option><option>Tahun ini</option>
+      </select>
+    </div>
+    <div class="flex items-end gap-2 h-40">
+      <template x-for="(v,i) in chart" :key="i">
+        <div class="flex-1 flex flex-col items-center gap-2">
+          <div class="w-full bg-slate-100 dark:bg-slate-800 rounded relative" :style="`height:${v*100}%`">
+            <div class="absolute bottom-0 w-full bg-gradient-to-t from-indigo-600 to-purple-500 rounded" :style="`height:${v*100}%`"></div>
           </div>
-          <div class="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200 dark:border-slate-800">
-            <h3 class="font-semibold text-sm mb-4">Terkini</h3>
-            <div class="space-y-3">
-              <template x-for="a in activities" :key="a.id">
-                <div class="flex gap-2.5">
-                  <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :style="`background:${a.bg}`">
-                    <i :data-lucide="a.icon" class="w-4 h-4" :style="`color:${a.color}`"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm truncate"><span class="font-medium" x-text="a.user"></span> <span x-text="a.action"></span></p>
-                    <p class="text-xs text-slate-500 truncate" x-text="a.file"></p>
-                    <p class="text-xs text-slate-400 mt-0.5" x-text="a.time"></p>
-                  </div>
-                </div>
-              </template>
-            </div>
+          <span class="text-xs text-slate-500" x-text="['Sen','Sel','Rab','Kam','Jum','Sab','Min'][i]"></span>
+        </div>
+      </template>
+    </div>
+  </div>
+  <div class="w-fit max-w-full bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+    <h3 class="font-semibold text-sm p-4 border-b border-slate-200 dark:border-slate-800">Terkini</h3>
+    <div class="space-y-3 p-4 max-h-[360px] overflow-y-auto scrollbar">
+      <template x-for="a in activities" :key="a.id">
+        <div class="flex gap-2.5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :style="`background:${a.bg}`">
+            <i :data-lucide="a.icon" class="w-4 h-4" :style="`color:${a.color}`"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm truncate"><span class="font-medium" x-text="a.user"></span> <span x-text="a.action"></span></p>
+            <p class="text-xs text-slate-500 truncate" x-text="a.file"></p>
+            <p class="text-xs text-slate-400 mt-0.5" x-text="a.time"></p>
           </div>
         </div>
+      </template>
+    </div>
+  </div>
+</div>
       </div>
 
       <!-- Files View -->
