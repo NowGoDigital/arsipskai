@@ -914,11 +914,26 @@ function docuCloud() {
       }, 200);
       setTimeout(() => clearInterval(checkGIS), 10000);
       setInterval(() => { if (window.lucide) lucide.createIcons(); }, 300);
+
       this.$watch('darkMode', v => { localStorage.setItem('dc_dark', v); this.$nextTick(() => { if(window.lucide) lucide.createIcons(); }); });
-      this.$watch('activeMenu', () => this.$nextTick(() => { if(window.lucide) lucide.createIcons(); }));
-      this.$watch('filterCategory', () => this.filterFiles());
-      this.$watch('sourceFilter', () => this.filterFiles());
-      this.$watch('fileType', () => this.filterFiles());
+
+      // ✅ FIX #2: Panggil filterFiles() setiap kali pindah menu
+      this.$watch('activeMenu', () => {
+        this.filterFiles();
+        this.$nextTick(() => { if(window.lucide) lucide.createIcons(); });
+      });
+
+      this.$watch('filterCategory', () => { this.filterFiles(); });
+      this.$watch('sourceFilter', () => { this.filterFiles(); });
+      this.$watch('fileType', () => { this.filterFiles(); });
+
+      // ✅ FIX TAMBAHAN: Re-filter saat files berubah
+      this.$watch('files', () => {
+        this.filterFiles();
+        this.updateCategoryCounts();
+        this.updateStats();
+      });
+
       const savedToken = localStorage.getItem('dc_drive_token');
       const savedClient = localStorage.getItem('dc_drive_client');
       if (savedToken && savedClient) {
@@ -946,19 +961,56 @@ function docuCloud() {
       });
     },
 
+    // ✅ FIX #3: Konversi ArrayBuffer dengan benar saat load dari IndexedDB
     async loadFromStorage() {
       try {
         const db = await this.openDB();
         const tx = db.transaction('files', 'readonly');
-        const files = await new Promise(r => { const req = tx.objectStore('files').getAll(); req.onsuccess = () => r(req.result); });
-        this.files = (files || []).map(f => { if (f.blobData) { const blob = new Blob([f.blobData], { type: f.mimeType }); f.blobUrl = URL.createObjectURL(blob); } return f; });
-        try { const tx2 = db.transaction('categories', 'readonly'); const cats = await new Promise(r => { const req = tx2.objectStore('categories').getAll(); req.onsuccess = () => r(req.result); }); if (cats && cats.length > 0) this.categories = cats; } catch(e) {}
+        const files = await new Promise(r => { const req = tx.objectStore('files').getAll(); req.onsuccess = () => r(req.result); req.onerror = () => r([]); });
+        this.files = (files || []).map(f => {
+          if (f.blobData) {
+            let data = f.blobData;
+            // Tangani berbagai tipe data dari IndexedDB
+            if (data instanceof ArrayBuffer) {
+              data = new Uint8Array(data);
+            }
+            const blob = new Blob([data], { type: f.mimeType || 'application/octet-stream' });
+            f.blobUrl = URL.createObjectURL(blob);
+          }
+          return f;
+        });
+        try {
+          const tx2 = db.transaction('categories', 'readonly');
+          const cats = await new Promise(r => { const req = tx2.objectStore('categories').getAll(); req.onsuccess = () => r(req.result); req.onerror = () => r([]); });
+          if (cats && cats.length > 0) this.categories = cats;
+        } catch(e) {}
       } catch(e) { console.warn('Storage load failed:', e); }
     },
 
-    async saveFileToStorage(file) { try { const db = await this.openDB(); const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put(file); } catch(e) {} },
-    async deleteFileFromStorage(id) { try { const db = await this.openDB(); const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete(id); } catch(e) {} },
-    async saveCategories() { try { const db = await this.openDB(); const tx = db.transaction('categories', 'readwrite'); const store = tx.objectStore('categories'); store.clear(); this.categories.forEach(c => store.put({...c})); } catch(e) {} },
+    async saveFileToStorage(file) {
+      try {
+        const db = await this.openDB();
+        const tx = db.transaction('files', 'readwrite');
+        const storeData = { ...file, blobUrl: undefined };
+        tx.objectStore('files').put(storeData);
+      } catch(e) { console.warn('Save failed:', e); }
+    },
+    async deleteFileFromStorage(id) {
+      try {
+        const db = await this.openDB();
+        const tx = db.transaction('files', 'readwrite');
+        tx.objectStore('files').delete(id);
+      } catch(e) {}
+    },
+    async saveCategories() {
+      try {
+        const db = await this.openDB();
+        const tx = db.transaction('categories', 'readwrite');
+        const store = tx.objectStore('categories');
+        store.clear();
+        this.categories.forEach(c => store.put({...c}));
+      } catch(e) {}
+    },
 
     getDisplayTitle(file) { return file?.title?.trim() || file?.name || '(tanpa judul)'; },
     catColor(name) { return this.categories.find(c => c.name === name)?.color || '#64748b'; },
@@ -971,17 +1023,44 @@ function docuCloud() {
     formatDriveSize(s) { return this.formatBytes(parseInt(s)||0); },
     formatDriveDate(d) { if (!d) return ''; return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}); },
 
+    // ✅ FIX UTAMA: filterFiles yang lebih robust
     filterFiles() {
-      let result = [...this.files];
-      if (this.searchQuery) { const q = this.searchQuery.toLowerCase(); result = result.filter(f => (f.title||'').toLowerCase().includes(q) || f.name.toLowerCase().includes(q)); }
-      if (this.fileType !== 'Semua') result = result.filter(f => f.type === this.fileType);
-      if (this.filterCategory) result = result.filter(f => f.category === this.filterCategory);
-      if (this.sourceFilter === 'local') result = result.filter(f => f.source === 'indexeddb');
-      if (this.sourceFilter === 'drive') result = result.filter(f => f.source === 'drive-import');
+      let result = this.files.slice(); // gunakan slice() untuk salinan baru
+      if (this.searchQuery && this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        result = result.filter(f => {
+          const title = (f.title || '').toLowerCase();
+          const name = (f.name || '').toLowerCase();
+          const cat = (f.category || '').toLowerCase();
+          return title.includes(q) || name.includes(q) || cat.includes(q);
+        });
+      }
+      if (this.fileType && this.fileType !== 'Semua') {
+        result = result.filter(f => f.type === this.fileType);
+      }
+      if (this.filterCategory && this.filterCategory.trim()) {
+        result = result.filter(f => f.category === this.filterCategory);
+      }
+      if (this.sourceFilter === 'local') {
+        result = result.filter(f => f.source === 'indexeddb');
+      } else if (this.sourceFilter === 'drive') {
+        result = result.filter(f => f.source === 'drive-import');
+      }
+      // Urutkan berdasarkan waktu upload terbaru
+      result.sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
       this.filteredFiles = result;
     },
-    getFilesByCategory(cat) { return this.files.filter(f => f.category === cat).sort((a,b) => (b.uploadedAt||0) - (a.uploadedAt||0)); },
-    updateCategoryCounts() { this.categories.forEach(c => { c.count = this.files.filter(f => f.category === c.name).length; }); },
+
+    getFilesByCategory(cat) {
+      return this.files.filter(f => f.category === cat).sort((a,b) => (b.uploadedAt||0) - (a.uploadedAt||0));
+    },
+
+    updateCategoryCounts() {
+      this.categories.forEach(c => {
+        c.count = this.files.filter(f => f.category === c.name).length;
+      });
+    },
+
     updateStats() {
       const totalBytes = this.files.reduce((sum,f) => sum + (f.sizeBytes||0), 0);
       this.usedStorage = this.formatBytes(totalBytes);
@@ -994,30 +1073,87 @@ function docuCloud() {
 
     handleFileSelect(e) { this.prepareUpload(Array.from(e.target.files)); },
     handleDrop(e) { this.isDragging = false; if (e.dataTransfer?.files) this.prepareUpload(Array.from(e.dataTransfer.files)); },
-    prepareUpload(fileList) { if (!fileList || fileList.length === 0) return; this.pendingUploadFiles = fileList.map(f => ({ file: f, previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : null })); this.showUpload = false; this.showUploadConfirm = true; },
-    removePendingFile(idx) { if (this.pendingUploadFiles[idx]?.previewUrl) URL.revokeObjectURL(this.pendingUploadFiles[idx].previewUrl); this.pendingUploadFiles.splice(idx,1); },
-    cancelUpload() { this.pendingUploadFiles.forEach(p => { if(p.previewUrl) URL.revokeObjectURL(p.previewUrl); }); this.pendingUploadFiles = []; this.uploadDefaultTitle = ''; this.showUploadConfirm = false; },
+    prepareUpload(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      this.pendingUploadFiles = fileList.map(f => ({
+        file: f,
+        previewUrl: f.type && f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+      }));
+      this.showUpload = false;
+      this.showUploadConfirm = true;
+    },
+    removePendingFile(idx) {
+      if (this.pendingUploadFiles[idx]?.previewUrl) URL.revokeObjectURL(this.pendingUploadFiles[idx].previewUrl);
+      this.pendingUploadFiles.splice(idx, 1);
+    },
+    cancelUpload() {
+      this.pendingUploadFiles.forEach(p => { if(p.previewUrl) URL.revokeObjectURL(p.previewUrl); });
+      this.pendingUploadFiles = [];
+      this.uploadDefaultTitle = '';
+      this.showUploadConfirm = false;
+    },
 
+    // ✅ FIX #1: Gunakan spread operator untuk reaktivitas Alpine.js
     async confirmUpload() {
       const count = this.pendingUploadFiles.length;
+      const newFiles = [];
+
       for (let i = 0; i < this.pendingUploadFiles.length; i++) {
-        const pf = this.pendingUploadFiles[i]; const f = pf.file;
-        const id = 'f_'+Date.now()+'_'+i;
+        const pf = this.pendingUploadFiles[i];
+        const f = pf.file;
+        const id = 'f_' + Date.now() + '_' + i;
         const blobData = await f.arrayBuffer();
-        const blob = new Blob([blobData], {type:f.type});
+        const blob = new Blob([blobData], { type: f.type || 'application/octet-stream' });
         const blobUrl = URL.createObjectURL(blob);
-        const newFile = { id, name:f.name, title:this.uploadDefaultTitle.trim(), type:this.getFileType(f), icon:this.getFileIcon(f), color:this.getFileColor(f), size:this.formatBytes(f.size), sizeBytes:f.size, mimeType:f.type, category:this.uploadCategory, date:new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}), uploadedAt:Date.now(), blobUrl, blobData, source:'indexeddb', driveId:null };
-        this.files.push(newFile);
-        await this.saveFileToStorage({...newFile, blobUrl:undefined});
+
+        const newFile = {
+          id: id,
+          name: f.name,
+          title: this.uploadDefaultTitle.trim(),
+          type: this.getFileType(f),
+          icon: this.getFileIcon(f),
+          color: this.getFileColor(f),
+          size: this.formatBytes(f.size),
+          sizeBytes: f.size,
+          mimeType: f.type || 'application/octet-stream',
+          category: this.uploadCategory,
+          date: new Date().toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}),
+          uploadedAt: Date.now() + i,
+          blobUrl: blobUrl,
+          blobData: blobData,
+          source: 'indexeddb',
+          driveId: null
+        };
+
+        newFiles.push(newFile);
+        await this.saveFileToStorage(newFile);
       }
-      this.addActivity('Admin','mengupload '+count+' file','Kategori: '+this.uploadCategory,'#10b981','upload-cloud');
-      this.showToast(count+' file berhasil diupload','Upload sukses','success');
+
+      // ✅ FIX #1: Spread operator untuk trigger reaktivitas Alpine
+      this.files = [...this.files, ...newFiles];
+
+      this.addActivity('Admin', 'mengupload ' + count + ' file', 'Kategori: ' + this.uploadCategory, '#10b981', 'upload-cloud');
+      this.showToast(count + ' file berhasil diupload', 'Upload sukses', 'success');
       this.cancelUpload();
-      this.updateCategoryCounts(); this.updateStats(); this.filterFiles();
+
+      // Explicit update (sebagai backup jika $watch belum trigger)
+      this.updateCategoryCounts();
+      this.updateStats();
+      this.filterFiles();
+
       this.$nextTick(() => { if(window.lucide) lucide.createIcons(); });
     },
 
-    startEditFile(file) { this.fileToEdit = file; this.editFileTitle = file.title||''; this.editFileName = file.name; this.editFileCategory = file.category; this.showEditFile = true; this.$nextTick(() => { if(window.lucide) lucide.createIcons(); }); },
+    startEditFile(file) {
+      this.fileToEdit = file;
+      this.editFileTitle = file.title || '';
+      this.editFileName = file.name;
+      this.editFileCategory = file.category;
+      this.showEditFile = true;
+      this.$nextTick(() => { if(window.lucide) lucide.createIcons(); });
+    },
+
+    // ✅ FIX: Reassign array setelah edit untuk trigger reaktivitas
     async saveEditFile() {
       if (!this.fileToEdit) return;
       const idx = this.files.findIndex(f => f.id === this.fileToEdit.id);
@@ -1025,26 +1161,49 @@ function docuCloud() {
       this.files[idx].title = this.editFileTitle.trim();
       this.files[idx].name = this.editFileName;
       this.files[idx].category = this.editFileCategory;
-      await this.saveFileToStorage({...this.files[idx], blobUrl:undefined});
-      this.showToast('Perubahan tersimpan','File diupdate','success');
+      await this.saveFileToStorage(this.files[idx]);
+      // Trigger reaktivitas
+      this.files = [...this.files];
+      this.showToast('Perubahan tersimpan', 'File diupdate', 'success');
       this.showEditFile = false;
-      this.updateCategoryCounts(); this.filterFiles();
+      this.updateCategoryCounts();
+      this.filterFiles();
+      this.$nextTick(() => { if(window.lucide) lucide.createIcons(); });
     },
 
     deleteFile(file) { this.fileToDelete = file; this.showDeleteConfirm = true; },
+
+    // ✅ FIX: Reassign array setelah delete
     async confirmDeleteFile() {
       if (!this.fileToDelete) return;
       const idx = this.files.findIndex(f => f.id === this.fileToDelete.id);
-      if (idx !== -1) { if(this.files[idx].blobUrl) URL.revokeObjectURL(this.files[idx].blobUrl); this.files.splice(idx,1); await this.deleteFileFromStorage(this.fileToDelete.id); }
-      this.showToast('File dihapus',this.fileToDelete.name,'warning');
-      this.showDeleteConfirm = false; this.fileToDelete = null;
-      this.updateCategoryCounts(); this.updateStats(); this.filterFiles();
+      if (idx !== -1) {
+        if (this.files[idx].blobUrl) URL.revokeObjectURL(this.files[idx].blobUrl);
+        await this.deleteFileFromStorage(this.fileToDelete.id);
+      }
+      const name = this.fileToDelete.name;
+      // ✅ Gunakan filter untuk reassign (lebih reaktif dari splice)
+      this.files = this.files.filter(f => f.id !== this.fileToDelete.id);
+      this.showToast('File dihapus', name, 'warning');
+      this.showDeleteConfirm = false;
+      this.fileToDelete = null;
+      this.updateCategoryCounts();
+      this.updateStats();
+      this.filterFiles();
     },
 
     openFile(file) { this.previewFile = file; this.$nextTick(() => { if(window.lucide) lucide.createIcons(); }); },
-    downloadFile(file) { if (file.blobUrl) { const a = document.createElement('a'); a.href = file.blobUrl; a.download = file.name; a.click(); this.showToast('Download dimulai',file.name,'info'); } else this.showToast('Download tidak tersedia','File tidak punya data lokal','error'); },
+    downloadFile(file) {
+      if (file.blobUrl) {
+        const a = document.createElement('a'); a.href = file.blobUrl; a.download = file.name; a.click();
+        this.showToast('Download dimulai', file.name, 'info');
+      } else {
+        this.showToast('Download tidak tersedia', 'File tidak punya data lokal', 'error');
+      }
+    },
     toggleFileMenu(id, e) { e?.stopPropagation(); this.openFileMenuId = this.openFileMenuId === id ? null : id; this.$nextTick(() => { if(window.lucide) lucide.createIcons(); }); },
 
+    // ============ KATEGORI FUNCTIONS (SUDAH DIPERBAIKI SEBELUMNYA) ============
     openNewCategoryModal() {
       this.newCategoryName = '';
       this.newCategoryColor = this.categoryColors[0];
@@ -1066,8 +1225,8 @@ function docuCloud() {
     },
     addCategory() {
       const name = this.newCategoryName.trim();
-      if (!name) { this.showToast('Error','Nama kategori tidak boleh kosong','error'); return; }
-      if (this.categories.some(c => c.name.toLowerCase() === name.toLowerCase())) { this.showToast('Kategori sudah ada',name,'error'); return; }
+      if (!name) { this.showToast('Error', 'Nama kategori tidak boleh kosong', 'error'); return; }
+      if (this.categories.some(c => c.name.toLowerCase() === name.toLowerCase())) { this.showToast('Kategori sudah ada', name, 'error'); return; }
       const newCat = { name, color: this.newCategoryColor, icon: this.newCategoryIcon, count: 0 };
       this.categories.push(newCat);
       this.saveCategories();
@@ -1079,7 +1238,11 @@ function docuCloud() {
     deleteCategory() {
       if (this.categoryDeleteIndex < 0 || this.categoryDeleteIndex >= this.categories.length) return;
       const name = this.categories[this.categoryDeleteIndex].name;
-      this.files.forEach(f => { if(f.category === name) f.category = ''; });
+      // ✅ Reassign files yang kategorinya dihapus
+      this.files = this.files.map(f => {
+        if (f.category === name) return {...f, category: ''};
+        return f;
+      });
       this.categories.splice(this.categoryDeleteIndex, 1);
       this.saveCategories();
       this.updateCategoryCounts();
@@ -1099,24 +1262,109 @@ function docuCloud() {
     showToast(title,desc='',type='info') { const map={success:{icon:'check-circle',color:'#10b981',bg:'#d1fae5'},error:{icon:'alert-circle',color:'#ef4444',bg:'#fee2e2'},warning:{icon:'alert-triangle',color:'#f59e0b',bg:'#fef3c7'},info:{icon:'info',color:'#3b82f6',bg:'#dbeafe'}}; const cfg=map[type]||map.info; const id=Date.now()+Math.random(); this.toasts.push({id,title,desc,show:true,...cfg}); this.$nextTick(() => { if(window.lucide) lucide.createIcons(); }); setTimeout(()=>{const t=this.toasts.find(x=>x.id===id);if(t)t.show=false;setTimeout(()=>{this.toasts=this.toasts.filter(x=>x.id!==id)},300)},3500); },
 
     startDriveImport() { if(!this.driveConnected){this.showDriveSetup=true;return} this.showDriveBrowser=true;this.driveBrowserMode='import'; },
+
     async signInToDrive() {
       if(!this.driveConfig.clientId.trim()){this.driveAuthError='Client ID tidak boleh kosong';return}
       this.driveLoading=true; this.driveAuthError='';
       const clientId=this.driveConfig.clientId.trim();
       if(!clientId.includes('.apps.googleusercontent.com')){this.driveAuthError='Format Client ID tidak valid';this.driveLoading=false;return}
       const waitForGIS=()=>new Promise((resolve,reject)=>{let attempts=0;const check=()=>{attempts++;if(window.google?.accounts?.oauth2){resolve()}else if(window._gisError){reject(new Error('Google API gagal dimuat'))}else if(attempts>50){reject(new Error('Timeout'))}else{setTimeout(check,100)}};check();});
-      try { await waitForGIS(); const tokenClient=google.accounts.oauth2.initTokenClient({client_id:clientId,scope:'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',ux_mode:'popup',callback:async(resp)=>{if(resp.error){this.driveAuthError=resp.error_description||'Error';this.driveLoading=false;return}try{const userResp=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});if(!userResp.ok)throw new Error('Failed');const user=await userResp.json();this.driveUser={name:user.name||user.email.split('@')[0],email:user.email,picture:user.picture};this.driveConnected=true;this.driveSetupStep=3;localStorage.setItem('dc_drive_token',resp.access_token);localStorage.setItem('dc_drive_client',clientId);await this.syncDriveFiles();this.showToast('Drive terhubung!',user.email,'success');this.driveLoading=false;this.$nextTick(()=>{if(window.lucide)lucide.createIcons()});setTimeout(()=>{this.showDriveSetup=false},1500)}catch(e){this.driveAuthError='Gagal: '+e.message;this.driveLoading=false}}});tokenClient.requestAccessToken({prompt:'consent'});}catch(e){this.driveAuthError=e.message||'Gagal';this.driveLoading=false}
+      try {
+        await waitForGIS();
+        const tokenClient=google.accounts.oauth2.initTokenClient({
+          client_id:clientId,
+          scope:'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+          ux_mode:'popup',
+          callback:async(resp)=>{
+            if(resp.error){this.driveAuthError=resp.error_description||'Error';this.driveLoading=false;return}
+            try{
+              const userResp=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
+              if(!userResp.ok)throw new Error('Failed');
+              const user=await userResp.json();
+              this.driveUser={name:user.name||user.email.split('@')[0],email:user.email,picture:user.picture};
+              this.driveConnected=true;this.driveSetupStep=3;
+              localStorage.setItem('dc_drive_token',resp.access_token);
+              localStorage.setItem('dc_drive_client',clientId);
+              await this.syncDriveFiles();
+              this.showToast('Drive terhubung!',user.email,'success');
+              this.driveLoading=false;
+              this.$nextTick(()=>{if(window.lucide)lucide.createIcons()});
+              setTimeout(()=>{this.showDriveSetup=false},1500);
+            }catch(e){this.driveAuthError='Gagal: '+e.message;this.driveLoading=false}
+          }
+        });
+        tokenClient.requestAccessToken({prompt:'consent'});
+      }catch(e){this.driveAuthError=e.message||'Gagal';this.driveLoading=false}
     },
-    async syncDriveFiles() { const token=localStorage.getItem('dc_drive_token');if(!token)return;this.driveLoading=true;try{const resp=await fetch('https://www.googleapis.com/drive/v3/files?pageSize=100&fields=files(id,name,mimeType,size,modifiedTime,thumbnailLink)&q=trashed=false',{headers:{Authorization:'Bearer '+token}});if(!resp.ok)throw new Error('Token expired');const data=await resp.json();this.driveFiles=data.files||[];this.driveLastSync=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});this.driveStorageUsed='1.2 GB';this.driveStoragePercent=12;}catch(e){this.showToast('Sync gagal','Login ulang','error');this.driveConnected=false;localStorage.removeItem('dc_drive_token')}this.driveLoading=false;this.$nextTick(()=>{if(window.lucide)lucide.createIcons()}); },
+
+    async syncDriveFiles() {
+      const token=localStorage.getItem('dc_drive_token');
+      if(!token)return;
+      this.driveLoading=true;
+      try{
+        const resp=await fetch('https://www.googleapis.com/drive/v3/files?pageSize=100&fields=files(id,name,mimeType,size,modifiedTime,thumbnailLink)&q=trashed=false',{headers:{Authorization:'Bearer '+token}});
+        if(!resp.ok)throw new Error('Token expired');
+        const data=await resp.json();
+        this.driveFiles=data.files||[];
+        this.driveLastSync=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+        this.driveStorageUsed='1.2 GB';this.driveStoragePercent=12;
+      }catch(e){this.showToast('Sync gagal','Login ulang','error');this.driveConnected=false;localStorage.removeItem('dc_drive_token')}
+      this.driveLoading=false;
+      this.$nextTick(()=>{if(window.lucide)lucide.createIcons()});
+    },
+
     openDriveFile(file) { window.open('https://drive.google.com/file/d/'+file.id+'/view','_blank'); },
     toggleDriveImport(file) { const idx=this.selectedDriveImports.findIndex(f=>f.id===file.id);if(idx>=0)this.selectedDriveImports.splice(idx,1);else this.selectedDriveImports.push(file); },
     proceedDriveImport() { if(this.selectedDriveImports.length===0)return;this.showDriveImportConfirm=true; },
+
+    // ✅ FIX: Gunakan spread operator untuk Drive import juga
     async confirmDriveImport() {
-      this.driveImporting=true;this.driveImportProgress=0;const token=localStorage.getItem('dc_drive_token');const total=this.selectedDriveImports.length;
-      for(let i=0;i<total;i++){const df=this.selectedDriveImports[i];this.driveImportProgress=Math.round(((i+1)/total)*100);try{const resp=await fetch('https://www.googleapis.com/drive/v3/files/'+df.id+'?alt=media',{headers:{Authorization:'Bearer '+token}});const blob=await resp.blob();const arrayBuf=await blob.arrayBuffer();const blobUrl=URL.createObjectURL(blob);const id='drv_'+Date.now()+'_'+i;const newFile={id,name:df.name,title:'',type:df.mimeType?.startsWith('image/')?'Gambar':(df.mimeType==='application/pdf'?'PDF':'Dokumen'),icon:this.getDriveFileIcon(df.mimeType),color:this.getDriveFileColor(df.mimeType),size:this.formatDriveSize(df.size),sizeBytes:parseInt(df.size)||0,mimeType:df.mimeType,category:this.uploadCategory,date:new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),uploadedAt:Date.now(),blobUrl,blobData:arrayBuf,source:'drive-import',driveId:df.id};this.files.push(newFile);await this.saveFileToStorage({...newFile,blobUrl:undefined});}catch(e){console.warn('Import gagal:',df.name,e)}}
-      this.driveImporting=false;this.showDriveImportConfirm=false;this.showToast(total+' file diimpor','Dari Google Drive','success');this.selectedDriveImports=[];this.showDriveBrowser=false;this.driveBrowserMode='browse';this.updateCategoryCounts();this.updateStats();this.filterFiles();
+      this.driveImporting=true;this.driveImportProgress=0;
+      const token=localStorage.getItem('dc_drive_token');
+      const total=this.selectedDriveImports.length;
+      const newFiles = [];
+
+      for(let i=0;i<total;i++){
+        const df=this.selectedDriveImports[i];
+        this.driveImportProgress=Math.round(((i+1)/total)*100);
+        try{
+          const resp=await fetch('https://www.googleapis.com/drive/v3/files/'+df.id+'?alt=media',{headers:{Authorization:'Bearer '+token}});
+          const blob=await resp.blob();
+          const arrayBuf=await blob.arrayBuffer();
+          const blobUrl=URL.createObjectURL(blob);
+          const id='drv_'+Date.now()+'_'+i;
+          const newFile={
+            id,name:df.name,title:'',
+            type:df.mimeType?.startsWith('image/')?'Gambar':(df.mimeType==='application/pdf'?'PDF':'Dokumen'),
+            icon:this.getDriveFileIcon(df.mimeType),color:this.getDriveFileColor(df.mimeType),
+            size:this.formatDriveSize(df.size),sizeBytes:parseInt(df.size)||0,mimeType:df.mimeType,
+            category:this.uploadCategory,
+            date:new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),
+            uploadedAt:Date.now()+i,blobUrl,blobData:arrayBuf,source:'drive-import',driveId:df.id
+          };
+          newFiles.push(newFile);
+          await this.saveFileToStorage(newFile);
+        }catch(e){console.warn('Import gagal:',df.name,e)}
+      }
+
+      // ✅ Spread operator
+      this.files = [...this.files, ...newFiles];
+
+      this.driveImporting=false;this.showDriveImportConfirm=false;
+      this.showToast(total+' file diimpor','Dari Google Drive','success');
+      this.selectedDriveImports=[];this.showDriveBrowser=false;this.driveBrowserMode='browse';
+      this.updateCategoryCounts();this.updateStats();this.filterFiles();
     },
-    async confirmDisconnectDrive() { this.driveDisconnecting=true;try{const token=localStorage.getItem('dc_drive_token');if(token)await fetch('https://oauth2.googleapis.com/revoke?token='+token).catch(()=>{})}catch(e){}localStorage.removeItem('dc_drive_token');localStorage.removeItem('dc_drive_client');this.driveConnected=false;this.driveUser=null;this.driveFiles=[];this.driveDisconnecting=false;this.showDisconnectDrive=false;this.confirmDisconnectCheck=false;this.showToast('Drive diputuskan','Koneksi dicabut','warning'); },
+
+    async confirmDisconnectDrive() {
+      this.driveDisconnecting=true;
+      try{const token=localStorage.getItem('dc_drive_token');if(token)await fetch('https://oauth2.googleapis.com/revoke?token='+token).catch(()=>{})}catch(e){}
+      localStorage.removeItem('dc_drive_token');localStorage.removeItem('dc_drive_client');
+      this.driveConnected=false;this.driveUser=null;this.driveFiles=[];
+      this.driveDisconnecting=false;this.showDisconnectDrive=false;this.confirmDisconnectCheck=false;
+      this.showToast('Drive diputuskan','Koneksi dicabut','warning');
+    },
+
     logout() { if(confirm('Yakin ingin keluar?')) this.showToast('Logout','Sampai jumpa!','info'); }
   };
 }
