@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>DocuCloud v5.0</title>
+<title>DocuCloud v5.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={darkMode:'class'}</script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -19,8 +19,134 @@
 .gradient-bg{background:var(--theme-gradient,linear-gradient(135deg,#667eea 0%,#764ba2 100%))}
 .glass{backdrop-filter:blur(14px);background:rgba(255,255,255,.85)}
 .dark .glass{background:rgba(15,23,42,.85)}
-.file-card{transition:all .2s ease}
-.file-card:hover{transform:translateY(-3px)}
+.file-card{transition:all .25s cubic-bezier(.4,0,.2,1);position:relative}
+.file-card:hover{transform:translateY(-4px)}
+
+/* ===== HOVER PREVIEW STYLES ===== */
+.file-card .preview-overlay{
+  position:absolute;
+  bottom:100%;
+  left:50%;
+  transform:translateX(-50%) translateY(10px) scale(0.9);
+  opacity:0;
+  pointer-events:none;
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+  z-index:60;
+  width:240px;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.1);
+  margin-bottom:8px;
+}
+.file-card:hover .preview-overlay{
+  opacity:1;
+  transform:translateX(-50%) translateY(0) scale(1);
+  pointer-events:auto;
+}
+.preview-overlay img,
+.preview-overlay video{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  display:block;
+}
+.preview-overlay .preview-footer{
+  background:rgba(15,23,42,.9);
+  backdrop-filter:blur(10px);
+  padding:10px 12px;
+}
+.preview-overlay .preview-footer p{
+  color:white;
+  font-size:11px;
+  margin:0;
+}
+.preview-overlay .preview-footer .preview-title{
+  font-weight:600;
+  font-size:12px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.preview-overlay .preview-footer .preview-meta{
+  color:rgba(255,255,255,.6);
+  font-size:10px;
+  margin-top:2px;
+}
+
+/* Zoom effect for image thumbnails */
+.file-card .thumb-container{
+  position:relative;
+  overflow:hidden;
+  border-radius:8px;
+}
+.file-card .thumb-container img,
+.file-card .thumb-container video{
+  transition:transform .4s cubic-bezier(.4,0,.2,1), filter .3s ease;
+}
+.file-card:hover .thumb-container img,
+.file-card:hover .thumb-container video{
+  transform:scale(1.08);
+  filter:brightness(1.1);
+}
+
+/* Shimmer effect on hover for non-image files */
+.file-card .thumb-shimmer{
+  position:absolute;
+  top:0;left:-100%;
+  width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  transition:left .6s ease;
+  pointer-events:none;
+}
+.file-card:hover .thumb-shimmer{
+  left:100%;
+}
+
+/* Glow border on hover */
+.file-card::after{
+  content:'';
+  position:absolute;
+  inset:-1px;
+  border-radius:12px;
+  background:var(--theme-gradient,linear-gradient(135deg,#667eea,#764ba2));
+  opacity:0;
+  transition:opacity .25s ease;
+  z-index:-1;
+}
+.file-card:hover::after{
+  opacity:1;
+}
+
+/* Play button overlay for video */
+.file-card .video-play-indicator{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(0.8);
+  opacity:0;
+  transition:all .25s ease;
+  pointer-events:none;
+  z-index:5;
+}
+.file-card:hover .video-play-indicator{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
+
+/* Doc type badge in preview */
+.preview-type-badge{
+  position:absolute;
+  top:8px;right:8px;
+  padding:3px 8px;
+  border-radius:6px;
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  backdrop-filter:blur(8px);
+}
+
+/* ===== END HOVER PREVIEW STYLES ===== */
+
 .fade-in{animation:fadeIn .3s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -35,9 +161,6 @@ tr:hover .file-actions-btn{opacity:1}
 .theme-swatch{cursor:pointer;transition:all .2s}
 .theme-swatch:hover{transform:scale(1.05)}
 .theme-swatch.active{box-shadow:0 0 0 3px white,0 0 0 5px currentColor}
-.color-swatch{cursor:pointer;transition:all .15s}
-.color-swatch:hover{transform:scale(1.15)}
-.color-swatch.active{transform:scale(1.2);box-shadow:0 0 0 3px white,0 0 0 5px currentColor}
 .pulse-dot{animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes driveFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
@@ -65,7 +188,6 @@ tr:hover .file-actions-btn{opacity:1}
 .dark .sync-badge.local{background:rgba(99,102,241,.2);color:#a5b4fc}
 .sync-progress-bar{height:4px;background:#e5e7eb;border-radius:4px;overflow:hidden}
 .sync-progress-bar .bar{height:100%;background:linear-gradient(90deg,#4285F4,#34A853);transition:width .3s ease}
-.bottom-nav-btn.active::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;border-radius:0 0 2px 2px;background:var(--theme-gradient)}
 @media(max-width:640px){.drive-banner-name{display:none!important}.drive-banner-email{display:none!important}.drive-banner-storage{display:none!important}}
 @media(min-width:641px) and (max-width:1023px){.drive-banner-email{display:none!important}}
 @media(max-width:768px){main{padding-bottom:4.5rem!important}aside{display:none!important}}
@@ -80,13 +202,13 @@ tr:hover .file-actions-btn{opacity:1}
 <div x-show="isLoading" x-transition.opacity class="fixed inset-0 bg-white/90 dark:bg-slate-950/90 z-[100] flex items-center justify-center">
   <div class="text-center">
     <div class="w-14 h-14 rounded-xl gradient-bg flex items-center justify-center mx-auto mb-3"><i data-lucide="cloud-cog" class="w-7 h-7 text-white"></i></div>
-    <h2 class="text-lg font-bold mb-1">DocuCloud v5.0</h2>
+    <h2 class="text-lg font-bold mb-1">DocuCloud v5.1</h2>
     <p class="text-xs text-slate-500" x-text="loadingMessage"></p>
     <div class="mt-3 w-44 bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 mx-auto"><div class="gradient-bg h-1.5 rounded-full transition-all duration-500" :style="'width:'+loadingProgress+'%'"></div></div>
   </div>
 </div>
 
-<!-- SYNC INDICATOR (floating bottom right) -->
+<!-- SYNC INDICATOR -->
 <div x-show="syncQueue.length > 0" x-transition class="fixed bottom-20 md:bottom-6 right-5 z-[70] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-3 w-72">
   <div class="flex items-center justify-between mb-2">
     <div class="flex items-center gap-2">
@@ -112,7 +234,7 @@ tr:hover .file-actions-btn{opacity:1}
 <aside :class="sidebarOpen ? 'w-56' : 'w-16'" class="hidden md:flex transition-all duration-200 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col">
   <div class="h-14 flex items-center px-4 border-b border-slate-200 dark:border-slate-800">
     <div class="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0"><i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i></div>
-    <div x-show="sidebarOpen" class="ml-2.5 fade-in"><h1 class="font-bold text-sm">DocuCloud</h1><p class="text-[10px] text-slate-400">v5.0 Auto-Sync</p></div>
+    <div x-show="sidebarOpen" class="ml-2.5 fade-in"><h1 class="font-bold text-sm">DocuCloud</h1><p class="text-[10px] text-slate-400">v5.1 Preview</p></div>
   </div>
   <nav class="flex-1 py-3 px-2 overflow-y-auto scrollbar">
     <p x-show="sidebarOpen" class="text-[10px] uppercase text-slate-400 font-bold px-2.5 mb-1.5 mt-1">Menu</p>
@@ -134,8 +256,6 @@ tr:hover .file-actions-btn{opacity:1}
         <button x-show="sidebarOpen" @click.stop="openDeleteCategoryModal(catIdx)" class="cat-del-btn w-5 h-5 rounded text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 hover:text-red-600 flex items-center justify-center"><i data-lucide="x" class="w-3 h-3"></i></button>
       </div>
     </template>
-
-    <!-- Drive Sync Status in Sidebar -->
     <div x-show="sidebarOpen && driveConnected" class="mt-4 mx-1 p-2.5 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
       <div class="flex items-center gap-2 mb-1.5">
         <svg class="w-4 h-4" viewBox="0 0 87.3 78"><path fill="#4285F4" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45z" opacity=".8"/></svg>
@@ -144,9 +264,8 @@ tr:hover .file-actions-btn{opacity:1}
       <div class="space-y-1 text-[10px]">
         <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-400">☁️ Synced</span><span class="font-bold text-green-600" x-text="syncedCount"></span></div>
         <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-400">⏳ Pending</span><span class="font-bold text-amber-600" x-text="pendingCount"></span></div>
-        <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-400">❌ Failed</span><span class="font-bold text-red-600" x-text="failedCount"></span></div>
       </div>
-      <button x-show="pendingCount > 0 || failedCount > 0" @click="syncAllPending()" class="w-full mt-2 py-1.5 bg-blue-600 text-white rounded text-[10px] font-semibold hover:bg-blue-700 flex items-center justify-center gap-1">
+      <button x-show="pendingCount > 0" @click="syncAllPending()" class="w-full mt-2 py-1.5 bg-blue-600 text-white rounded text-[10px] font-semibold hover:bg-blue-700 flex items-center justify-center gap-1">
         <i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync Now
       </button>
     </div>
@@ -194,8 +313,6 @@ tr:hover .file-actions-btn{opacity:1}
           </div>
           <span :class="driveConnected ? 'bg-green-400 drive-sync-pulse' : 'bg-slate-400'" class="w-2 h-2 rounded-full pulse-dot relative z-10 flex-shrink-0"></span>
         </button>
-
-        <!-- Drive Dropdown Menu -->
         <div x-show="showDriveMenu && driveConnected" @click.away="showDriveMenu = false" x-transition class="context-menu absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
           <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3 text-white">
             <div class="flex items-center gap-3">
@@ -206,18 +323,12 @@ tr:hover .file-actions-btn{opacity:1}
                 <p class="text-[11px] text-white/80 truncate" x-text="driveUser ? driveUser.email : ''"></p>
               </div>
             </div>
-            <div class="mt-2 flex items-center gap-2 text-[11px]">
-              <div class="flex-1 bg-white/20 rounded-full h-1"><div class="bg-white h-1 rounded-full" :style="'width:'+driveStoragePercent+'%'"></div></div>
-              <span class="text-white/90" x-text="driveStorageUsed + ' terpakai'"></span>
-            </div>
           </div>
           <div class="py-2">
-            <button @click="showDriveMenu = false; showDriveBrowser = true; driveBrowserMode = 'browse'; syncDriveFiles()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 transition"><i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i><div class="flex-1 text-left"><p class="font-medium">Browse Drive</p><p class="text-[11px] text-slate-500" x-text="driveFiles.length + ' file di Drive'"></p></div></button>
-            <button @click="showDriveMenu = false; driveBrowserMode = 'import'; showDriveBrowser = true; syncDriveFiles()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 transition"><i data-lucide="download-cloud" class="w-4 h-4 text-indigo-500"></i><div class="flex-1 text-left"><p class="font-medium">Import File</p><p class="text-[11px] text-slate-500">Ambil dari Drive ke DocuCloud</p></div></button>
-            <button @click="showDriveMenu = false; syncAllPending()" :disabled="driveLoading" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 transition disabled:opacity-50"><i data-lucide="upload-cloud" class="w-4 h-4 text-emerald-500" :class="driveLoading ? 'spin' : ''"></i><div class="flex-1 text-left"><p class="font-medium">Sync All to Drive</p><p class="text-[11px] text-slate-500" x-text="pendingCount + ' file menunggu sync'"></p></div></button>
-            <button @click="showDriveMenu = false; syncDriveFiles()" :disabled="driveLoading" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 transition disabled:opacity-50"><i data-lucide="refresh-cw" class="w-4 h-4 text-amber-500" :class="driveLoading ? 'spin' : ''"></i><div class="flex-1 text-left"><p class="font-medium" x-text="driveLoading ? 'Sedang Sync...' : 'Refresh Drive'"></p><p class="text-[11px] text-slate-500" x-text="'Terakhir: ' + driveLastSync"></p></div></button>
+            <button @click="showDriveMenu = false; showDriveBrowser = true; driveBrowserMode = 'browse'; syncDriveFiles()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 transition"><i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i><span>Browse Drive</span></button>
+            <button @click="showDriveMenu = false; syncAllPending()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 transition"><i data-lucide="upload-cloud" class="w-4 h-4 text-emerald-500"></i><span>Sync All to Drive</span></button>
             <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
-            <button @click="showDriveMenu = false; showDisconnectDrive = true" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-sm text-red-500 transition"><i data-lucide="unlink" class="w-4 h-4"></i><div class="flex-1 text-left"><p class="font-medium">Putuskan Koneksi</p></div></button>
+            <button @click="showDriveMenu = false; showDisconnectDrive = true" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-sm text-red-500 transition"><i data-lucide="unlink" class="w-4 h-4"></i><span>Putuskan Koneksi</span></button>
           </div>
         </div>
       </div>
@@ -233,7 +344,7 @@ tr:hover .file-actions-btn{opacity:1}
 
     <!-- DASHBOARD -->
     <div x-show="activeMenu === 'dashboard'" class="fade-in">
-      <div class="mb-5"><h2 class="text-xl font-bold">Dashboard 👋</h2><p class="text-slate-500 text-sm mt-0.5">Kelola dokumen dengan auto-sync ke Google Drive.</p></div>
+      <div class="mb-5"><h2 class="text-xl font-bold">Dashboard 👋</h2><p class="text-slate-500 text-sm mt-0.5">Hover file untuk melihat preview. 🖱️</p></div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <template x-for="s in stats" :key="s.label">
           <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
@@ -244,26 +355,13 @@ tr:hover .file-actions-btn{opacity:1}
           </div>
         </template>
       </div>
-
-      <!-- Drive Setup Banner -->
       <div x-show="!driveConnected" @click="showDriveSetup = true" class="mb-5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl p-5 text-white cursor-pointer hover:opacity-95 transition shadow-lg">
         <div class="flex items-center gap-4">
           <div class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><svg class="w-8 h-8 drive-float" viewBox="0 0 87.3 78"><path fill="#fff" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45z" opacity=".8"/></svg></div>
-          <div class="flex-1"><h3 class="font-bold text-base mb-0.5">Aktifkan Auto-Sync ke Google Drive</h3><p class="text-sm text-white/80">File Anda akan otomatis tersimpan di cloud, aman dari kehilangan data.</p></div>
+          <div class="flex-1"><h3 class="font-bold text-base mb-0.5">Aktifkan Auto-Sync ke Google Drive</h3><p class="text-sm text-white/80">File Anda akan otomatis tersimpan di cloud.</p></div>
           <i data-lucide="chevron-right" class="w-6 h-6 flex-shrink-0"></i>
         </div>
       </div>
-
-      <!-- Pending Sync Alert -->
-      <div x-show="pendingCount > 0 || failedCount > 0" class="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0"><i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i></div>
-        <div class="flex-1">
-          <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Ada file yang belum tersync ke Drive</p>
-          <p class="text-xs text-amber-700 dark:text-amber-400" x-text="pendingCount + ' pending, ' + failedCount + ' gagal'"></p>
-        </div>
-        <button @click="syncAllPending()" class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 flex items-center gap-1.5"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Sync Now</button>
-      </div>
-
       <div x-show="files.length > 0" class="mb-5">
         <div class="flex items-center justify-between mb-3"><h3 class="font-semibold">📄 Dokumen Terbaru</h3><button @click="activeMenu = 'files'" class="text-xs text-indigo-600 font-medium hover:underline">Lihat Semua →</button></div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -275,10 +373,7 @@ tr:hover .file-actions-btn{opacity:1}
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium truncate" x-text="file.title || file.name"></p>
-                <div class="flex items-center gap-2 mt-0.5">
-                  <p class="text-[11px] text-slate-500" x-text="file.size + ' • ' + file.category"></p>
-                  <span class="sync-badge" :class="file.syncStatus || 'local'" x-text="getSyncBadgeText(file.syncStatus)"></span>
-                </div>
+                <p class="text-[11px] text-slate-500" x-text="file.size + ' • ' + file.category"></p>
               </div>
             </div>
           </template>
@@ -291,7 +386,7 @@ tr:hover .file-actions-btn{opacity:1}
       <div class="flex items-center justify-between mb-4">
         <div>
           <h2 class="text-xl font-bold">Semua File</h2>
-          <p class="text-xs text-slate-500 mt-0.5" x-text="filteredFiles.length + ' dari ' + files.length + ' file'"></p>
+          <p class="text-xs text-slate-500 mt-0.5" x-text="filteredFiles.length + ' dari ' + files.length + ' file • Hover untuk preview 🖱️'"></p>
         </div>
         <div class="flex gap-2">
           <button x-show="pendingCount > 0" @click="syncAllPending()" class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-amber-600"><i data-lucide="cloud-upload" class="w-4 h-4" :class="driveLoading ? 'spin' : ''"></i> Sync <span x-text="pendingCount" class="bg-white/30 px-1.5 rounded text-xs"></span></button>
@@ -308,22 +403,89 @@ tr:hover .file-actions-btn{opacity:1}
           <button @click="syncFilter = 'all'; filterFiles()" :class="syncFilter==='all' ? 'gradient-bg text-white' : 'text-slate-500'" class="px-2.5 py-1 rounded-md text-xs font-medium transition">Semua</button>
           <button @click="syncFilter = 'synced'; filterFiles()" :class="syncFilter==='synced' ? 'gradient-bg text-white' : 'text-slate-500'" class="px-2.5 py-1 rounded-md text-xs font-medium transition flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Synced</button>
           <button @click="syncFilter = 'pending'; filterFiles()" :class="syncFilter==='pending' ? 'gradient-bg text-white' : 'text-slate-500'" class="px-2.5 py-1 rounded-md text-xs font-medium transition flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Pending</button>
-          <button @click="syncFilter = 'failed'; filterFiles()" :class="syncFilter==='failed' ? 'gradient-bg text-white' : 'text-slate-500'" class="px-2.5 py-1 rounded-md text-xs font-medium transition flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Failed</button>
         </div>
         <div class="ml-auto flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
           <button @click="viewMode='grid'" :class="viewMode==='grid' ? 'gradient-bg text-white' : ''" class="p-1.5 rounded"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
           <button @click="viewMode='list'" :class="viewMode==='list' ? 'gradient-bg text-white' : ''" class="p-1.5 rounded"><i data-lucide="list" class="w-4 h-4"></i></button>
         </div>
       </div>
-      <div x-show="filterCategory !== ''" class="mb-3 flex items-center gap-2">
-        <span class="text-xs text-slate-500">Filter aktif:</span>
-        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" :style="'background:'+catColor(filterCategory)+'15; color:'+catColor(filterCategory)"><span x-text="filterCategory"></span><button @click="filterCategory=''; filterFiles()" class="ml-0.5 hover:text-red-500 font-bold">×</button></span>
-      </div>
 
-      <!-- GRID -->
+      <!-- GRID VIEW WITH HOVER PREVIEW -->
       <div x-show="viewMode === 'grid'" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <template x-for="file in filteredFiles" :key="file.id">
-          <div class="file-card bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-600 relative" @click="openFile(file)">
+          <div class="file-card bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:shadow-lg relative"
+               @click="openFile(file)"
+               @mouseenter="handleHoverEnter(file, $event)"
+               @mouseleave="handleHoverLeave(file, $event)">
+
+            <!-- HOVER PREVIEW OVERLAY -->
+            <div class="preview-overlay bg-white dark:bg-slate-800">
+              <!-- Image Preview -->
+              <template x-if="file.type === 'Gambar' && file.blobUrl">
+                <div class="relative">
+                  <img :src="file.blobUrl" :alt="file.name" loading="lazy">
+                  <span class="preview-type-badge bg-pink-500/80 text-white">🖼️ Gambar</span>
+                </div>
+              </template>
+              <!-- Video Preview -->
+              <template x-if="file.type === 'Video' && file.blobUrl">
+                <div class="relative">
+                  <video :src="file.blobUrl" :ref="'vid_' + file.id" muted loop preload="metadata" playsinline></video>
+                  <span class="preview-type-badge bg-purple-500/80 text-white">🎬 Video</span>
+                </div>
+              </template>
+              <!-- PDF Preview -->
+              <template x-if="file.type === 'PDF'">
+                <div class="relative" style="height:180px; background:linear-gradient(135deg,#fee2e2,#fecaca); display:flex; align-items:center; justify-content:center;">
+                  <div class="text-center">
+                    <i data-lucide="file-text" class="w-12 h-12 mx-auto text-red-500 mb-2"></i>
+                    <p class="text-xs font-bold text-red-700">PDF Document</p>
+                    <p class="text-[10px] text-red-500 mt-0.5" x-text="file.size"></p>
+                  </div>
+                  <span class="preview-type-badge bg-red-500/80 text-white">📄 PDF</span>
+                </div>
+              </template>
+              <!-- Audio Preview -->
+              <template x-if="file.type === 'Audio'">
+                <div class="relative" style="height:180px; background:linear-gradient(135deg,#fef3c7,#fde68a); display:flex; align-items:center; justify-content:center;">
+                  <div class="text-center">
+                    <i data-lucide="music" class="w-12 h-12 mx-auto text-amber-600 mb-2"></i>
+                    <p class="text-xs font-bold text-amber-800">Audio File</p>
+                    <p class="text-[10px] text-amber-600 mt-0.5" x-text="file.size"></p>
+                  </div>
+                  <span class="preview-type-badge bg-amber-500/80 text-white">🎵 Audio</span>
+                </div>
+              </template>
+              <!-- Spreadsheet Preview -->
+              <template x-if="file.type === 'Spreadsheet'">
+                <div class="relative" style="height:180px; background:linear-gradient(135deg,#d1fae5,#a7f3d0); display:flex; align-items:center; justify-content:center;">
+                  <div class="text-center">
+                    <i data-lucide="table" class="w-12 h-12 mx-auto text-emerald-600 mb-2"></i>
+                    <p class="text-xs font-bold text-emerald-800">Spreadsheet</p>
+                    <p class="text-[10px] text-emerald-600 mt-0.5" x-text="file.size"></p>
+                  </div>
+                  <span class="preview-type-badge bg-emerald-500/80 text-white">📊 Sheet</span>
+                </div>
+              </template>
+              <!-- Dokumen/Other Preview -->
+              <template x-if="file.type === 'Dokumen'">
+                <div class="relative" style="height:180px; background:linear-gradient(135deg,#e0e7ff,#c7d2fe); display:flex; align-items:center; justify-content:center;">
+                  <div class="text-center">
+                    <i data-lucide="file-text" class="w-12 h-12 mx-auto text-indigo-600 mb-2"></i>
+                    <p class="text-xs font-bold text-indigo-800">Dokumen</p>
+                    <p class="text-[10px] text-indigo-600 mt-0.5" x-text="file.size"></p>
+                  </div>
+                  <span class="preview-type-badge bg-indigo-500/80 text-white">📝 Doc</span>
+                </div>
+              </template>
+              <!-- Preview Footer -->
+              <div class="preview-footer">
+                <p class="preview-title" x-text="file.title || file.name"></p>
+                <p class="preview-meta" x-text="file.size + ' • ' + file.category + ' • ' + file.date"></p>
+              </div>
+            </div>
+
+            <!-- Action button -->
             <div class="absolute top-2 right-2 z-10">
               <button @click.stop="toggleFileMenu(file.id, $event)" class="file-actions-btn p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-lg shadow"><i data-lucide="more-vertical" class="w-3.5 h-3.5 text-slate-500"></i></button>
               <div x-show="openFileMenuId === file.id" @click.stop @click.away="openFileMenuId = null" x-transition class="context-menu absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
@@ -331,25 +493,38 @@ tr:hover .file-actions-btn{opacity:1}
                 <button @click.stop="openFileMenuId=null; startEditFile(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700"><i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit</button>
                 <button @click.stop="openFileMenuId=null; downloadFile(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700"><i data-lucide="download" class="w-3.5 h-3.5"></i> Download</button>
                 <button x-show="file.syncStatus !== 'synced' && driveConnected" @click.stop="openFileMenuId=null; syncFileToDrive(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600"><i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> Sync ke Drive</button>
-                <button x-show="file.syncStatus === 'synced' && file.driveId" @click.stop="openFileMenuId=null; openInDrive(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600"><i data-lucide="external-link" class="w-3.5 h-3.5"></i> Buka di Drive</button>
                 <div class="border-t border-slate-100 dark:border-slate-700"></div>
                 <button @click.stop="openFileMenuId=null; deleteFile(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus</button>
               </div>
             </div>
-            <!-- Sync status badge -->
+
+            <!-- Sync badge -->
             <div class="absolute top-2 left-2 z-10">
               <span class="sync-badge" :class="file.syncStatus || 'local'">
-                <template x-if="file.syncStatus === 'synced'"><svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></template>
-                <template x-if="file.syncStatus === 'pending'"><svg class="w-2.5 h-2.5 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg></template>
-                <template x-if="file.syncStatus === 'failed'"><svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></template>
                 <span x-text="getSyncBadgeText(file.syncStatus)"></span>
               </span>
             </div>
-            <div class="aspect-square rounded-lg flex items-center justify-center mb-2.5 overflow-hidden mt-5" :style="'background:'+file.color+'12'">
-              <template x-if="file.type === 'Gambar' && file.blobUrl"><img :src="file.blobUrl" class="w-full h-full object-cover rounded-lg" :alt="file.name"></template>
-              <template x-if="file.type === 'Video' && file.blobUrl"><video :src="file.blobUrl" class="w-full h-full object-cover rounded-lg" muted></video></template>
-              <template x-if="!(file.blobUrl && (file.type === 'Gambar' || file.type === 'Video'))"><i :data-lucide="file.icon" class="w-10 h-10" :style="'color:'+file.color"></i></template>
+
+            <!-- Thumbnail area -->
+            <div class="thumb-container aspect-square rounded-lg flex items-center justify-center mb-2.5 mt-5" :style="'background:'+file.color+'12'">
+              <div class="thumb-shimmer"></div>
+              <template x-if="file.type === 'Gambar' && file.blobUrl">
+                <img :src="file.blobUrl" class="w-full h-full object-cover rounded-lg" :alt="file.name">
+              </template>
+              <template x-if="file.type === 'Video' && file.blobUrl">
+                <div class="relative w-full h-full">
+                  <video :src="file.blobUrl" class="w-full h-full object-cover rounded-lg" muted preload="metadata"></video>
+                  <div class="video-play-indicator w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              </template>
+              <template x-if="!(file.blobUrl && (file.type === 'Gambar' || file.type === 'Video'))">
+                <i :data-lucide="file.icon" class="w-10 h-10" :style="'color:'+file.color"></i>
+              </template>
             </div>
+
+            <!-- File info -->
             <p class="text-sm font-semibold truncate" x-text="file.title || file.name"></p>
             <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-slate-500" x-text="file.size"></span><span class="text-[11px] text-slate-400" x-text="file.date"></span></div>
             <div class="flex items-center gap-1.5 mt-1.5"><span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:'+catColor(file.category)"></span><span class="text-[11px] text-slate-500 truncate" x-text="file.category"></span></div>
@@ -361,7 +536,7 @@ tr:hover .file-actions-btn{opacity:1}
         </div>
       </div>
 
-      <!-- LIST -->
+      <!-- LIST VIEW -->
       <div x-show="viewMode === 'list'" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase"><tr><th class="text-left px-4 py-3">Nama</th><th class="text-left px-4 py-3">Sync</th><th class="text-left px-4 py-3">Kategori</th><th class="text-left px-4 py-3">Ukuran</th><th class="text-right px-4 py-3">Aksi</th></tr></thead>
@@ -374,7 +549,6 @@ tr:hover .file-actions-btn{opacity:1}
                 <td class="px-4 py-3 text-slate-500 text-xs" x-text="file.size"></td>
                 <td class="px-4 py-3 text-right">
                   <div class="inline-flex gap-0.5">
-                    <button x-show="file.syncStatus !== 'synced' && driveConnected" @click.stop="syncFileToDrive(file)" class="p-1.5 hover:bg-blue-50 rounded" title="Sync ke Drive"><i data-lucide="cloud-upload" class="w-3.5 h-3.5 text-blue-500"></i></button>
                     <button @click.stop="startEditFile(file)" class="p-1.5 hover:bg-indigo-50 rounded"><i data-lucide="pencil" class="w-3.5 h-3.5 text-indigo-500"></i></button>
                     <button @click.stop="downloadFile(file)" class="p-1.5 hover:bg-slate-100 rounded"><i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i></button>
                     <button @click.stop="deleteFile(file)" class="p-1.5 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-500"></i></button>
@@ -406,18 +580,9 @@ tr:hover .file-actions-btn{opacity:1}
           <h3 class="font-semibold text-sm mb-4">☁️ Auto-Sync ke Drive</h3>
           <div class="space-y-3">
             <label class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer">
-              <div class="flex items-center gap-3"><i data-lucide="cloud-cog" class="w-4 h-4 text-blue-500"></i><div><span class="text-sm font-medium block">Auto-sync saat upload</span><span class="text-[11px] text-slate-500">Otomatis upload ke Drive</span></div></div>
+              <div class="flex items-center gap-3"><i data-lucide="cloud-cog" class="w-4 h-4 text-blue-500"></i><span class="text-sm font-medium">Auto-sync saat upload</span></div>
               <input type="checkbox" x-model="autoSyncEnabled" class="accent-blue-600 w-4 h-4">
             </label>
-            <label class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer">
-              <div class="flex items-center gap-3"><i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i><div><span class="text-sm font-medium block">Hapus dari Drive</span><span class="text-[11px] text-slate-500">Saat hapus di DocuCloud</span></div></div>
-              <input type="checkbox" x-model="deleteFromDriveOnRemove" class="accent-red-600 w-4 h-4">
-            </label>
-            <div x-show="driveConnected" class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p class="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-1">Drive Folder</p>
-              <p class="text-[11px] text-blue-700 dark:text-blue-400 mb-2" x-text="'/DocuCloud' + (driveFolderId ? ' (ID: ' + driveFolderId.substring(0,8) + '...)' : ' (belum dibuat)')"></p>
-              <button @click="ensureDriveFolder()" class="px-2.5 py-1 bg-blue-600 text-white rounded text-[11px] font-medium hover:bg-blue-700">Buat/Verifikasi Folder</button>
-            </div>
           </div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
@@ -437,16 +602,15 @@ tr:hover .file-actions-btn{opacity:1}
 
 <!-- BOTTOM NAV -->
 <nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 z-40">
-  <div class="grid grid-cols-5 h-16">
+  <div class="grid grid-cols-4 h-16">
     <button @click="activeMenu='dashboard'" :class="activeMenu==='dashboard' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 relative transition"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="text-[10px]">Home</span></button>
     <button @click="activeMenu='files'; filterFiles()" :class="activeMenu==='files' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 relative transition"><i data-lucide="folder" class="w-5 h-5"></i><span class="text-[10px]">Files</span></button>
     <button @click="showUpload = true" class="flex flex-col items-center justify-center gap-0.5 text-slate-500"><div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center -mt-5 shadow-lg"><i data-lucide="plus" class="w-5 h-5 text-white"></i></div><span class="text-[10px] -mt-0.5">Upload</span></button>
-    <button @click="driveConnected ? (showDriveMenu = !showDriveMenu) : (showDriveSetup = true)" :class="driveConnected ? 'text-blue-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 relative transition"><svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45 7.71 3.5z" opacity=".8"/></svg><span class="text-[10px]">Drive</span></button>
     <button @click="activeMenu='settings'" :class="activeMenu==='settings' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 relative transition"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-[10px]">Settings</span></button>
   </div>
 </nav>
 
-<!-- ========== MODALS ========== -->
+<!-- MODALS (Upload, Edit, Delete, Preview, Category, Drive Setup, etc.) -->
 
 <!-- UPLOAD -->
 <div x-show="showUpload" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -456,26 +620,20 @@ tr:hover .file-actions-btn{opacity:1}
       <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 text-center" @dragover.prevent="isDragging = true" @dragleave="isDragging = false" @drop.prevent="handleDrop($event)" :class="isDragging ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : ''">
         <i data-lucide="cloud-upload" class="w-12 h-12 mx-auto text-indigo-500 mb-3"></i>
         <p class="text-sm font-semibold mb-1">Drag & drop file di sini</p>
-        <p class="text-xs text-slate-500 mb-3">atau klik tombol di bawah</p>
         <input type="file" multiple class="hidden" id="fileInput" @change="handleFileSelect($event)">
-        <button onclick="document.getElementById('fileInput').click()" class="px-4 py-2 gradient-bg text-white rounded-lg text-sm font-medium">Pilih File</button>
+        <button onclick="document.getElementById('fileInput').click()" class="px-4 py-2 gradient-bg text-white rounded-lg text-sm font-medium mt-2">Pilih File</button>
       </div>
       <div class="mt-4 space-y-3">
         <div><label class="text-xs font-semibold mb-1 block">Kategori</label>
           <select x-model="uploadCategory" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 focus:ring-2 focus:ring-indigo-500"><template x-for="c in categories" :key="c.name"><option x-text="c.name"></option></template></select></div>
         <div><label class="text-xs font-semibold mb-1 block">Judul (opsional)</label>
           <input x-model="uploadDefaultTitle" type="text" placeholder="Kosongkan = pakai nama file" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 focus:ring-2 focus:ring-indigo-500"></div>
-
-        <!-- Auto-sync toggle -->
         <div class="p-3 rounded-lg border-2 transition" :class="uploadAutoSync ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'">
           <label class="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" x-model="uploadAutoSync" class="accent-blue-600 w-4 h-4">
             <div class="flex-1">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4" :class="uploadAutoSync ? 'text-blue-600' : 'text-slate-400'" viewBox="0 0 87.3 78"><path fill="currentColor" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45z" opacity=".8"/></svg>
-                <span class="text-sm font-semibold" :class="uploadAutoSync ? 'text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'">Sync ke Google Drive</span>
-              </div>
-              <p class="text-[11px] mt-0.5" :class="uploadAutoSync ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'" x-text="driveConnected ? 'File akan otomatis tersimpan di Drive Anda' : '⚠️ Hubungkan Drive terlebih dahulu'"></p>
+              <span class="text-sm font-semibold" :class="uploadAutoSync ? 'text-blue-700 dark:text-blue-300' : ''">☁️ Sync ke Google Drive</span>
+              <p class="text-[11px] mt-0.5 text-slate-500" x-text="driveConnected ? 'Otomatis upload ke Drive' : '⚠️ Hubungkan Drive dulu'"></p>
             </div>
           </label>
         </div>
@@ -484,7 +642,7 @@ tr:hover .file-actions-btn{opacity:1}
         <template x-for="(pf, idx) in pendingUploadFiles" :key="idx">
           <div class="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
             <template x-if="pf.previewUrl"><img :src="pf.previewUrl" class="w-10 h-10 rounded-lg object-cover" alt=""></template>
-            <template x-if="!pf.previewUrl"><div class="w-10 h-10 rounded-lg flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20"><i data-lucide="file" class="w-5 h-5 text-indigo-500"></i></div></template>
+            <template x-if="!pf.previewUrl"><div class="w-10 h-10 rounded-lg flex items-center justify-center bg-indigo-50"><i data-lucide="file" class="w-5 h-5 text-indigo-500"></i></div></template>
             <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate" x-text="pf.file.name"></p><p class="text-[11px] text-slate-500" x-text="formatBytes(pf.file.size)"></p></div>
             <button @click="removePendingFile(idx)" class="p-1 hover:bg-red-100 rounded text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button>
           </div>
@@ -523,15 +681,7 @@ tr:hover .file-actions-btn{opacity:1}
 <div x-show="showDeleteConfirm" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div @click.away="showDeleteConfirm = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
     <div class="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-4 text-white flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i><h3 class="font-bold">Hapus Dokumen</h3></div>
-    <div class="p-5 space-y-3">
-      <p class="text-sm">Yakin ingin menghapus <strong x-text="fileToDelete ? (fileToDelete.title || fileToDelete.name) : ''"></strong>?</p>
-      <div x-show="fileToDelete && fileToDelete.syncStatus === 'synced'" class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" x-model="deleteAlsoFromDrive" class="accent-red-600 w-4 h-4">
-          <div><p class="text-xs font-semibold text-amber-900 dark:text-amber-200">Juga hapus dari Google Drive</p><p class="text-[10px] text-amber-700 dark:text-amber-400">File akan dihapus permanen dari cloud</p></div>
-        </label>
-      </div>
-    </div>
+    <div class="p-5"><p class="text-sm">Yakin ingin menghapus <strong x-text="fileToDelete ? (fileToDelete.title || fileToDelete.name) : ''"></strong>?</p></div>
     <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t flex gap-2"><button @click="showDeleteConfirm = false" class="flex-1 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium">Batal</button><button @click="confirmDeleteFile()" class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold">Hapus</button></div>
   </div>
 </div>
@@ -542,14 +692,9 @@ tr:hover .file-actions-btn{opacity:1}
     <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
       <div class="min-w-0 flex-1">
         <h3 class="font-bold text-sm truncate" x-text="previewFile ? (previewFile.title || previewFile.name) : ''"></h3>
-        <div class="flex items-center gap-2 mt-0.5">
-          <p class="text-xs text-slate-500" x-text="previewFile ? (previewFile.size + ' • ' + previewFile.date + ' • ' + previewFile.category) : ''"></p>
-          <span x-show="previewFile" class="sync-badge" :class="previewFile ? (previewFile.syncStatus || 'local') : ''" x-text="getSyncBadgeText(previewFile ? previewFile.syncStatus : '')"></span>
-        </div>
+        <p class="text-xs text-slate-500" x-text="previewFile ? (previewFile.size + ' • ' + previewFile.date + ' • ' + previewFile.category) : ''"></p>
       </div>
       <div class="flex gap-1">
-        <button x-show="previewFile && previewFile.syncStatus !== 'synced' && driveConnected" @click="syncFileToDrive(previewFile)" class="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title="Sync ke Drive"><i data-lucide="cloud-upload" class="w-4 h-4 text-blue-500"></i></button>
-        <button x-show="previewFile && previewFile.syncStatus === 'synced' && previewFile.driveId" @click="openInDrive(previewFile)" class="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title="Buka di Drive"><i data-lucide="external-link" class="w-4 h-4 text-blue-500"></i></button>
         <button @click="downloadFile(previewFile)" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="download" class="w-4 h-4"></i></button>
         <button @click="previewFile = null" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
@@ -576,7 +721,6 @@ tr:hover .file-actions-btn{opacity:1}
     <div class="gradient-bg px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="tag" class="w-5 h-5"></i><h3 class="font-bold">Kategori Baru</h3></div><button @click="showNewCategory = false" class="p-1 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
     <div class="p-5 space-y-4">
       <div><label class="text-xs font-semibold mb-1 block">Nama</label><input x-model="newCategoryName" @keydown.enter="addCategory()" type="text" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 focus:ring-2 focus:ring-indigo-500" maxlength="30" autofocus></div>
-      <div><label class="text-xs font-semibold mb-2 block">Icon</label><div class="grid grid-cols-8 gap-1.5 max-h-28 overflow-y-auto scrollbar"><template x-for="ico in faIconOptions" :key="ico.class"><button @click="newCategoryIcon = ico.class" :class="newCategoryIcon === ico.class ? 'gradient-bg text-white' : 'bg-slate-100 dark:bg-slate-800'" class="aspect-square rounded-md flex items-center justify-center transition hover:scale-110"><i :class="ico.class" class="text-xs"></i></button></template></div></div>
       <div><label class="text-xs font-semibold mb-2 block">Warna</label><div class="flex flex-wrap gap-2"><template x-for="c in categoryColors" :key="c"><button @click="newCategoryColor = c" :style="'background:'+c" :class="newCategoryColor === c ? 'scale-125 shadow-lg ring-2 ring-offset-2 ring-white' : ''" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-700 shadow flex items-center justify-center transition hover:scale-110"><i x-show="newCategoryColor === c" data-lucide="check" class="w-3.5 h-3.5 text-white"></i></button></template></div></div>
     </div>
     <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t flex gap-2"><button @click="showNewCategory = false" class="flex-1 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium">Batal</button><button @click="addCategory()" :disabled="!newCategoryName.trim()" class="flex-1 py-2 gradient-bg text-white rounded-lg text-sm font-bold disabled:opacity-40">Buat</button></div>
@@ -595,34 +739,23 @@ tr:hover .file-actions-btn{opacity:1}
 <!-- DRIVE SETUP -->
 <div x-show="showDriveSetup" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
   <div @click.away="showDriveSetup = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg max-h-[88vh] overflow-y-auto scrollbar shadow-2xl">
-    <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-3"><svg class="w-6 h-6 drive-float" viewBox="0 0 87.3 78"><path fill="#fff" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45z" opacity=".8"/></svg><div><h3 class="font-bold text-base">Hubungkan Google Drive</h3><p class="text-xs text-white/80">Aktifkan auto-sync file Anda</p></div></div><button @click="showDriveSetup = false" class="p-1.5 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+    <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-3"><svg class="w-6 h-6 drive-float" viewBox="0 0 87.3 78"><path fill="#fff" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45z" opacity=".8"/></svg><div><h3 class="font-bold text-base">Hubungkan Google Drive</h3><p class="text-xs text-white/80">Aktifkan auto-sync</p></div></div><button @click="showDriveSetup = false" class="p-1.5 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
     <div class="p-5 space-y-4">
-      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <p class="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-2">✨ Fitur Auto-Sync v5.0:</p>
-        <ul class="text-[11px] text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
-          <li>File otomatis ter-upload ke Drive setelah upload lokal</li>
-          <li>Akses file dari device manapun via drive.google.com</li>
-          <li>Status sync real-time: ☁️ Synced / ⏳ Pending / ❌ Failed</li>
-          <li>Hapus file dari Drive bersamaan dengan di DocuCloud</li>
-        </ul>
-      </div>
-      <div class="drive-step border-2 rounded-lg p-4" :class="driveSetupStep >= 1 ? (driveSetupStep > 1 ? 'done' : 'active') : 'border-slate-200 dark:border-slate-700'">
-        <div class="flex items-center gap-2.5 mb-3"><div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" :class="driveSetupStep > 1 ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'"><template x-if="driveSetupStep > 1"><i data-lucide="check" class="w-3.5 h-3.5"></i></template><template x-if="driveSetupStep <= 1"><span>1</span></template></div><h4 class="font-medium text-sm">Konfigurasi API</h4></div>
-        <div class="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"><p class="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-2">Cara Mendapatkan Client ID:</p><ol class="text-[11px] text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside"><li>Buka <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="underline font-medium">Google Cloud Console</a></li><li>Aktifkan Google Drive API</li><li>Buat OAuth 2.0 Client ID</li><li>Copy dan paste di bawah</li></ol></div>
+      <div class="drive-step border-2 rounded-lg p-4" :class="driveSetupStep >= 1 ? 'active' : 'border-slate-200 dark:border-slate-700'">
+        <div class="flex items-center gap-2.5 mb-3"><div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold"><span>1</span></div><h4 class="font-medium text-sm">Konfigurasi API</h4></div>
         <label class="text-xs font-medium mb-1 block">OAuth 2.0 Client ID</label>
-        <input x-model="driveConfig.clientId" type="text" placeholder="1234567890-abc...apps.googleusercontent.com" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-mono border-0 focus:ring-2 focus:ring-blue-500">
+        <input x-model="driveConfig.clientId" type="text" placeholder="...apps.googleusercontent.com" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-mono border-0 focus:ring-2 focus:ring-blue-500">
       </div>
-      <div class="drive-step border-2 rounded-lg p-4" :class="driveSetupStep > 2 ? 'done' : (driveConfig.clientId && driveConfig.clientId.trim() ? 'active' : 'border-slate-200 dark:border-slate-700')">
-        <div class="flex items-center gap-2.5 mb-3"><div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" :class="driveSetupStep > 2 ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'"><template x-if="driveSetupStep > 2"><i data-lucide="check" class="w-3.5 h-3.5"></i></template><template x-if="driveSetupStep <= 2"><span>2</span></template></div><h4 class="font-medium text-sm">Autentikasi</h4></div>
+      <div class="drive-step border-2 rounded-lg p-4" :class="driveConfig.clientId && driveConfig.clientId.trim() ? 'active' : 'border-slate-200 dark:border-slate-700'">
+        <div class="flex items-center gap-2.5 mb-3"><div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold"><span>2</span></div><h4 class="font-medium text-sm">Autentikasi</h4></div>
         <button x-show="driveConfig.clientId && driveConfig.clientId.trim() && !driveConnected" @click="signInToDrive()" :disabled="driveLoading" class="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition disabled:opacity-50">
-          <template x-if="!driveLoading"><svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg></template>
-          <template x-if="driveLoading"><svg class="w-5 h-5 spin" viewBox="0 0 24 24" fill="none" stroke="#4285F4" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg></template>
+          <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
           <span x-text="driveLoading ? 'Menghubungkan...' : 'Masuk dengan Google'"></span>
         </button>
-        <div x-show="driveAuthError" class="flex items-start gap-2 p-3 mt-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-700 dark:text-red-400"><i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 mt-0.5"></i><div><p class="font-semibold">Gagal</p><p x-text="driveAuthError"></p></div></div>
+        <div x-show="driveAuthError" class="p-3 mt-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-700 dark:text-red-400"><p x-text="driveAuthError"></p></div>
       </div>
       <div x-show="driveSetupStep >= 3" class="drive-step border-2 border-green-300 bg-green-50 dark:bg-green-900/10 rounded-lg p-4">
-        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-green-100 text-green-600 flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></div><div class="flex-1 min-w-0"><h4 class="font-medium text-sm text-green-800 dark:text-green-300">Terhubung!</h4><p class="text-xs text-green-600 dark:text-green-400 truncate" x-text="driveUser ? driveUser.email : ''"></p></div><button @click="showDriveSetup = false; showDriveBrowser = true; driveBrowserMode = 'browse'; syncDriveFiles()" class="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700">Buka Drive</button></div>
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-green-100 text-green-600 flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></div><div class="flex-1"><h4 class="font-medium text-sm text-green-800 dark:text-green-300">Terhubung!</h4><p class="text-xs text-green-600" x-text="driveUser ? driveUser.email : ''"></p></div></div>
       </div>
     </div>
   </div>
@@ -632,37 +765,25 @@ tr:hover .file-actions-btn{opacity:1}
 <div x-show="showDisconnectDrive" x-transition class="fixed inset-0 bg-black/60 z-[55] flex items-center justify-center p-4">
   <div @click.away="showDisconnectDrive = false; confirmDisconnectCheck = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
     <div class="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-4 text-white flex items-center gap-2"><i data-lucide="unlink" class="w-5 h-5"></i><h3 class="font-bold">Putuskan Google Drive</h3></div>
-    <div class="p-5 space-y-4">
-      <div class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center font-bold text-sm" x-text="driveUser && driveUser.name ? driveUser.name.charAt(0) : 'U'"></div>
-        <div class="flex-1 min-w-0"><p class="text-sm font-semibold truncate" x-text="driveUser ? driveUser.name : ''"></p><p class="text-xs text-slate-500 truncate" x-text="driveUser ? driveUser.email : ''"></p></div>
-      </div>
-      <p class="text-xs text-slate-600 dark:text-slate-400">⚠️ File yang sudah tersync di Drive <strong>tidak akan terhapus</strong>. Hanya koneksi yang diputus.</p>
-      <label class="flex items-center gap-2.5 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer"><input type="checkbox" x-model="confirmDisconnectCheck" class="accent-red-600 w-4 h-4"><span class="text-xs text-slate-700 dark:text-slate-300">Saya yakin ingin memutuskan koneksi</span></label>
+    <div class="p-5">
+      <label class="flex items-center gap-2.5 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer"><input type="checkbox" x-model="confirmDisconnectCheck" class="accent-red-600 w-4 h-4"><span class="text-xs">Saya yakin ingin memutuskan</span></label>
     </div>
-    <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t flex gap-2"><button @click="showDisconnectDrive = false; confirmDisconnectCheck = false" class="flex-1 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium">Batal</button><button @click="confirmDisconnectDrive()" :disabled="!confirmDisconnectCheck" class="flex-1 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"><i data-lucide="unlink" class="w-4 h-4"></i>Putuskan</button></div>
+    <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t flex gap-2"><button @click="showDisconnectDrive = false; confirmDisconnectCheck = false" class="flex-1 py-2.5 bg-white dark:bg-slate-700 border rounded-lg text-sm font-medium">Batal</button><button @click="confirmDisconnectDrive()" :disabled="!confirmDisconnectCheck" class="flex-1 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">Putuskan</button></div>
   </div>
 </div>
 
 <!-- DRIVE BROWSER -->
 <div x-show="showDriveBrowser" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-  <div @click.away="showDriveBrowser = false; driveBrowserMode = 'browse'; selectedDriveImports = []" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-3xl max-h-[88vh] overflow-hidden shadow-2xl flex flex-col">
-    <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-white flex items-center justify-between"><div class="flex items-center gap-2.5"><svg class="w-6 h-6" viewBox="0 0 87.3 78"><path fill="#fff" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45z" opacity=".8"/></svg><div><h3 class="font-semibold text-sm" x-text="driveBrowserMode === 'import' ? 'Pilih File untuk Import' : 'Google Drive'"></h3><p class="text-[11px] text-white/80" x-text="driveUser ? driveUser.email : ''"></p></div></div><div class="flex items-center gap-1.5"><button @click="syncDriveFiles()" class="p-1.5 hover:bg-white/20 rounded-lg"><i data-lucide="refresh-cw" class="w-4 h-4" :class="driveLoading ? 'spin' : ''"></i></button><button @click="showDriveBrowser = false" class="p-1.5 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div></div>
-    <div class="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
-      <div class="flex-1 relative"><i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i><input x-model="driveSearchQuery" type="text" placeholder="Cari di Drive..." class="w-full pl-8 pr-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"></div>
-      <div x-show="driveBrowserMode === 'import'" class="flex items-center gap-2"><span class="text-xs text-slate-500" x-text="selectedDriveImports.length + ' dipilih'"></span><button @click="confirmDriveImport()" :disabled="selectedDriveImports.length === 0 || driveLoading" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium disabled:opacity-50 flex items-center gap-1.5"><i data-lucide="download-cloud" class="w-3.5 h-3.5"></i> Import</button></div>
-    </div>
-    <div class="flex-1 overflow-y-auto scrollbar">
-      <div x-show="driveLoading && driveFiles.length === 0" class="p-10 text-center"><svg class="w-10 h-10 mx-auto spin text-blue-500 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg><p class="text-xs text-slate-500">Memuat...</p></div>
-      <template x-for="file in filteredDriveFiles" :key="file.id">
-        <div class="drive-file-item flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 cursor-pointer" :class="driveBrowserMode === 'import' && selectedDriveImports.some(function(f){ return f.id === file.id }) ? 'selected' : ''" @click="driveBrowserMode === 'import' ? toggleDriveImport(file) : openDriveFile(file)">
+  <div @click.away="showDriveBrowser = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-3xl max-h-[88vh] overflow-hidden shadow-2xl flex flex-col">
+    <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-white flex items-center justify-between"><h3 class="font-semibold text-sm">Google Drive</h3><button @click="showDriveBrowser = false" class="p-1.5 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+    <div class="flex-1 overflow-y-auto scrollbar p-4">
+      <template x-for="file in driveFiles" :key="file.id">
+        <div class="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50" @click="window.open('https://drive.google.com/file/d/'+file.id+'/view','_blank')">
           <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" :style="'background:'+getDriveFileColor(file.mimeType)+'15'"><i :data-lucide="getDriveFileIcon(file.mimeType)" class="w-4 h-4" :style="'color:'+getDriveFileColor(file.mimeType)"></i></div>
-          <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate" x-text="file.name"></p><div class="flex items-center gap-2.5 mt-0.5"><span class="text-xs text-slate-500" x-text="formatBytes(parseInt(file.size)||0)"></span><span class="text-xs text-slate-400" x-text="formatDriveDate(file.modifiedTime)"></span></div></div>
-          <div x-show="driveBrowserMode === 'import'" class="drive-import-check"><i x-show="selectedDriveImports.some(function(f){ return f.id === file.id })" data-lucide="check" class="w-3 h-3 text-white"></i></div>
-          <div x-show="driveBrowserMode === 'browse'" class="flex items-center gap-1 flex-shrink-0"><button @click.stop="openDriveFile(file)" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg"><i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i></button><button @click.stop="toggleDriveImport(file); driveBrowserMode = 'import'" class="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg"><i data-lucide="download-cloud" class="w-4 h-4 text-blue-500"></i></button></div>
+          <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate" x-text="file.name"></p><p class="text-xs text-slate-500" x-text="formatBytes(parseInt(file.size)||0)"></p></div>
         </div>
       </template>
-      <div x-show="!driveLoading && filteredDriveFiles.length === 0" class="p-10 text-center"><i data-lucide="folder-open" class="w-12 h-12 mx-auto text-slate-300 mb-2"></i><p class="text-sm text-slate-500">Tidak ada file</p></div>
+      <div x-show="driveFiles.length === 0" class="p-10 text-center text-slate-400 text-sm">Tidak ada file di Drive</div>
     </div>
   </div>
 </div>
@@ -681,7 +802,6 @@ tr:hover .file-actions-btn{opacity:1}
 <script>
 function docuCloud() {
   return {
-    // STATE
     isLoading: true, loadingMessage: 'Memuat...', loadingProgress: 0,
     sidebarOpen: true, darkMode: false, activeMenu: 'dashboard',
     searchQuery: '', viewMode: 'grid', fileType: 'Semua',
@@ -698,23 +818,13 @@ function docuCloud() {
       {name:'Proyek',color:'#f59e0b',icon:'fa-solid fa-diagram-project',count:0}
     ],
     categoryColors:['#6366f1','#ec4899','#10b981','#f59e0b','#ef4444','#06b6d4','#8b5cf6','#14b8a6'],
-    faIconOptions:[
-      {class:'fa-solid fa-folder'},{class:'fa-solid fa-briefcase'},{class:'fa-solid fa-heart'},
-      {class:'fa-solid fa-coins'},{class:'fa-solid fa-diagram-project'},{class:'fa-solid fa-book'},
-      {class:'fa-solid fa-graduation-cap'},{class:'fa-solid fa-house'},{class:'fa-solid fa-car'},
-      {class:'fa-solid fa-plane'},{class:'fa-solid fa-camera'},{class:'fa-solid fa-music'},
-      {class:'fa-solid fa-star'},{class:'fa-solid fa-bolt'},{class:'fa-solid fa-fire'},
-      {class:'fa-solid fa-gem'},{class:'fa-solid fa-shield-halved'},{class:'fa-solid fa-key'},
-      {class:'fa-solid fa-file-invoice'},{class:'fa-solid fa-chart-line'}
-    ],
-    showNewCategory:false, newCategoryName:'', newCategoryColor:'#6366f1', newCategoryIcon:'fa-solid fa-folder',
+    showNewCategory:false, newCategoryName:'', newCategoryColor:'#6366f1',
     showDeleteCategory:false, categoryToDelete:null, categoryDeleteIndex:-1,
     files:[], filteredFiles:[],
     showUpload:false, uploadCategory:'Pekerjaan', uploadDefaultTitle:'', isDragging:false, pendingUploadFiles:[],
-    uploadAutoSync: true, // ✅ Default ON
+    uploadAutoSync: true,
     showEditFile:false, fileToEdit:null, editFileTitle:'', editFileName:'', editFileCategory:'',
-    showDeleteConfirm:false, fileToDelete:null, deleteAlsoFromDrive:true, previewFile:null, openFileMenuId:null,
-    // DRIVE STATE
+    showDeleteConfirm:false, fileToDelete:null, previewFile:null, openFileMenuId:null,
     driveConnected:false, driveUser:null, driveFiles:[], driveLoading:false,
     driveLastSync:'Belum pernah', driveSetupStep:1, driveAuthError:'',
     showDriveSetup:false, showDriveBrowser:false, showDriveMenu:false,
@@ -722,14 +832,10 @@ function docuCloud() {
     driveBrowserMode:'browse', driveSearchQuery:'', selectedDriveImports:[],
     driveConfig:{clientId:''},
     driveStorageUsed:'0 GB', driveStoragePercent:0,
-    driveFolderId: null, // ID folder DocuCloud di Drive
-    // AUTO-SYNC STATE
+    driveFolderId: null,
     autoSyncEnabled: true,
     deleteFromDriveOnRemove: true,
-    syncQueue: [],
-    syncProgress: 0,
-    syncCurrentFile: '',
-    // STATS & THEME
+    syncQueue: [], syncProgress: 0, syncCurrentFile: '',
     stats:[
       {label:'Total File',value:'0',icon:'file-text',color:'#6366f1',bg:'#eef2ff'},
       {label:'☁️ Synced',value:'0',icon:'cloud',color:'#3b82f6',bg:'#dbeafe'},
@@ -750,24 +856,16 @@ function docuCloud() {
     currentTheme:{id:'indigo',gradient:'linear-gradient(135deg,#667eea,#764ba2)'},
     usedStorage:'0 B', storagePercent:0,
 
-    // COMPUTED
-    get filteredDriveFiles(){
-      var q = (this.driveSearchQuery || '').toLowerCase().trim();
-      if(!q) return this.driveFiles;
-      return this.driveFiles.filter(function(f){ return (f.name||'').toLowerCase().indexOf(q) !== -1 });
-    },
     get syncedCount(){ return this.files.filter(function(f){return f.syncStatus==='synced'}).length },
     get pendingCount(){ return this.files.filter(function(f){return f.syncStatus==='pending'}).length },
     get failedCount(){ return this.files.filter(function(f){return f.syncStatus==='failed'}).length },
 
-    // INIT
     init(){
       var self = this;
       var t = localStorage.getItem('dc_theme');
       if(t){ var f = this.themePresets.find(function(p){return p.id===t}); if(f) this.currentTheme = f; }
       if(localStorage.getItem('dc_dark')==='true') this.darkMode = true;
       if(localStorage.getItem('dc_autosync')==='false') this.autoSyncEnabled = false;
-      if(localStorage.getItem('dc_deletefromdrive')==='false') this.deleteFromDriveOnRemove = false;
       this.uploadAutoSync = this.autoSyncEnabled;
       this.driveFolderId = localStorage.getItem('dc_drive_folder') || null;
 
@@ -783,44 +881,53 @@ function docuCloud() {
           self.filterFiles();
           self.updateStats();
           self.refreshIcons();
-          // Drive auto-login
           var savedToken = localStorage.getItem('dc_drive_token');
           var savedClient = localStorage.getItem('dc_drive_client');
           if(savedToken && savedClient){
             self.driveConfig.clientId = savedClient;
             try {
-              // Validate token first
               var validateResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {headers:{Authorization:'Bearer '+savedToken}});
               if(validateResp.ok){
                 var u = await validateResp.json();
                 self.driveUser = {name:u.name||u.email.split('@')[0],email:u.email,picture:u.picture};
-                self.driveConnected = true;
-                self.driveSetupStep = 3;
+                self.driveConnected = true; self.driveSetupStep = 3;
                 await self.ensureDriveFolder();
                 await self.syncDriveFiles();
-                // Auto-sync pending files
-                if(self.pendingCount > 0 || self.failedCount > 0){
-                  setTimeout(function(){ self.syncAllPending() }, 1000);
-                }
-              } else {
-                localStorage.removeItem('dc_drive_token');
-                self.showToast('Token expired', 'Silakan login ulang ke Drive', 'warning');
-              }
-            } catch(e){
-              console.warn('Drive auto-login failed:', e);
-            }
+                if(self.pendingCount > 0) setTimeout(function(){ self.syncAllPending() }, 1000);
+              } else { localStorage.removeItem('dc_drive_token'); }
+            } catch(e){}
           }
         },300); }
       },300);
-
       this.$watch('darkMode',function(v){ localStorage.setItem('dc_dark',v); self.refreshIcons() });
       this.$watch('activeMenu',function(){ self.filterFiles(); self.refreshIcons() });
       this.$watch('autoSyncEnabled',function(v){ localStorage.setItem('dc_autosync', v); self.uploadAutoSync = v; });
-      this.$watch('deleteFromDriveOnRemove',function(v){ localStorage.setItem('dc_deletefromdrive', v) });
       setInterval(function(){ self.refreshIcons() },500);
     },
 
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
+
+    // ===== HOVER PREVIEW HANDLERS =====
+    handleHoverEnter(file, event){
+      // Auto-play video on hover
+      if(file.type === 'Video' && file.blobUrl && event){
+        var card = event.currentTarget;
+        var videos = card.querySelectorAll('video');
+        videos.forEach(function(v){
+          try { v.currentTime = 0; v.play().catch(function(){}); } catch(e){}
+        });
+      }
+    },
+    handleHoverLeave(file, event){
+      // Pause video on hover leave
+      if(file.type === 'Video' && file.blobUrl && event){
+        var card = event.currentTarget;
+        var videos = card.querySelectorAll('video');
+        videos.forEach(function(v){
+          try { v.pause(); v.currentTime = 0; } catch(e){}
+        });
+      }
+    },
 
     // INDEXEDDB
     openDB(){
@@ -861,7 +968,7 @@ function docuCloud() {
           var cats = await new Promise(function(r){ req2.onsuccess=function(){r(req2.result||[])}; req2.onerror=function(){r([])} });
           if(cats.length>0) this.categories = cats;
         }catch(e){}
-      }catch(e){ console.warn('Load failed:', e) }
+      }catch(e){}
     },
     async saveFileToStorage(file){
       try{
@@ -875,7 +982,7 @@ function docuCloud() {
           lastSyncAt:file.lastSyncAt || null
         });
         await new Promise(function(r){tx.oncomplete=r;tx.onerror=r});
-      }catch(e){ console.warn('Save failed:', e) }
+      }catch(e){}
     },
     async deleteFileFromStorage(id){
       try{ var db = await this.openDB(); var tx = db.transaction('files','readwrite'); tx.objectStore('files').delete(id); await new Promise(function(r){tx.oncomplete=r;tx.onerror=r}) }catch(e){}
@@ -884,7 +991,6 @@ function docuCloud() {
       try{ var db = await this.openDB(); var tx = db.transaction('categories','readwrite'); var s = tx.objectStore('categories'); s.clear(); this.categories.forEach(function(c){s.put({name:c.name,color:c.color,icon:c.icon,count:c.count})}); await new Promise(function(r){tx.oncomplete=r;tx.onerror=r}) }catch(e){}
     },
 
-    // HELPERS
     formatBytes(b){ if(!b||b===0)return'0 B'; var u=['B','KB','MB','GB']; var i=Math.floor(Math.log(b)/Math.log(1024)); return(b/Math.pow(1024,i)).toFixed(1)+' '+u[i] },
     getFileType(f){
       var mime = '';
@@ -899,16 +1005,14 @@ function docuCloud() {
     },
     getFileIcon(t){ var m={'Gambar':'image','PDF':'file-text','Spreadsheet':'table','Video':'video','Audio':'music','Dokumen':'file-text'}; return m[t]||'file' },
     getFileColor(t){ var m={'Gambar':'#ec4899','PDF':'#ef4444','Spreadsheet':'#10b981','Video':'#8b5cf6','Audio':'#f59e0b','Dokumen':'#6366f1'}; return m[t]||'#6366f1' },
-    getDriveFileIcon(m){ if(!m)return'file'; if(m.indexOf('image/')===0)return'image'; if(m==='application/pdf')return'file-text'; if(m.indexOf('sheet')!==-1||m.indexOf('excel')!==-1)return'table'; if(m.indexOf('video/')===0)return'video'; if(m.indexOf('audio/')===0)return'music'; return'file' },
+    getDriveFileIcon(m){ if(!m)return'file'; if(m.indexOf('image/')===0)return'image'; if(m==='application/pdf')return'file-text'; if(m.indexOf('sheet')!==-1||m.indexOf('excel')!==-1)return'table'; if(m.indexOf('video/')===0)return'video'; return'file' },
     getDriveFileColor(m){ if(!m)return'#6366f1'; if(m.indexOf('image/')===0)return'#ec4899'; if(m==='application/pdf')return'#ef4444'; if(m.indexOf('sheet')!==-1||m.indexOf('excel')!==-1)return'#10b981'; if(m.indexOf('video/')===0)return'#8b5cf6'; return'#6366f1' },
-    formatDriveDate(d){ if(!d)return''; return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) },
     catColor(n){ var f=this.categories.find(function(c){return c.name===n}); return f?f.color:'#64748b' },
     getSyncBadgeText(status){
       var map = {'synced':'☁️ Synced','pending':'⏳ Pending','failed':'❌ Failed','local':'💾 Lokal'};
       return map[status] || '💾 Lokal';
     },
 
-    // FILTER
     filterFiles(){
       var self=this, result=[];
       for(var i=0;i<this.files.length;i++){
@@ -948,7 +1052,6 @@ function docuCloud() {
       this.stats[3].value=this.categories.filter(function(c){return c.count>0}).length.toString();
     },
 
-    // UPLOAD
     handleFileSelect(e){ if(e.target.files) this.addPendingFiles(Array.from(e.target.files)) },
     handleDrop(e){ this.isDragging=false; if(e.dataTransfer&&e.dataTransfer.files) this.addPendingFiles(Array.from(e.dataTransfer.files)) },
     addPendingFiles(list){
@@ -965,11 +1068,8 @@ function docuCloud() {
     async confirmUpload(){
       var self=this, count=this.pendingUploadFiles.length;
       if(count===0) return;
-
-      // Determine sync status
       var shouldSync = this.uploadAutoSync && this.driveConnected && this.autoSyncEnabled;
       var initialSyncStatus = shouldSync ? 'pending' : 'local';
-
       var newFiles=[];
       for(var i=0;i<count;i++){
         var pf=this.pendingUploadFiles[i], f=pf.file;
@@ -983,7 +1083,6 @@ function docuCloud() {
           reader.onerror=function(){resolve(null)};
           reader.readAsArrayBuffer(f);
         })}catch(e){}
-
         var newFile = {
           id:id, name:f.name, title:self.uploadDefaultTitle.trim(), type:type, icon:icon, color:color,
           size:self.formatBytes(f.size), sizeBytes:f.size, mimeType:f.type||'application/octet-stream',
@@ -992,12 +1091,10 @@ function docuCloud() {
           uploadedAt:Date.now()+i, blobUrl:blobUrl, blobData:arrayBuffer, source:'local',
           syncStatus: initialSyncStatus, driveId: null, lastSyncAt: null
         };
-
         newFiles.push(newFile);
         self.saveFileToStorage(newFile);
         if(pf.previewUrl){try{URL.revokeObjectURL(pf.previewUrl)}catch(e){}}
       }
-
       self.files = self.files.concat(newFiles);
       self.updateCategoryCounts(); self.updateStats();
       self.filterCategory=''; self.fileType='Semua'; self.searchQuery=''; self.syncFilter='all';
@@ -1008,29 +1105,15 @@ function docuCloud() {
       self.refreshIcons();
       setTimeout(function(){self.refreshIcons()},300);
       setTimeout(function(){self.refreshIcons()},600);
-
-      // ✅ AUTO-SYNC TO DRIVE
-      if(shouldSync){
-        setTimeout(function(){ self.syncAllPending() }, 500);
-      }
+      if(shouldSync) setTimeout(function(){ self.syncAllPending() }, 500);
     },
 
-    // ===== GOOGLE DRIVE INTEGRATION =====
-
-    // Create/verify DocuCloud folder in Drive
     async ensureDriveFolder(){
       var token = localStorage.getItem('dc_drive_token');
       if(!token || !this.driveConnected) return null;
-
-      // If we already have folder ID, verify it exists
       if(this.driveFolderId){
-        try{
-          var check = await fetch('https://www.googleapis.com/drive/v3/files/'+this.driveFolderId+'?fields=id', {headers:{Authorization:'Bearer '+token}});
-          if(check.ok){ return this.driveFolderId; }
-        }catch(e){}
+        try{ var check = await fetch('https://www.googleapis.com/drive/v3/files/'+this.driveFolderId+'?fields=id', {headers:{Authorization:'Bearer '+token}}); if(check.ok) return this.driveFolderId; }catch(e){}
       }
-
-      // Search for existing DocuCloud folder
       try{
         var q = "name='DocuCloud' and mimeType='application/vnd.google-apps.folder' and trashed=false";
         var searchResp = await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)', {headers:{Authorization:'Bearer '+token}});
@@ -1042,8 +1125,6 @@ function docuCloud() {
             return this.driveFolderId;
           }
         }
-
-        // Create new folder
         var metadata = { name: 'DocuCloud', mimeType: 'application/vnd.google-apps.folder' };
         var createResp = await fetch('https://www.googleapis.com/drive/v3/files', {
           method:'POST', headers:{'Authorization':'Bearer '+token, 'Content-Type':'application/json'},
@@ -1053,262 +1134,112 @@ function docuCloud() {
           var folder = await createResp.json();
           this.driveFolderId = folder.id;
           localStorage.setItem('dc_drive_folder', this.driveFolderId);
-          this.showToast('Folder dibuat', '/DocuCloud di Drive Anda', 'success');
           return this.driveFolderId;
         }
-      }catch(e){
-        console.warn('ensureDriveFolder failed:', e);
-      }
+      }catch(e){}
       return null;
     },
-
-    // ✅ UPLOAD FILE TO GOOGLE DRIVE
     async uploadToDrive(file){
       var token = localStorage.getItem('dc_drive_token');
       if(!token) throw new Error('No token');
-
-      // Get blob from ArrayBuffer
       var blob;
-      if(file.blobData instanceof ArrayBuffer){
-        blob = new Blob([file.blobData], {type: file.mimeType || 'application/octet-stream'});
-      } else {
-        throw new Error('No blob data');
-      }
-
-      // Ensure folder exists
+      if(file.blobData instanceof ArrayBuffer) blob = new Blob([file.blobData], {type: file.mimeType || 'application/octet-stream'});
+      else throw new Error('No blob data');
       var folderId = await this.ensureDriveFolder();
-
-      // Prepare metadata
-      var metadata = {
-        name: file.title ? (file.title + (file.name.indexOf('.') !== -1 ? file.name.substring(file.name.lastIndexOf('.')) : '')) : file.name,
-        description: 'Uploaded via DocuCloud v5.0 - Category: ' + (file.category || 'Uncategorized')
-      };
-      if(folderId){
-        metadata.parents = [folderId];
-      }
-
-      // Multipart upload
-      var boundary = '-------docucloud_boundary_' + Date.now();
-      var delimiter = "\r\n--" + boundary + "\r\n";
-      var closeDelimiter = "\r\n--" + boundary + "--";
-
-      var metadataPart = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata);
-
-      // Read blob as base64 - use array buffer instead
-      var filePart = delimiter + 'Content-Type: ' + (file.mimeType || 'application/octet-stream') + '\r\n\r\n';
-
-      // Build multipart body using FormData approach - simpler and more reliable
+      var metadata = { name: file.title ? (file.title + (file.name.indexOf('.') !== -1 ? file.name.substring(file.name.lastIndexOf('.')) : '')) : file.name, description: 'DocuCloud - ' + (file.category || '') };
+      if(folderId) metadata.parents = [folderId];
       var formData = new FormData();
       formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
       formData.append('file', blob);
-
-      var uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-
-      var response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: formData
-      });
-
-      if(!response.ok){
-        var errText = await response.text();
-        throw new Error('Upload failed: ' + response.status + ' ' + errText);
-      }
-
-      var result = await response.json();
-      return result; // {id, name, mimeType, etc}
+      var response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+      if(!response.ok) throw new Error('Upload failed: ' + response.status);
+      return await response.json();
     },
-
-    // Sync single file to Drive
     async syncFileToDrive(file){
-      if(!this.driveConnected){
-        this.showToast('Drive tidak terhubung', 'Hubungkan Drive terlebih dahulu', 'error');
-        this.showDriveSetup = true;
-        return;
-      }
-      if(!file || !file.blobData){
-        this.showToast('Error', 'Data file tidak tersedia', 'error');
-        return;
-      }
-
-      this.syncCurrentFile = file.name;
-      this.syncProgress = 10;
-      this.refreshIcons();
-
-      // Update status to pending
+      if(!this.driveConnected){ this.showDriveSetup = true; return; }
+      if(!file || !file.blobData){ this.showToast('Error','Data tidak tersedia','error'); return; }
+      this.syncCurrentFile = file.name; this.syncProgress = 10;
       this.updateFileSyncStatus(file.id, 'pending');
-
       try{
         this.syncProgress = 40;
         var result = await this.uploadToDrive(file);
         this.syncProgress = 90;
-
-        // Update file with Drive ID
-        file.driveId = result.id;
-        file.syncStatus = 'synced';
-        file.lastSyncAt = Date.now();
-
+        file.driveId = result.id; file.syncStatus = 'synced'; file.lastSyncAt = Date.now();
         await this.saveFileToStorage(file);
-
         this.syncProgress = 100;
-        this.showToast('☁️ Synced!', file.name + ' tersimpan di Drive', 'success');
-
-        setTimeout(function(){
-          self.syncProgress = 0;
-          self.syncCurrentFile = '';
-          self.refreshIcons();
-        }.bind({self: this}), 1500);
-
-        this.updateStats();
-        this.filterFiles();
-        this.refreshIcons();
-
+        this.showToast('☁️ Synced!', file.name, 'success');
+        var self = this;
+        setTimeout(function(){ self.syncProgress = 0; self.syncCurrentFile = ''; self.refreshIcons(); }, 1500);
+        this.updateStats(); this.filterFiles(); this.refreshIcons();
       }catch(e){
-        console.error('Sync failed:', e);
         this.updateFileSyncStatus(file.id, 'failed');
-        this.showToast('❌ Sync gagal', file.name + ': ' + e.message, 'error');
-        this.syncProgress = 0;
-        this.syncCurrentFile = '';
-        this.refreshIcons();
+        this.showToast('❌ Sync gagal', file.name, 'error');
+        this.syncProgress = 0; this.syncCurrentFile = '';
       }
     },
-
-    // Sync all pending/failed files
     async syncAllPending(){
-      if(!this.driveConnected){
-        this.showToast('Drive tidak terhubung', 'Hubungkan Drive terlebih dahulu', 'error');
-        this.showDriveSetup = true;
-        return;
-      }
-
-      var pendingFiles = this.files.filter(function(f){
-        return f.syncStatus === 'pending' || f.syncStatus === 'failed';
-      });
-
-      if(pendingFiles.length === 0){
-        this.showToast('Semua sudah sync', 'Tidak ada file yang perlu disync', 'info');
-        return;
-      }
-
+      if(!this.driveConnected){ this.showDriveSetup = true; return; }
+      var pendingFiles = this.files.filter(function(f){ return f.syncStatus === 'pending' || f.syncStatus === 'failed'; });
+      if(pendingFiles.length === 0){ this.showToast('Semua sudah sync','','info'); return; }
       this.syncQueue = pendingFiles.map(function(f){return f.id});
-      this.showToast('Memulai sync', pendingFiles.length + ' file akan disync', 'info');
-
-      var self = this;
       for(var i=0; i<pendingFiles.length; i++){
         this.syncProgress = Math.round((i/pendingFiles.length)*100);
         await this.syncFileToDrive(pendingFiles[i]);
-        // Small delay between files
         await new Promise(function(r){setTimeout(r, 500)});
       }
-
-      this.syncQueue = [];
-      this.syncProgress = 0;
-      this.syncCurrentFile = '';
-      this.showToast('✅ Sync selesai!', 'Semua file berhasil disinkronkan', 'success');
-      this.updateStats();
+      this.syncQueue = []; this.syncProgress = 0; this.syncCurrentFile = '';
+      this.showToast('✅ Sync selesai!', 'Semua file tersinkronisasi', 'success');
     },
-
     updateFileSyncStatus(fileId, status){
-      for(var i=0; i<this.files.length; i++){
-        if(this.files[i].id === fileId){
-          this.files[i].syncStatus = status;
-          break;
-        }
-      }
-      this.filterFiles();
-      this.updateStats();
-      this.refreshIcons();
+      for(var i=0; i<this.files.length; i++){ if(this.files[i].id === fileId){ this.files[i].syncStatus = status; break; } }
+      this.filterFiles(); this.updateStats(); this.refreshIcons();
     },
-
-    // Open file in Google Drive
-    openInDrive(file){
-      if(file && file.driveId){
-        window.open('https://drive.google.com/file/d/'+file.driveId+'/view', '_blank');
-      }
-    },
-
-    // Delete file from Drive
     async deleteFromDrive(driveId){
       var token = localStorage.getItem('dc_drive_token');
       if(!token || !driveId) return false;
-      try{
-        var resp = await fetch('https://www.googleapis.com/drive/v3/files/'+driveId, {
-          method: 'DELETE',
-          headers: {'Authorization': 'Bearer '+token}
-        });
-        return resp.ok || resp.status === 404;
-      }catch(e){
-        console.warn('Delete from Drive failed:', e);
-        return false;
-      }
+      try{ var resp = await fetch('https://www.googleapis.com/drive/v3/files/'+driveId, { method: 'DELETE', headers: {'Authorization': 'Bearer '+token} }); return resp.ok || resp.status === 404; }catch(e){ return false; }
     },
 
-    // EDIT
     startEditFile(file){ this.fileToEdit=file; this.editFileTitle=file.title||''; this.editFileName=file.name; this.editFileCategory=file.category||''; this.showEditFile=true; this.refreshIcons() },
     async saveEditFile(){
-      if(!this.fileToEdit)return; var self=this, tid=this.fileToEdit.id, nf=[];
-      for(var i=0;i<this.files.length;i++){ var f=this.files[i]; if(f.id===tid){f.title=self.editFileTitle.trim();f.name=self.editFileName;f.category=self.editFileCategory;await self.saveFileToStorage(f)} nf.push(f) }
-      this.files=nf; this.showEditFile=false; this.updateCategoryCounts(); this.filterFiles(); this.refreshIcons(); this.showToast('Perubahan tersimpan',this.editFileName,'success');
+      if(!this.fileToEdit)return; var self=this, tid=this.fileToEdit.id;
+      for(var i=0;i<this.files.length;i++){ var f=this.files[i]; if(f.id===tid){f.title=self.editFileTitle.trim();f.name=self.editFileName;f.category=self.editFileCategory;await self.saveFileToStorage(f)} }
+      this.showEditFile=false; this.updateCategoryCounts(); this.filterFiles(); this.refreshIcons(); this.showToast('Tersimpan',this.editFileName,'success');
     },
-
-    // DELETE
-    deleteFile(file){ this.fileToDelete=file; this.deleteAlsoFromDrive = this.deleteFromDriveOnRemove; this.showDeleteConfirm=true },
+    deleteFile(file){ this.fileToDelete=file; this.showDeleteConfirm=true },
     async confirmDeleteFile(){
-      if(!this.fileToDelete)return;
-      var id=this.fileToDelete.id, nm=this.fileToDelete.name, driveId=this.fileToDelete.driveId;
-      var wasSynced = this.fileToDelete.syncStatus === 'synced';
-
+      if(!this.fileToDelete)return; var id=this.fileToDelete.id, nm=this.fileToDelete.name;
       if(this.fileToDelete.blobUrl){try{URL.revokeObjectURL(this.fileToDelete.blobUrl)}catch(e){}}
       await this.deleteFileFromStorage(id);
-
-      // Delete from Drive if requested and file was synced
-      if(this.deleteAlsoFromDrive && wasSynced && driveId && this.driveConnected){
-        try{
-          await this.deleteFromDrive(driveId);
-          this.showToast('File dihapus', nm + ' (termasuk dari Drive)', 'warning');
-        }catch(e){
-          this.showToast('File dihapus lokal', nm + ' (gagal hapus di Drive)', 'warning');
-        }
-      } else {
-        this.showToast('File dihapus', nm, 'warning');
-      }
-
       this.files=this.files.filter(function(f){return f.id!==id});
-      this.showDeleteConfirm=false; this.fileToDelete=null; this.deleteAlsoFromDrive=false;
+      this.showDeleteConfirm=false; this.fileToDelete=null;
       this.updateCategoryCounts(); this.updateStats(); this.filterFiles(); this.refreshIcons();
+      this.showToast('File dihapus', nm, 'warning');
     },
-
-    // FILE ACTIONS
     openFile(file){ this.previewFile=file; this.refreshIcons() },
     downloadFile(file){
-      if(file&&file.blobUrl){ var a=document.createElement('a'); a.href=file.blobUrl; a.download=file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); this.showToast('Download dimulai',file.name,'info') }
-      else this.showToast('Error','Data tidak tersedia','error');
+      if(file&&file.blobUrl){ var a=document.createElement('a'); a.href=file.blobUrl; a.download=file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); this.showToast('Download',file.name,'info') }
     },
     toggleFileMenu(id,e){ if(e)e.stopPropagation(); this.openFileMenuId=(this.openFileMenuId===id)?null:id; this.refreshIcons() },
-
-    // CATEGORIES
-    openNewCategoryModal(){ this.newCategoryName=''; this.newCategoryColor='#6366f1'; this.newCategoryIcon='fa-solid fa-folder'; this.showNewCategory=true; this.refreshIcons() },
+    openNewCategoryModal(){ this.newCategoryName=''; this.newCategoryColor='#6366f1'; this.showNewCategory=true; this.refreshIcons() },
     addCategory(){
-      var n=this.newCategoryName.trim(); if(!n){this.showToast('Error','Nama tidak boleh kosong','error');return}
+      var n=this.newCategoryName.trim(); if(!n)return;
       if(this.categories.some(function(c){return c.name.toLowerCase()===n.toLowerCase()})){this.showToast('Error','Kategori sudah ada','error');return}
-      this.categories=this.categories.concat([{name:n,color:this.newCategoryColor,icon:this.newCategoryIcon,count:0}]);
+      this.categories=this.categories.concat([{name:n,color:this.newCategoryColor,icon:'fa-solid fa-folder',count:0}]);
       this.uploadCategory=n; this.saveCategories(); this.showNewCategory=false; this.refreshIcons(); this.showToast('Kategori ditambahkan',n,'success');
     },
     openDeleteCategoryModal(idx){ this.categoryDeleteIndex=idx; this.categoryToDelete=Object.assign({},this.categories[idx]); this.showDeleteCategory=true; this.refreshIcons() },
     deleteCategory(){
-      if(this.categoryDeleteIndex<0)return; var nm=this.categories[this.categoryDeleteIndex].name, nf=[];
-      for(var i=0;i<this.files.length;i++){var f=this.files[i]; if(f.category===nm)f.category=''; nf.push(f)}
-      this.files=nf;
+      if(this.categoryDeleteIndex<0)return; var nm=this.categories[this.categoryDeleteIndex].name;
+      for(var i=0;i<this.files.length;i++){ if(this.files[i].category===nm) this.files[i].category='' }
       var self=this; this.categories=this.categories.filter(function(c,i){return i!==self.categoryDeleteIndex});
-      this.saveCategories(); this.updateCategoryCounts(); this.filterFiles(); this.showDeleteCategory=false; this.refreshIcons(); this.showToast('Kategori dihapus',nm,'warning');
+      this.saveCategories(); this.updateCategoryCounts(); this.filterFiles(); this.showDeleteCategory=false; this.refreshIcons();
     },
-
-    // MISC
-    changeTheme(id){ var t=this.themePresets.find(function(p){return p.id===id}); if(t){this.currentTheme=t;localStorage.setItem('dc_theme',id);this.showToast('Tema diubah',id,'success')} },
+    changeTheme(id){ var t=this.themePresets.find(function(p){return p.id===id}); if(t){this.currentTheme=t;localStorage.setItem('dc_theme',id)} },
     async clearAllData(){
-      if(!confirm('Yakin hapus SEMUA data lokal? File di Drive TIDAK akan terhapus.'))return;
+      if(!confirm('Yakin hapus SEMUA data?'))return;
       try{var db=await this.openDB();var tx=db.transaction('files','readwrite');tx.objectStore('files').clear();await new Promise(function(r){tx.oncomplete=r})}catch(e){}
-      this.files=[]; this.filteredFiles=[]; this.updateCategoryCounts(); this.updateStats(); this.showToast('Semua data lokal dihapus','Drive tetap aman','warning');
+      this.files=[]; this.filteredFiles=[]; this.updateCategoryCounts(); this.updateStats(); this.showToast('Data dihapus','','warning');
     },
     showToast(title,desc,type){
       var map={success:{icon:'check-circle',color:'#10b981',bg:'#d1fae5'},error:{icon:'alert-circle',color:'#ef4444',bg:'#fee2e2'},warning:{icon:'alert-triangle',color:'#f59e0b',bg:'#fef3c7'},info:{icon:'info',color:'#3b82f6',bg:'#dbeafe'}};
@@ -1318,14 +1249,12 @@ function docuCloud() {
       setTimeout(function(){self.toasts=self.toasts.filter(function(t){return t.id!==id})},4000);
     },
 
-    // ===== DRIVE AUTH =====
     async signInToDrive(){
-      if(!this.driveConfig.clientId||!this.driveConfig.clientId.trim()){this.driveAuthError='Client ID tidak boleh kosong';return}
+      if(!this.driveConfig.clientId||!this.driveConfig.clientId.trim()){this.driveAuthError='Client ID kosong';return}
       this.driveLoading=true; this.driveAuthError='';
       var clientId=this.driveConfig.clientId.trim(), self=this;
-      if(clientId.indexOf('.apps.googleusercontent.com')===-1){this.driveAuthError='Format Client ID tidak valid';this.driveLoading=false;return}
       var waitGIS=function(){return new Promise(function(resolve,reject){
-        var a=0,ck=function(){a++;if(window.google&&window.google.accounts&&window.google.accounts.oauth2)resolve();else if(window._gisError)reject(new Error('Google API gagal dimuat'));else if(a>50)reject(new Error('Timeout'));else setTimeout(ck,100)};ck()
+        var a=0,ck=function(){a++;if(window.google&&window.google.accounts&&window.google.accounts.oauth2)resolve();else if(a>50)reject(new Error('Timeout'));else setTimeout(ck,100)};ck()
       })};
       try{
         await waitGIS();
@@ -1337,19 +1266,15 @@ function docuCloud() {
             if(resp.error){self.driveAuthError=resp.error_description||'Error';self.driveLoading=false;return}
             try{
               var ur=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
-              if(!ur.ok)throw new Error('Gagal mengambil profil'); var u=await ur.json();
+              if(!ur.ok)throw new Error('Gagal'); var u=await ur.json();
               self.driveUser={name:u.name||u.email.split('@')[0],email:u.email,picture:u.picture};
               self.driveConnected=true; self.driveSetupStep=3;
               localStorage.setItem('dc_drive_token',resp.access_token); localStorage.setItem('dc_drive_client',clientId);
               await self.ensureDriveFolder();
               await self.syncDriveFiles();
-              self.showToast('✅ Drive terhubung!','Auto-sync aktif','success');
+              self.showToast('Drive terhubung!','','success');
               self.driveLoading=false; self.refreshIcons();
               setTimeout(function(){self.showDriveSetup=false},1500);
-              // Auto-sync any pending files
-              if(self.pendingCount > 0 || self.failedCount > 0){
-                setTimeout(function(){ self.syncAllPending() }, 2000);
-              }
             }catch(e){self.driveAuthError='Gagal: '+e.message;self.driveLoading=false}
           }
         });
@@ -1361,61 +1286,19 @@ function docuCloud() {
       this.driveLoading=true;
       try{
         var folderQ = this.driveFolderId ? ("'"+this.driveFolderId+"' in parents and ") : '';
-        var r=await fetch('https://www.googleapis.com/drive/v3/files?pageSize=100&fields=files(id,name,mimeType,size,modifiedTime,thumbnailLink)&q='+encodeURIComponent(folderQ+'trashed=false'),{headers:{Authorization:'Bearer '+token}});
+        var r=await fetch('https://www.googleapis.com/drive/v3/files?pageSize=100&fields=files(id,name,mimeType,size,modifiedTime)&q='+encodeURIComponent(folderQ+'trashed=false'),{headers:{Authorization:'Bearer '+token}});
         if(!r.ok)throw new Error('Token expired');
         var d=await r.json(); this.driveFiles=d.files||[];
         this.driveLastSync=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-
-        // Update storage info
-        try{
-          var aboutR = await fetch('https://www.googleapis.com/drive/v3/about?fields=storageQuota', {headers:{Authorization:'Bearer '+token}});
-          if(aboutR.ok){
-            var aboutD = await aboutR.json();
-            if(aboutD.storageQuota){
-              var used = parseInt(aboutD.storageQuota.usage || 0);
-              var limit = parseInt(aboutD.storageQuota.limit || 15*1024*1024*1024);
-              this.driveStorageUsed = this.formatBytes(used);
-              this.driveStoragePercent = Math.min(100, Math.round((used/limit)*100));
-            }
-          }
-        }catch(e){}
-      }catch(e){
-        this.showToast('Sync gagal','Login ulang diperlukan','error');
-        this.driveConnected=false;localStorage.removeItem('dc_drive_token')
-      }
+      }catch(e){this.driveConnected=false;localStorage.removeItem('dc_drive_token')}
       this.driveLoading=false; this.refreshIcons();
-    },
-    openDriveFile(f){ window.open('https://drive.google.com/file/d/'+f.id+'/view','_blank') },
-    toggleDriveImport(f){ var idx=-1; for(var i=0;i<this.selectedDriveImports.length;i++)if(this.selectedDriveImports[i].id===f.id){idx=i;break} if(idx>=0)this.selectedDriveImports.splice(idx,1);else this.selectedDriveImports.push(f) },
-    async confirmDriveImport(){
-      var self=this, token=localStorage.getItem('dc_drive_token');
-      if(!token){this.showToast('Error','Token expired','error');return}
-      this.driveLoading=true;
-      var total=this.selectedDriveImports.length, newFiles=[];
-      for(var i=0;i<total;i++){
-        var df=this.selectedDriveImports[i];
-        try{
-          var r=await fetch('https://www.googleapis.com/drive/v3/files/'+df.id+'?alt=media',{headers:{Authorization:'Bearer '+token}});
-          var blob=await r.blob(), ab=await blob.arrayBuffer(), bu=URL.createObjectURL(blob);
-          var id='drv_'+Date.now()+'_'+i;
-          var mime=df.mimeType||'';
-          var type=(mime.indexOf('image/')===0)?'Gambar':(mime==='application/pdf'?'PDF':'Dokumen');
-          newFiles.push({id:id,name:df.name,title:'',type:type,icon:self.getDriveFileIcon(mime),color:self.getDriveFileColor(mime),size:self.formatBytes(parseInt(df.size)||0),sizeBytes:parseInt(df.size)||0,mimeType:mime,category:self.uploadCategory,date:new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),uploadedAt:Date.now()+i,blobUrl:bu,blobData:ab,source:'drive-import',driveId:df.id,syncStatus:'synced',lastSyncAt:Date.now()});
-          self.saveFileToStorage(newFiles[newFiles.length-1]);
-        }catch(e){}
-      }
-      self.files=self.files.concat(newFiles);
-      self.driveLoading=false; self.showToast(total+' file diimpor','Dari Google Drive','success');
-      self.selectedDriveImports=[]; self.showDriveBrowser=false; self.driveBrowserMode='browse';
-      self.updateCategoryCounts(); self.updateStats(); self.filterFiles(); self.refreshIcons();
     },
     async confirmDisconnectDrive(){
       try{var t=localStorage.getItem('dc_drive_token');if(t)await fetch('https://oauth2.googleapis.com/revoke?token='+t).catch(function(){})}catch(e){}
-      localStorage.removeItem('dc_drive_token'); localStorage.removeItem('dc_drive_client');
+      localStorage.removeItem('dc_drive_token'); localStorage.removeItem('dc_drive_client'); localStorage.removeItem('dc_drive_folder');
       this.driveConnected=false; this.driveUser=null; this.driveFiles=[]; this.driveFolderId=null;
-      localStorage.removeItem('dc_drive_folder');
       this.showDisconnectDrive=false; this.confirmDisconnectCheck=false;
-      this.showToast('Drive diputuskan','Koneksi dicabut','warning');
+      this.showToast('Drive diputuskan','','warning');
     }
   };
 }
