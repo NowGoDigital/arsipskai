@@ -250,7 +250,112 @@ tr.selected{background:rgba(99,102,241,.08)!important}
       </div>
       <button @click="driveConnected ? (showUpload = true) : (showDriveSetup = true)" class="hidden sm:flex items-center gap-1.5 px-3 py-2 gradient-bg text-white rounded-lg text-xs font-semibold hover:opacity-90"><i data-lucide="upload-cloud" class="w-4 h-4"></i><span class="hidden md:inline">Upload</span></button>
       <button @click="darkMode = !darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i></button>
-      <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-bold cursor-pointer">A</div>
+      <!-- ★ PROFILE AVATAR + DROPDOWN -->
+<div class="relative">
+  <button @click="showProfileMenu = !showProfileMenu" class="flex items-center gap-2 transition hover:opacity-80">
+    <template x-if="driveConnected && driveUser && driveUser.picture">
+      <img :src="driveUser.picture" class="w-9 h-9 rounded-full border-2 border-white dark:border-slate-700 shadow-md object-cover" alt="Profile" referrerpolicy="no-referrer">
+    </template>
+    <template x-if="!driveConnected || !driveUser || !driveUser.picture">
+      <div class="w-9 h-9 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-bold shadow-md">
+        <span x-text="driveConnected && driveUser && driveUser.name ? driveUser.name.charAt(0).toUpperCase() : 'A'"></span>
+      </div>
+    </template>
+  </button>
+
+  <!-- Profile Dropdown Menu -->
+  <div x-show="showProfileMenu" @click.away="showProfileMenu = false" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-100" class="context-menu absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
+    
+    <!-- Header: User Info -->
+    <template x-if="driveConnected && driveUser">
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-4 text-white">
+        <div class="flex items-center gap-3">
+          <img x-show="driveUser.picture" :src="driveUser.picture" class="w-12 h-12 rounded-full border-2 border-white/30 object-cover" alt="" referrerpolicy="no-referrer">
+          <div x-show="!driveUser.picture" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold" x-text="driveUser.name ? driveUser.name.charAt(0).toUpperCase() : 'U'"></div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-sm truncate" x-text="driveUser.name || 'User'"></p>
+            <p class="text-[11px] text-white/80 truncate" x-text="driveUser.email || ''"></p>
+            <div class="flex items-center gap-1 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+              <span class="text-[10px] text-white/70">Terhubung ke Drive</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Header: Not Logged In -->
+    <template x-if="!driveConnected">
+      <div class="bg-gradient-to-r from-slate-600 to-slate-700 px-4 py-4 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <i data-lucide="user" class="w-6 h-6"></i>
+          </div>
+          <div class="flex-1">
+            <p class="font-bold text-sm">Belum Login</p>
+            <p class="text-[11px] text-white/70">Hubungkan Google Drive untuk mulai</p>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Menu Items -->
+    <div class="py-2">
+      <template x-if="driveConnected">
+        <div>
+          <!-- Storage Info -->
+          <div class="px-4 py-2.5 mx-2 mb-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Storage Terpakai</span>
+              <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400" x-text="usedStorage"></span>
+            </div>
+            <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full gradient-bg rounded-full" style="width: 15%"></div>
+            </div>
+            <p class="text-[9px] text-slate-400 mt-1">dari 15 GB free quota</p>
+          </div>
+
+          <button @click="showProfileMenu=false; activeMenu='dashboard'; filterFiles()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 text-indigo-500"></i>
+            <span>Dashboard</span>
+          </button>
+          <button @click="showProfileMenu=false; activeMenu='settings'; filterFiles()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm transition">
+            <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i>
+            <span>Pengaturan</span>
+          </button>
+          <button @click="showProfileMenu=false; showDriveBrowser=true; driveCurrentFolderId='root'; syncDriveFiles()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm transition">
+            <i data-lucide="folder-open" class="w-4 h-4 text-cyan-500"></i>
+            <span>Browse Drive</span>
+          </button>
+          <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
+          <button @click="showProfileMenu=false; logoutUser()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-sm text-red-500 transition">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span>Keluar (Logout)</span>
+          </button>
+        </div>
+      </template>
+
+      <template x-if="!driveConnected">
+        <div>
+          <button @click="showProfileMenu=false; showDriveSetup=true" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
+            <span class="font-semibold">Login dengan Google</span>
+          </button>
+          <button @click="showProfileMenu=false; activeMenu='settings'" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm transition">
+            <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i>
+            <span>Pengaturan</span>
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <span class="text-[10px] text-slate-500">DocuCloud v8.0</span>
+      <span class="text-[10px] text-slate-400">Ultimate Edition</span>
+    </div>
+  </div>
+</div>
     </div>
   </header>
 
@@ -753,6 +858,7 @@ function docuCloud() {
     driveSetupStep:1, driveAuthError:'',
     showDriveSetup:false, showDriveBrowser:false, showDriveMenu:false,
     showDisconnectDrive:false, confirmDisconnectCheck:false,
+    showProfileMenu:false,
     driveConfig:{clientId:''},
     gisLoaded: false,
     gisLoadError: false,
@@ -881,6 +987,7 @@ function docuCloud() {
       
       this.$watch('darkMode',function(v){ localStorage.setItem('dc_dark',v); self.refreshIcons() });
       this.$watch('activeMenu',function(){ self.filterFiles(); self.refreshIcons() });
+      this.$watch('showProfileMenu',function(){ self.refreshIcons() });
       setInterval(function(){ self.refreshIcons() },500);
 
       document.addEventListener('keydown', function(e){
@@ -1938,6 +2045,59 @@ function docuCloud() {
       }
     },
 
+        // ================================================================
+    //  ★ NEW: LOGIN & LOGOUT
+    // ================================================================
+    async logoutUser(){
+      if(!confirm('Yakin ingin keluar? Data cache lokal akan dihapus, tapi file di Google Drive tetap aman.')) return;
+      
+      try {
+        // Revoke token dari Google
+        var token = localStorage.getItem('dc_drive_token');
+        if(token){
+          await fetch('https://oauth2.googleapis.com/revoke?token=' + token).catch(function(){});
+        }
+      } catch(e){ console.warn('[DocuCloud] Revoke token error:', e); }
+      
+      // Clear semua data autentikasi
+      localStorage.removeItem('dc_drive_token');
+      localStorage.removeItem('dc_drive_client');
+      localStorage.removeItem('dc_drive_folder');
+      localStorage.removeItem('dc_metadata_cache');
+      
+      // Reset state aplikasi
+      this.driveConnected = false;
+      this.driveUser = null;
+      this.driveFiles = [];
+      this.driveFolders = [];
+      this.driveFolderId = null;
+      this.driveTokenClient = null;
+      this.files = [];
+      this.filteredFiles = [];
+      this.driveCurrentFolderId = 'root';
+      this.cacheStatus = 'Logged Out';
+      
+      // Reset kategori folder ID
+      for(var i = 0; i < this.categories.length; i++){
+        this.categories[i].driveFolderId = null;
+      }
+      this.saveCategories();
+      
+      // Reset tampilan
+      this.activeMenu = 'dashboard';
+      this.updateStats();
+      this.refreshIcons();
+      
+      this.showToast('Berhasil Logout', 'Sampai jumpa kembali!', 'success');
+    },
+
+    loginUser(){
+      this.showProfileMenu = false;
+      this.showDriveSetup = true;
+      this.refreshIcons();
+    },
+
+    
     async confirmDisconnectDrive(){
       try{var t=localStorage.getItem('dc_drive_token');if(t)await fetch('https://oauth2.googleapis.com/revoke?token='+t).catch(function(){})}catch(e){}
       localStorage.removeItem('dc_drive_token'); localStorage.removeItem('dc_drive_client'); localStorage.removeItem('dc_drive_folder');
