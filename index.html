@@ -437,10 +437,14 @@ tr.selected{background:rgba(99,102,241,.08)!important}
           <div x-show="files.length > 0" class="space-y-1">
             <template x-for="file in files.slice(0, 6)" :key="file.id">
               <div @click="openFile(file)" class="flex items-center gap-2.5 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition group">
-                <div class="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'">
-                  <template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-md lazy-img" @load="$event.target.classList.add('loaded')" alt=""></template>
-                  <template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i></template>
-                </div>
+                <div class="w-11 h-11 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden relative" :style="'background:'+file.color+'15'">
+  <template x-if="file.thumbUrl">
+    <img :src="file.thumbUrl" class="w-full h-full object-cover rounded-md lazy-img" @load="$event.target.classList.add('loaded')" @error="$event.target.style.display='none'; $event.target.nextElementSibling && ($event.target.nextElementSibling.style.display='flex')" loading="lazy" alt="">
+  </template>
+  <div class="w-full h-full flex-col items-center justify-center absolute inset-0" :style="'display:'+(file.thumbUrl ? 'none' : 'flex')">
+    <i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i>
+  </div>
+</div>
                 <div class="flex-1 min-w-0"><p class="text-xs font-semibold truncate" x-text="file.title || file.name"></p><div class="flex items-center gap-1.5 mt-0.5"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="'background:'+catColor(file.category)"></span><span class="text-[10px] text-slate-500 truncate" x-text="file.category + ' • ' + file.size"></span></div></div>
                 <span class="text-[10px] text-slate-400 flex-shrink-0" x-text="file.date"></span>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition flex-shrink-0"></i>
@@ -491,7 +495,20 @@ tr.selected{background:rgba(99,102,241,.08)!important}
               </div>
             </div>
             <div x-show="!selectionMode" class="absolute top-2 left-2 z-10"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">☁️ Cloud</span></div>
-            <div class="thumb-container aspect-square rounded-lg flex items-center justify-center mb-2.5" :class="selectionMode ? '' : 'mt-5'" :style="'background:'+file.color+'12'"><div class="thumb-shimmer"></div><template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" loading="lazy" :alt="file.name"></template><template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-10 h-10" :style="'color:'+file.color"></i></template></div>
+            <div class="thumb-container aspect-square rounded-lg flex items-center justify-center mb-2.5 relative" :class="selectionMode ? '' : 'mt-5'" :style="'background:'+file.color+'12'">
+  <div class="thumb-shimmer"></div>
+  <!-- ★ Tampilkan thumbnail preview (gambar, PDF, video, dokumen) -->
+  <template x-if="file.thumbUrl">
+    <img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" @error="$event.target.style.display='none'; $event.target.nextElementSibling && ($event.target.nextElementSibling.style.display='flex')" loading="lazy" :alt="file.name">
+  </template>
+  <!-- ★ Fallback: Icon kalau thumbnail tidak tersedia atau gagal dimuat -->
+  <div class="w-full h-full flex-col items-center justify-center absolute inset-0" :style="'display:'+(file.thumbUrl ? 'none' : 'flex')">
+    <i :data-lucide="file.icon" class="w-10 h-10" :style="'color:'+file.color"></i>
+    <span class="text-[9px] mt-1 font-semibold opacity-60" x-text="file.type"></span>
+  </div>
+  <!-- ★ Badge tipe file di pojok kiri bawah -->
+  <div class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold text-white shadow-sm" :style="'background:'+file.color+'cc'" x-text="file.type === 'Gambar' ? 'IMG' : file.type === 'PDF' ? 'PDF' : file.type === 'Video' ? 'VID' : file.type === 'Audio' ? 'MP3' : file.type === 'Spreadsheet' ? 'XLS' : 'DOC'"></div>
+</div>
             <p class="text-sm font-semibold truncate" x-text="file.title || file.name"></p>
             <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-slate-500" x-text="file.size"></span><span class="text-[11px] text-slate-400" x-text="file.date"></span></div>
             <div class="flex items-center gap-1.5 mt-1.5"><span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:'+catColor(file.category)"></span><span class="text-[11px] text-slate-500 truncate" x-text="file.category || 'Tanpa Kategori'"></span></div>
@@ -501,7 +518,14 @@ tr.selected{background:rgba(99,102,241,.08)!important}
       </div>
       <div x-show="viewMode === 'list' && !(driveLoading && files.length === 0)" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase"><tr><th x-show="selectionMode" class="text-left px-4 py-3 w-10"><label class="flex items-center"><input type="checkbox" @change="toggleSelectAll($event)" :checked="isAllSelected" class="accent-indigo-600 w-4 h-4"></label></th><th class="text-left px-4 py-3">Nama</th><th class="text-left px-4 py-3">Kategori</th><th class="text-left px-4 py-3">Ukuran</th><th class="text-left px-4 py-3">Tanggal</th><th x-show="!selectionMode" class="text-right px-4 py-3">Aksi</th></tr></thead>
-          <tbody><template x-for="file in displayedFiles" :key="file.id"><tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition" :class="{'selected': selectedFiles[file.id], 'opacity-50': draggedFileId === file.id}" draggable="true" @dragstart="onDragStartFile(file, $event)" @dragend="onDragEndFile($event)" @click="selectionMode ? toggleSelectFile(file.id) : openFile(file)"><td x-show="selectionMode" class="px-4 py-3" @click.stop><label class="selection-checkbox w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer" :class="selectedFiles[file.id] ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600'"><input type="checkbox" :checked="selectedFiles[file.id]" @change="toggleSelectFile(file.id)" class="hidden"><i x-show="selectedFiles[file.id]" data-lucide="check" class="w-3 h-3 text-white"></i></label></td><td class="px-4 py-3"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'"><template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" loading="lazy" alt=""></template><template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i></template></div><span class="font-medium truncate max-w-[200px]" x-text="file.title || file.name"></span></div></td><td class="px-4 py-3"><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="'background:'+catColor(file.category)"></span><span class="text-xs" x-text="file.category || '-'"></span></div></td><td class="px-4 py-3 text-slate-500 text-xs" x-text="file.size"></td><td class="px-4 py-3 text-slate-500 text-xs" x-text="file.date"></td><td x-show="!selectionMode" class="px-4 py-3 text-right"><div class="inline-flex gap-0.5"><button @click.stop="startEditFile(file)" class="p-1.5 hover:bg-indigo-50 rounded"><i data-lucide="pencil" class="w-3.5 h-3.5 text-indigo-500"></i></button><button @click.stop="downloadFile(file)" class="p-1.5 hover:bg-slate-100 rounded"><i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i></button><button @click.stop="deleteFile(file)" class="p-1.5 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-500"></i></button></div></td></tr></template></tbody>
+          <tbody><template x-for="file in displayedFiles" :key="file.id"><tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition" :class="{'selected': selectedFiles[file.id], 'opacity-50': draggedFileId === file.id}" draggable="true" @dragstart="onDragStartFile(file, $event)" @dragend="onDragEndFile($event)" @click="selectionMode ? toggleSelectFile(file.id) : openFile(file)"><td x-show="selectionMode" class="px-4 py-3" @click.stop><label class="selection-checkbox w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer" :class="selectedFiles[file.id] ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600'"><input type="checkbox" :checked="selectedFiles[file.id]" @change="toggleSelectFile(file.id)" class="hidden"><i x-show="selectedFiles[file.id]" data-lucide="check" class="w-3 h-3 text-white"></i></label></td><td class="px-4 py-3"><div class="flex items-center gap-2.5"><div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden relative" :style="'background:'+file.color+'15'">
+  <template x-if="file.thumbUrl">
+    <img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" @error="$event.target.style.display='none'; $event.target.nextElementSibling && ($event.target.nextElementSibling.style.display='flex')" loading="lazy" alt="">
+  </template>
+  <div class="w-full h-full flex-col items-center justify-center absolute inset-0" :style="'display:'+(file.thumbUrl ? 'none' : 'flex')">
+    <i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i>
+  </div>
+</div><span class="font-medium truncate max-w-[200px]" x-text="file.title || file.name"></span></div></td><td class="px-4 py-3"><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="'background:'+catColor(file.category)"></span><span class="text-xs" x-text="file.category || '-'"></span></div></td><td class="px-4 py-3 text-slate-500 text-xs" x-text="file.size"></td><td class="px-4 py-3 text-slate-500 text-xs" x-text="file.date"></td><td x-show="!selectionMode" class="px-4 py-3 text-right"><div class="inline-flex gap-0.5"><button @click.stop="startEditFile(file)" class="p-1.5 hover:bg-indigo-50 rounded"><i data-lucide="pencil" class="w-3.5 h-3.5 text-indigo-500"></i></button><button @click.stop="downloadFile(file)" class="p-1.5 hover:bg-slate-100 rounded"><i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i></button><button @click.stop="deleteFile(file)" class="p-1.5 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-500"></i></button></div></td></tr></template></tbody>
         </table>
         <div x-show="filteredFiles.length === 0 && !driveLoading" class="p-12 text-center text-slate-400 text-sm">Tidak ada file</div>
       </div>
@@ -1330,7 +1354,10 @@ function docuCloud() {
       var color = this.getFileColor(type);
       var sizeBytes = parseInt(driveFile.size) || 0;
       var thumbUrl = null;
-      if(type === 'Gambar') thumbUrl = 'https://drive.google.com/thumbnail?id=' + driveFile.id + '&sz=w400';
+      // ★ FIX: Generate thumbnail untuk SEMUA tipe file yang support preview
+      if(type === 'Gambar' || type === 'PDF' || type === 'Video' || type === 'Dokumen' || type === 'Spreadsheet'){
+        thumbUrl = 'https://drive.google.com/thumbnail?id=' + driveFile.id + '&sz=w600';
+      }
       var title = '';
       var descCategory = '';
       if(driveFile.description){
