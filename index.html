@@ -362,40 +362,113 @@ tr.selected{background:rgba(99,102,241,.08)!important}
     </div>
 
     <div x-show="activeMenu === 'dashboard' && driveConnected" class="fade-in">
-      <div class="mb-5"><h2 class="text-xl font-bold">Dashboard 👋</h2><p class="text-slate-500 text-sm mt-0.5">Full cloud storage dengan Smart Cache + Drag & Drop + Bulk Actions ⚡</p></div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <template x-for="s in stats" :key="s.label">
-          <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center" :style="'background:'+s.bg"><i :data-lucide="s.icon" class="w-5 h-5" :style="'color:'+s.color"></i></div>
-              <div><p class="text-xl font-bold" x-text="s.value"></p><p class="text-[11px] text-slate-500" x-text="s.label"></p></div>
+  <div class="mb-3 flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold flex items-center gap-2">
+        👋 Dashboard
+      </h2>
+      <p class="text-slate-500 text-xs mt-0.5">Ringkasan data cloud storage kamu</p>
+    </div>
+    <button @click="activeMenu = 'files'; filterFiles()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 gradient-bg text-white rounded-lg text-xs font-semibold hover:opacity-90">
+      <i data-lucide="folder" class="w-3.5 h-3.5"></i> Lihat Semua File
+    </button>
+  </div>
+
+  <!-- Stats Grid - Compact -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+    <template x-for="s in stats" :key="s.label">
+      <div class="bg-white dark:bg-slate-900 rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 hover:shadow-md transition">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" :style="'background:'+s.bg">
+            <i :data-lucide="s.icon" class="w-4 h-4" :style="'color:'+s.color"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-base font-bold leading-tight truncate" x-text="s.value"></p>
+            <p class="text-[10px] text-slate-500 truncate" x-text="s.label"></p>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Quick Access + Recent Files side by side -->
+  <div class="grid lg:grid-cols-5 gap-2">
+    
+    <!-- Kategori Quick Access -->
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
+      <h3 class="text-xs font-bold mb-2 flex items-center gap-1.5">
+        <i data-lucide="folder-heart" class="w-3.5 h-3.5 text-indigo-500"></i> Kategori
+      </h3>
+      <div class="space-y-1">
+        <template x-for="cat in categories" :key="cat.name">
+          <button @click="filterCategory = cat.name; activeMenu = 'files'; filterFiles()" 
+                  class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition text-left">
+            <i :class="cat.icon" class="w-4 text-center flex-shrink-0" :style="'color:'+cat.color"></i>
+            <span class="text-xs font-medium flex-1 truncate" x-text="cat.name"></span>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full font-semibold" x-text="cat.count"></span>
+          </button>
+        </template>
+        <button @click="openNewCategoryModal()" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition text-xs font-medium">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Tambah Kategori
+        </button>
+      </div>
+    </div>
+
+    <!-- Recent Files -->
+    <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-bold flex items-center gap-1.5">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i> Terbaru
+        </h3>
+        <span class="text-[10px] text-slate-400" x-text="Math.min(files.length, 6) + ' file'"></span>
+      </div>
+      
+      <div x-show="files.length === 0" class="py-6 text-center">
+        <i data-lucide="inbox" class="w-8 h-8 mx-auto text-slate-300 mb-1.5"></i>
+        <p class="text-xs text-slate-500">Belum ada file</p>
+        <button @click="showUpload = true" class="mt-2 px-3 py-1 gradient-bg text-white rounded-md text-[10px] font-semibold">Upload Sekarang</button>
+      </div>
+
+      <div x-show="files.length > 0" class="space-y-1">
+        <template x-for="file in files.slice(0, 6)" :key="file.id">
+          <div @click="openFile(file)" class="flex items-center gap-2.5 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition group">
+            <div class="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'">
+              <template x-if="file.thumbUrl">
+                <img :src="file.thumbUrl" class="w-full h-full object-cover rounded-md lazy-img" @load="$event.target.classList.add('loaded')" alt="">
+              </template>
+              <template x-if="!file.thumbUrl">
+                <i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i>
+              </template>
             </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold truncate" x-text="file.title || file.name"></p>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="'background:'+catColor(file.category)"></span>
+                <span class="text-[10px] text-slate-500 truncate" x-text="file.category + ' • ' + file.size"></span>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400 flex-shrink-0" x-text="file.date"></span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition flex-shrink-0"></i>
           </div>
         </template>
       </div>
-      <div x-show="files.length > 0" class="mb-5">
-        <div class="flex items-center justify-between mb-3"><h3 class="font-semibold">📄 Dokumen Terbaru</h3><button @click="activeMenu = 'files'" class="text-xs text-indigo-600 font-medium hover:underline">Lihat Semua →</button></div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          <template x-for="file in files.slice(0, 6)" :key="file.id">
-            <div @click="openFile(file)" class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-200 dark:border-slate-800 flex items-center gap-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition">
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'">
-                <template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" alt=""></template>
-                <template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-5 h-5" :style="'color:'+file.color"></i></template>
-              </div>
-              <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate" x-text="file.title || file.name"></p><p class="text-[11px] text-slate-500" x-text="file.size + ' • ' + file.category"></p></div>
-            </div>
-          </template>
-        </div>
-      </div>
-      <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-xl p-4 border border-indigo-200 dark:border-indigo-800">
-        <h3 class="font-semibold text-sm mb-3 flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i> Tips v8.0 Ultimate</h3>
-        <div class="grid md:grid-cols-3 gap-3 text-xs">
-          <div class="flex gap-2"><span class="text-indigo-500 font-bold">1.</span><span class="text-slate-600 dark:text-slate-400"><strong>Drag & Drop</strong> file ke sidebar kategori untuk pindah folder instan</span></div>
-          <div class="flex gap-2"><span class="text-indigo-500 font-bold">2.</span><span class="text-slate-600 dark:text-slate-400"><strong>Bulk Actions</strong> - klik checkbox untuk operasi banyak file sekaligus</span></div>
-          <div class="flex gap-2"><span class="text-indigo-500 font-bold">3.</span><span class="text-slate-600 dark:text-slate-400"><strong>Advanced Filter</strong> - cari berdasarkan tanggal, ukuran, dan field spesifik</span></div>
-        </div>
-      </div>
     </div>
+  </div>
+
+  <!-- Tips Strip - Ultra Compact -->
+  <div class="mt-2 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-lg px-3 py-2 border border-indigo-200 dark:border-indigo-800 flex items-center gap-3 overflow-x-auto scrollbar">
+    <div class="flex items-center gap-1.5 flex-shrink-0">
+      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-500"></i>
+      <span class="text-[11px] font-bold text-indigo-800 dark:text-indigo-300">Tips:</span>
+    </div>
+    <div class="flex gap-3 text-[10px] text-slate-600 dark:text-slate-400">
+      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Drag & Drop</strong> file ke kategori</span>
+      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Bulk Actions</strong> pilih banyak file</span>
+      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Ctrl+A</strong> select all</span>
+      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>ESC</strong> keluar seleksi</span>
+    </div>
+  </div>
+</div>
 
     <div x-show="activeMenu === 'files' && driveConnected" class="fade-in">
       <div class="flex items-center justify-between mb-4">
