@@ -10,7 +10,18 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script>(function(){var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.defer=true;document.head.appendChild(s)})()</script>
+<!-- ★ FIX: Tambah onload/onerror handler untuk GIS script -->
+<script>
+(function(){
+  var s=document.createElement('script');
+  s.src='https://accounts.google.com/gsi/client';
+  s.async=true;
+  s.defer=true;
+  s.onload=function(){ window._gisLoaded=true; console.log('[DocuCloud] ✅ Google Identity Services loaded'); };
+  s.onerror=function(){ window._gisLoadError=true; console.error('[DocuCloud] ❌ Google Identity Services GAGAL dimuat'); };
+  document.head.appendChild(s);
+})();
+</script>
 <style>
 *{font-family:'Inter',sans-serif}
 [x-cloak]{display:none!important}
@@ -248,99 +259,23 @@ tr.selected{background:rgba(99,102,241,.08)!important}
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="filter" class="w-4 h-4 text-indigo-500"></i> Advanced Filter</h3>
         <div class="flex gap-2">
-          <button @click="resetAllFilters()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1">
-            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
-          </button>
+          <button @click="resetAllFilters()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1"><i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset</button>
           <button @click="showAdvancedFilter = false" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <div>
-          <label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Cari di</label>
-          <select x-model="searchField" @change="filterFiles()" class="w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-            <option value="all">Semua Field</option>
-            <option value="name">Nama File</option>
-            <option value="title">Judul</option>
-            <option value="category">Kategori</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Dari Tanggal</label>
-          <input x-model="filterDateFrom" @change="filterFiles()" type="date" class="w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-        </div>
-        <div>
-          <label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Sampai Tanggal</label>
-          <input x-model="filterDateTo" @change="filterFiles()" type="date" class="w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-        </div>
-        <div>
-          <label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Min Size</label>
-          <div class="flex gap-1">
-            <input x-model="filterSizeMin" @input="debouncedFilter()" type="number" min="0" placeholder="0" class="flex-1 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-            <select x-model="filterSizeUnit" @change="filterFiles()" class="px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-              <option value="KB">KB</option>
-              <option value="MB">MB</option>
-              <option value="GB">GB</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Max Size</label>
-          <div class="flex gap-1">
-            <input x-model="filterSizeMax" @input="debouncedFilter()" type="number" min="0" placeholder="∞" class="flex-1 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-            <select x-model="filterSizeUnit" @change="filterFiles()" class="px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-              <option value="KB">KB</option>
-              <option value="MB">MB</option>
-              <option value="GB">GB</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Urutkan</label>
-          <div class="flex gap-1">
-            <select x-model="sortBy" @change="filterFiles()" class="flex-1 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0">
-              <option value="date">Tanggal</option>
-              <option value="name">Nama</option>
-              <option value="size">Ukuran</option>
-            </select>
-            <button @click="sortDir = (sortDir === 'asc' ? 'desc' : 'asc'); filterFiles()" class="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-              <i :data-lucide="sortDir === 'asc' ? 'arrow-up' : 'arrow-down'" class="w-3 h-3"></i>
-            </button>
-          </div>
-        </div>
+        <div><label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Cari di</label><select x-model="searchField" @change="filterFiles()" class="w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"><option value="all">Semua Field</option><option value="name">Nama File</option><option value="title">Judul</option><option value="category">Kategori</option></select></div>
+        <div><label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Dari Tanggal</label><input x-model="filterDateFrom" @change="filterFiles()" type="date" class="w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"></div>
+        <div><label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Sampai Tanggal</label><input x-model="filterDateTo" @change="filterFiles()" type="date" class="w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"></div>
+        <div><label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Min Size</label><div class="flex gap-1"><input x-model="filterSizeMin" @input="debouncedFilter()" type="number" min="0" placeholder="0" class="flex-1 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"><select x-model="filterSizeUnit" @change="filterFiles()" class="px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"><option value="KB">KB</option><option value="MB">MB</option><option value="GB">GB</option></select></div></div>
+        <div><label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Max Size</label><div class="flex gap-1"><input x-model="filterSizeMax" @input="debouncedFilter()" type="number" min="0" placeholder="∞" class="flex-1 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"><select x-model="filterSizeUnit" @change="filterFiles()" class="px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"><option value="KB">KB</option><option value="MB">MB</option><option value="GB">GB</option></select></div></div>
+        <div><label class="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Urutkan</label><div class="flex gap-1"><select x-model="sortBy" @change="filterFiles()" class="flex-1 px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs border-0"><option value="date">Tanggal</option><option value="name">Nama</option><option value="size">Ukuran</option></select><button @click="sortDir = (sortDir === 'asc' ? 'desc' : 'asc'); filterFiles()" class="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition"><i :data-lucide="sortDir === 'asc' ? 'arrow-up' : 'arrow-down'" class="w-3 h-3"></i></button></div></div>
       </div>
       <div x-show="hasActiveFilters" class="mt-3 flex flex-wrap gap-1.5 items-center">
         <span class="text-[10px] text-slate-500 font-semibold">Filter Aktif:</span>
-        <template x-if="searchQuery">
-          <span class="filter-badge"><i data-lucide="search" class="w-2.5 h-2.5"></i> <span x-text="'Query: ' + searchQuery"></span>
-            <button @click="searchQuery=''; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button>
-          </span>
-        </template>
-        <template x-if="filterCategory">
-          <span class="filter-badge"><i data-lucide="folder" class="w-2.5 h-2.5"></i> <span x-text="filterCategory"></span>
-            <button @click="filterCategory=''; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button>
-          </span>
-        </template>
-        <template x-if="fileType !== 'Semua'">
-          <span class="filter-badge"><i data-lucide="file" class="w-2.5 h-2.5"></i> <span x-text="fileType"></span>
-            <button @click="fileType='Semua'; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button>
-          </span>
-        </template>
-        <template x-if="filterDateFrom">
-          <span class="filter-badge"><i data-lucide="calendar" class="w-2.5 h-2.5"></i> <span x-text="'Dari: ' + filterDateFrom"></span>
-            <button @click="filterDateFrom=''; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button>
-          </span>
-        </template>
-        <template x-if="filterDateTo">
-          <span class="filter-badge"><i data-lucide="calendar" class="w-2.5 h-2.5"></i> <span x-text="'Sampai: ' + filterDateTo"></span>
-            <button @click="filterDateTo=''; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button>
-          </span>
-        </template>
-        <template x-if="filterSizeMin || filterSizeMax">
-          <span class="filter-badge"><i data-lucide="hard-drive" class="w-2.5 h-2.5"></i>
-            <span x-text="(filterSizeMin||'0') + '-' + (filterSizeMax||'∞') + ' ' + filterSizeUnit"></span>
-            <button @click="filterSizeMin=''; filterSizeMax=''; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button>
-          </span>
-        </template>
+        <template x-if="searchQuery"><span class="filter-badge"><i data-lucide="search" class="w-2.5 h-2.5"></i> <span x-text="'Query: ' + searchQuery"></span><button @click="searchQuery=''; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button></span></template>
+        <template x-if="filterCategory"><span class="filter-badge"><i data-lucide="folder" class="w-2.5 h-2.5"></i> <span x-text="filterCategory"></span><button @click="filterCategory=''; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button></span></template>
+        <template x-if="fileType !== 'Semua'"><span class="filter-badge"><i data-lucide="file" class="w-2.5 h-2.5"></i> <span x-text="fileType"></span><button @click="fileType='Semua'; filterFiles()" class="ml-1 hover:text-red-500"><i data-lucide="x" class="w-2.5 h-2.5"></i></button></span></template>
       </div>
     </div>
   </div>
@@ -361,172 +296,86 @@ tr.selected{background:rgba(99,102,241,.08)!important}
       </div>
     </div>
 
+    <!-- DASHBOARD COMPACT -->
     <div x-show="activeMenu === 'dashboard' && driveConnected" class="fade-in">
-  <div class="mb-3 flex items-center justify-between">
-    <div>
-      <h2 class="text-lg font-bold flex items-center gap-2">
-        👋 Dashboard
-      </h2>
-      <p class="text-slate-500 text-xs mt-0.5">Ringkasan data cloud storage kamu</p>
-    </div>
-    <button @click="activeMenu = 'files'; filterFiles()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 gradient-bg text-white rounded-lg text-xs font-semibold hover:opacity-90">
-      <i data-lucide="folder" class="w-3.5 h-3.5"></i> Lihat Semua File
-    </button>
-  </div>
-
-  <!-- Stats Grid - Compact -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-    <template x-for="s in stats" :key="s.label">
-      <div class="bg-white dark:bg-slate-900 rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 hover:shadow-md transition">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" :style="'background:'+s.bg">
-            <i :data-lucide="s.icon" class="w-4 h-4" :style="'color:'+s.color"></i>
+      <div class="mb-3 flex items-center justify-between">
+        <div><h2 class="text-lg font-bold flex items-center gap-2">👋 Dashboard</h2><p class="text-slate-500 text-xs mt-0.5">Ringkasan data cloud storage kamu</p></div>
+        <button @click="activeMenu = 'files'; filterFiles()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 gradient-bg text-white rounded-lg text-xs font-semibold hover:opacity-90"><i data-lucide="folder" class="w-3.5 h-3.5"></i> Lihat Semua File</button>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+        <template x-for="s in stats" :key="s.label">
+          <div class="bg-white dark:bg-slate-900 rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 hover:shadow-md transition">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" :style="'background:'+s.bg"><i :data-lucide="s.icon" class="w-4 h-4" :style="'color:'+s.color"></i></div>
+              <div class="min-w-0"><p class="text-base font-bold leading-tight truncate" x-text="s.value"></p><p class="text-[10px] text-slate-500 truncate" x-text="s.label"></p></div>
+            </div>
           </div>
-          <div class="min-w-0">
-            <p class="text-base font-bold leading-tight truncate" x-text="s.value"></p>
-            <p class="text-[10px] text-slate-500 truncate" x-text="s.label"></p>
+        </template>
+      </div>
+      <div class="grid lg:grid-cols-5 gap-2">
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
+          <h3 class="text-xs font-bold mb-2 flex items-center gap-1.5"><i data-lucide="folder-heart" class="w-3.5 h-3.5 text-indigo-500"></i> Kategori</h3>
+          <div class="space-y-1">
+            <template x-for="cat in categories" :key="cat.name">
+              <button @click="filterCategory = cat.name; activeMenu = 'files'; filterFiles()" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition text-left">
+                <i :class="cat.icon" class="w-4 text-center flex-shrink-0" :style="'color:'+cat.color"></i>
+                <span class="text-xs font-medium flex-1 truncate" x-text="cat.name"></span>
+                <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full font-semibold" x-text="cat.count"></span>
+              </button>
+            </template>
+            <button @click="openNewCategoryModal()" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition text-xs font-medium"><i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Tambah Kategori</button>
+          </div>
+        </div>
+        <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
+          <div class="flex items-center justify-between mb-2"><h3 class="text-xs font-bold flex items-center gap-1.5"><i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i> Terbaru</h3><span class="text-[10px] text-slate-400" x-text="Math.min(files.length, 6) + ' file'"></span></div>
+          <div x-show="files.length === 0" class="py-6 text-center"><i data-lucide="inbox" class="w-8 h-8 mx-auto text-slate-300 mb-1.5"></i><p class="text-xs text-slate-500">Belum ada file</p><button @click="showUpload = true" class="mt-2 px-3 py-1 gradient-bg text-white rounded-md text-[10px] font-semibold">Upload Sekarang</button></div>
+          <div x-show="files.length > 0" class="space-y-1">
+            <template x-for="file in files.slice(0, 6)" :key="file.id">
+              <div @click="openFile(file)" class="flex items-center gap-2.5 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition group">
+                <div class="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'">
+                  <template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-md lazy-img" @load="$event.target.classList.add('loaded')" alt=""></template>
+                  <template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i></template>
+                </div>
+                <div class="flex-1 min-w-0"><p class="text-xs font-semibold truncate" x-text="file.title || file.name"></p><div class="flex items-center gap-1.5 mt-0.5"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="'background:'+catColor(file.category)"></span><span class="text-[10px] text-slate-500 truncate" x-text="file.category + ' • ' + file.size"></span></div></div>
+                <span class="text-[10px] text-slate-400 flex-shrink-0" x-text="file.date"></span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition flex-shrink-0"></i>
+              </div>
+            </template>
           </div>
         </div>
       </div>
-    </template>
-  </div>
-
-  <!-- Quick Access + Recent Files side by side -->
-  <div class="grid lg:grid-cols-5 gap-2">
-    
-    <!-- Kategori Quick Access -->
-    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
-      <h3 class="text-xs font-bold mb-2 flex items-center gap-1.5">
-        <i data-lucide="folder-heart" class="w-3.5 h-3.5 text-indigo-500"></i> Kategori
-      </h3>
-      <div class="space-y-1">
-        <template x-for="cat in categories" :key="cat.name">
-          <button @click="filterCategory = cat.name; activeMenu = 'files'; filterFiles()" 
-                  class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition text-left">
-            <i :class="cat.icon" class="w-4 text-center flex-shrink-0" :style="'color:'+cat.color"></i>
-            <span class="text-xs font-medium flex-1 truncate" x-text="cat.name"></span>
-            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full font-semibold" x-text="cat.count"></span>
-          </button>
-        </template>
-        <button @click="openNewCategoryModal()" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition text-xs font-medium">
-          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Tambah Kategori
-        </button>
+      <div class="mt-2 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-lg px-3 py-2 border border-indigo-200 dark:border-indigo-800 flex items-center gap-3 overflow-x-auto scrollbar">
+        <div class="flex items-center gap-1.5 flex-shrink-0"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-500"></i><span class="text-[11px] font-bold text-indigo-800 dark:text-indigo-300">Tips:</span></div>
+        <div class="flex gap-3 text-[10px] text-slate-600 dark:text-slate-400">
+          <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Drag & Drop</strong> file ke kategori</span>
+          <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Bulk Actions</strong> pilih banyak file</span>
+          <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Ctrl+A</strong> select all</span>
+          <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>ESC</strong> keluar seleksi</span>
+        </div>
       </div>
     </div>
 
-    <!-- Recent Files -->
-    <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-xs font-bold flex items-center gap-1.5">
-          <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i> Terbaru
-        </h3>
-        <span class="text-[10px] text-slate-400" x-text="Math.min(files.length, 6) + ' file'"></span>
-      </div>
-      
-      <div x-show="files.length === 0" class="py-6 text-center">
-        <i data-lucide="inbox" class="w-8 h-8 mx-auto text-slate-300 mb-1.5"></i>
-        <p class="text-xs text-slate-500">Belum ada file</p>
-        <button @click="showUpload = true" class="mt-2 px-3 py-1 gradient-bg text-white rounded-md text-[10px] font-semibold">Upload Sekarang</button>
-      </div>
-
-      <div x-show="files.length > 0" class="space-y-1">
-        <template x-for="file in files.slice(0, 6)" :key="file.id">
-          <div @click="openFile(file)" class="flex items-center gap-2.5 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition group">
-            <div class="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'">
-              <template x-if="file.thumbUrl">
-                <img :src="file.thumbUrl" class="w-full h-full object-cover rounded-md lazy-img" @load="$event.target.classList.add('loaded')" alt="">
-              </template>
-              <template x-if="!file.thumbUrl">
-                <i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i>
-              </template>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-semibold truncate" x-text="file.title || file.name"></p>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="'background:'+catColor(file.category)"></span>
-                <span class="text-[10px] text-slate-500 truncate" x-text="file.category + ' • ' + file.size"></span>
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 flex-shrink-0" x-text="file.date"></span>
-            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition flex-shrink-0"></i>
-          </div>
-        </template>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tips Strip - Ultra Compact -->
-  <div class="mt-2 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-lg px-3 py-2 border border-indigo-200 dark:border-indigo-800 flex items-center gap-3 overflow-x-auto scrollbar">
-    <div class="flex items-center gap-1.5 flex-shrink-0">
-      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-500"></i>
-      <span class="text-[11px] font-bold text-indigo-800 dark:text-indigo-300">Tips:</span>
-    </div>
-    <div class="flex gap-3 text-[10px] text-slate-600 dark:text-slate-400">
-      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Drag & Drop</strong> file ke kategori</span>
-      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Bulk Actions</strong> pilih banyak file</span>
-      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>Ctrl+A</strong> select all</span>
-      <span class="flex items-center gap-1 flex-shrink-0"><span class="text-indigo-500 font-bold">•</span> <strong>ESC</strong> keluar seleksi</span>
-    </div>
-  </div>
-</div>
-
+    <!-- SEMUA FILE (tetap sama) -->
     <div x-show="activeMenu === 'files' && driveConnected" class="fade-in">
       <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-bold">Semua File</h2>
-          <p class="text-xs text-slate-500 mt-0.5" x-text="filteredFiles.length + ' dari ' + files.length + ' file di Google Drive'"></p>
-        </div>
+        <div><h2 class="text-xl font-bold">Semua File</h2><p class="text-xs text-slate-500 mt-0.5" x-text="filteredFiles.length + ' dari ' + files.length + ' file di Google Drive'"></p></div>
         <div class="flex gap-2">
-          <button @click="refreshFromDrive()" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-slate-50">
-            <i data-lucide="refresh-cw" class="w-4 h-4" :class="driveLoading ? 'spin' : ''"></i>
-            <span class="hidden md:inline" x-text="driveLoading ? 'Refreshing...' : 'Refresh'"></span>
-          </button>
-          <button @click="toggleSelectionMode()" :class="selectionMode ? 'gradient-bg text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'" class="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-slate-50">
-            <i data-lucide="check-square" class="w-4 h-4"></i>
-            <span class="hidden md:inline" x-text="selectionMode ? 'Selesai' : 'Pilih'"></span>
-          </button>
+          <button @click="refreshFromDrive()" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-slate-50"><i data-lucide="refresh-cw" class="w-4 h-4" :class="driveLoading ? 'spin' : ''"></i><span class="hidden md:inline" x-text="driveLoading ? 'Refreshing...' : 'Refresh'"></span></button>
+          <button @click="toggleSelectionMode()" :class="selectionMode ? 'gradient-bg text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'" class="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-slate-50"><i data-lucide="check-square" class="w-4 h-4"></i><span class="hidden md:inline" x-text="selectionMode ? 'Selesai' : 'Pilih'"></span></button>
           <button @click="showUpload = true" class="px-3 py-2 gradient-bg text-white rounded-lg text-sm font-semibold flex items-center gap-2 hover:opacity-90"><i data-lucide="upload-cloud" class="w-4 h-4"></i> <span class="hidden md:inline">Upload</span></button>
         </div>
       </div>
       <div class="flex items-center gap-2 mb-3 flex-wrap">
-        <template x-for="f in ['Semua','Gambar','PDF','Dokumen','Spreadsheet','Video','Audio']" :key="f">
-          <button @click="fileType = f; filterFiles()" :class="fileType === f ? 'gradient-bg text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 transition" x-text="f"></button>
-        </template>
+        <template x-for="f in ['Semua','Gambar','PDF','Dokumen','Spreadsheet','Video','Audio']" :key="f"><button @click="fileType = f; filterFiles()" :class="fileType === f ? 'gradient-bg text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 transition" x-text="f"></button></template>
         <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-        <div class="ml-auto flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
-          <button @click="viewMode='grid'" :class="viewMode==='grid' ? 'gradient-bg text-white' : ''" class="p-1.5 rounded"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
-          <button @click="viewMode='list'" :class="viewMode==='list' ? 'gradient-bg text-white' : ''" class="p-1.5 rounded"><i data-lucide="list" class="w-4 h-4"></i></button>
-        </div>
+        <div class="ml-auto flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700"><button @click="viewMode='grid'" :class="viewMode==='grid' ? 'gradient-bg text-white' : ''" class="p-1.5 rounded"><i data-lucide="layout-grid" class="w-4 h-4"></i></button><button @click="viewMode='list'" :class="viewMode==='list' ? 'gradient-bg text-white' : ''" class="p-1.5 rounded"><i data-lucide="list" class="w-4 h-4"></i></button></div>
       </div>
-
-      <div x-show="driveLoading && files.length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        <template x-for="i in 10" :key="'skel-'+i">
-          <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3">
-            <div class="skeleton aspect-square rounded-lg mb-2.5"></div>
-            <div class="skeleton h-4 rounded mb-2 w-3/4"></div>
-            <div class="skeleton h-3 rounded w-1/2"></div>
-          </div>
-        </template>
-      </div>
-
+      <div x-show="driveLoading && files.length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"><template x-for="i in 10" :key="'skel-'+i"><div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3"><div class="skeleton aspect-square rounded-lg mb-2.5"></div><div class="skeleton h-4 rounded mb-2 w-3/4"></div><div class="skeleton h-3 rounded w-1/2"></div></div></template></div>
       <div x-show="viewMode === 'grid' && !(driveLoading && files.length === 0)" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <template x-for="file in displayedFiles" :key="file.id">
-          <div class="file-card bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:shadow-lg relative"
-               :class="{'dragging': draggedFileId === file.id, 'selected': selectedFiles[file.id]}"
-               draggable="true"
-               @dragstart="onDragStartFile(file, $event)"
-               @dragend="onDragEndFile($event)"
-               @click="selectionMode ? toggleSelectFile(file.id) : openFile(file)">
-            
-            <div x-show="selectionMode" class="absolute top-2 left-2 z-20" @click.stop>
-              <label class="selection-checkbox w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer" :class="selectedFiles[file.id] ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'">
-                <input type="checkbox" :checked="selectedFiles[file.id]" @change="toggleSelectFile(file.id)" class="hidden">
-                <i x-show="selectedFiles[file.id]" data-lucide="check" class="w-4 h-4 text-white"></i>
-              </label>
-            </div>
-
-            <div x-show="!selectionMode" class="absolute top-2 right-2 z-10">
-              <button @click.stop="toggleFileMenu(file.id, $event)" class="file-actions-btn p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-lg shadow"><i data-lucide="more-vertical" class="w-3.5 h-3.5 text-slate-500"></i></button>
+          <div class="file-card bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:shadow-lg relative" :class="{'dragging': draggedFileId === file.id, 'selected': selectedFiles[file.id]}" draggable="true" @dragstart="onDragStartFile(file, $event)" @dragend="onDragEndFile($event)" @click="selectionMode ? toggleSelectFile(file.id) : openFile(file)">
+            <div x-show="selectionMode" class="absolute top-2 left-2 z-20" @click.stop><label class="selection-checkbox w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer" :class="selectedFiles[file.id] ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'"><input type="checkbox" :checked="selectedFiles[file.id]" @change="toggleSelectFile(file.id)" class="hidden"><i x-show="selectedFiles[file.id]" data-lucide="check" class="w-4 h-4 text-white"></i></label></div>
+            <div x-show="!selectionMode" class="absolute top-2 right-2 z-10"><button @click.stop="toggleFileMenu(file.id, $event)" class="file-actions-btn p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-lg shadow"><i data-lucide="more-vertical" class="w-3.5 h-3.5 text-slate-500"></i></button>
               <div x-show="openFileMenuId === file.id" @click.stop @click.away="openFileMenuId = null" x-transition class="context-menu absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
                 <button @click.stop="openFileMenuId=null; openFile(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Preview</button>
                 <button @click.stop="openFileMenuId=null; startEditFile(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700"><i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit</button>
@@ -536,169 +385,53 @@ tr.selected{background:rgba(99,102,241,.08)!important}
                 <button @click.stop="openFileMenuId=null; deleteFile(file)" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus</button>
               </div>
             </div>
-
             <div x-show="!selectionMode" class="absolute top-2 left-2 z-10"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">☁️ Cloud</span></div>
-            <div class="thumb-container aspect-square rounded-lg flex items-center justify-center mb-2.5" :class="selectionMode ? '' : 'mt-5'" :style="'background:'+file.color+'12'">
-              <div class="thumb-shimmer"></div>
-              <template x-if="file.thumbUrl">
-                <img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" loading="lazy" :alt="file.name">
-              </template>
-              <template x-if="!file.thumbUrl">
-                <i :data-lucide="file.icon" class="w-10 h-10" :style="'color:'+file.color"></i>
-              </template>
-            </div>
+            <div class="thumb-container aspect-square rounded-lg flex items-center justify-center mb-2.5" :class="selectionMode ? '' : 'mt-5'" :style="'background:'+file.color+'12'"><div class="thumb-shimmer"></div><template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" loading="lazy" :alt="file.name"></template><template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-10 h-10" :style="'color:'+file.color"></i></template></div>
             <p class="text-sm font-semibold truncate" x-text="file.title || file.name"></p>
             <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-slate-500" x-text="file.size"></span><span class="text-[11px] text-slate-400" x-text="file.date"></span></div>
             <div class="flex items-center gap-1.5 mt-1.5"><span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:'+catColor(file.category)"></span><span class="text-[11px] text-slate-500 truncate" x-text="file.category || 'Tanpa Kategori'"></span></div>
           </div>
         </template>
-        <div x-show="filteredFiles.length === 0 && driveConnected && !driveLoading" class="col-span-full py-16 text-center">
-          <i data-lucide="folder-open" class="w-16 h-16 mx-auto text-slate-300 mb-3"></i>
-          <p class="text-sm font-medium text-slate-500" x-text="files.length > 0 ? 'Tidak ada file yang cocok dengan filter' : 'Belum ada file di Google Drive'"></p>
-          <p class="text-xs text-slate-400 mt-1" x-show="files.length > 0 && filteredFiles.length === 0">Coba ubah filter atau reset pencarian</p>
-          <button x-show="files.length > 0 && filteredFiles.length === 0" @click="resetAllFilters()" class="mt-3 px-4 py-2 gradient-bg text-white rounded-lg text-xs font-semibold">Reset Filter</button>
-        </div>
+        <div x-show="filteredFiles.length === 0 && driveConnected && !driveLoading" class="col-span-full py-16 text-center"><i data-lucide="folder-open" class="w-16 h-16 mx-auto text-slate-300 mb-3"></i><p class="text-sm font-medium text-slate-500" x-text="files.length > 0 ? 'Tidak ada file yang cocok dengan filter' : 'Belum ada file di Google Drive'"></p><button x-show="files.length > 0 && filteredFiles.length === 0" @click="resetAllFilters()" class="mt-3 px-4 py-2 gradient-bg text-white rounded-lg text-xs font-semibold">Reset Filter</button></div>
       </div>
-
       <div x-show="viewMode === 'list' && !(driveLoading && files.length === 0)" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase">
-            <tr>
-              <th x-show="selectionMode" class="text-left px-4 py-3 w-10">
-                <label class="flex items-center">
-                  <input type="checkbox" @change="toggleSelectAll($event)" :checked="isAllSelected" class="accent-indigo-600 w-4 h-4">
-                </label>
-              </th>
-              <th class="text-left px-4 py-3">Nama</th>
-              <th class="text-left px-4 py-3">Kategori</th>
-              <th class="text-left px-4 py-3">Ukuran</th>
-              <th class="text-left px-4 py-3">Tanggal</th>
-              <th x-show="!selectionMode" class="text-right px-4 py-3">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="file in displayedFiles" :key="file.id">
-              <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition"
-                  :class="{'selected': selectedFiles[file.id], 'opacity-50': draggedFileId === file.id}"
-                  draggable="true"
-                  @dragstart="onDragStartFile(file, $event)"
-                  @dragend="onDragEndFile($event)"
-                  @click="selectionMode ? toggleSelectFile(file.id) : openFile(file)">
-                <td x-show="selectionMode" class="px-4 py-3" @click.stop>
-                  <label class="selection-checkbox w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer" :class="selectedFiles[file.id] ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600'">
-                    <input type="checkbox" :checked="selectedFiles[file.id]" @change="toggleSelectFile(file.id)" class="hidden">
-                    <i x-show="selectedFiles[file.id]" data-lucide="check" class="w-3 h-3 text-white"></i>
-                  </label>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'">
-                      <template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" loading="lazy" alt=""></template>
-                      <template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i></template>
-                    </div>
-                    <span class="font-medium truncate max-w-[200px]" x-text="file.title || file.name"></span>
-                  </div>
-                </td>
-                <td class="px-4 py-3"><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="'background:'+catColor(file.category)"></span><span class="text-xs" x-text="file.category || '-'"></span></div></td>
-                <td class="px-4 py-3 text-slate-500 text-xs" x-text="file.size"></td>
-                <td class="px-4 py-3 text-slate-500 text-xs" x-text="file.date"></td>
-                <td x-show="!selectionMode" class="px-4 py-3 text-right">
-                  <div class="inline-flex gap-0.5">
-                    <button @click.stop="startEditFile(file)" class="p-1.5 hover:bg-indigo-50 rounded"><i data-lucide="pencil" class="w-3.5 h-3.5 text-indigo-500"></i></button>
-                    <button @click.stop="downloadFile(file)" class="p-1.5 hover:bg-slate-100 rounded"><i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i></button>
-                    <button @click.stop="deleteFile(file)" class="p-1.5 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-500"></i></button>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
+        <table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase"><tr><th x-show="selectionMode" class="text-left px-4 py-3 w-10"><label class="flex items-center"><input type="checkbox" @change="toggleSelectAll($event)" :checked="isAllSelected" class="accent-indigo-600 w-4 h-4"></label></th><th class="text-left px-4 py-3">Nama</th><th class="text-left px-4 py-3">Kategori</th><th class="text-left px-4 py-3">Ukuran</th><th class="text-left px-4 py-3">Tanggal</th><th x-show="!selectionMode" class="text-right px-4 py-3">Aksi</th></tr></thead>
+          <tbody><template x-for="file in displayedFiles" :key="file.id"><tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition" :class="{'selected': selectedFiles[file.id], 'opacity-50': draggedFileId === file.id}" draggable="true" @dragstart="onDragStartFile(file, $event)" @dragend="onDragEndFile($event)" @click="selectionMode ? toggleSelectFile(file.id) : openFile(file)"><td x-show="selectionMode" class="px-4 py-3" @click.stop><label class="selection-checkbox w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer" :class="selectedFiles[file.id] ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600'"><input type="checkbox" :checked="selectedFiles[file.id]" @change="toggleSelectFile(file.id)" class="hidden"><i x-show="selectedFiles[file.id]" data-lucide="check" class="w-3 h-3 text-white"></i></label></td><td class="px-4 py-3"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden" :style="'background:'+file.color+'15'"><template x-if="file.thumbUrl"><img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" loading="lazy" alt=""></template><template x-if="!file.thumbUrl"><i :data-lucide="file.icon" class="w-4 h-4" :style="'color:'+file.color"></i></template></div><span class="font-medium truncate max-w-[200px]" x-text="file.title || file.name"></span></div></td><td class="px-4 py-3"><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="'background:'+catColor(file.category)"></span><span class="text-xs" x-text="file.category || '-'"></span></div></td><td class="px-4 py-3 text-slate-500 text-xs" x-text="file.size"></td><td class="px-4 py-3 text-slate-500 text-xs" x-text="file.date"></td><td x-show="!selectionMode" class="px-4 py-3 text-right"><div class="inline-flex gap-0.5"><button @click.stop="startEditFile(file)" class="p-1.5 hover:bg-indigo-50 rounded"><i data-lucide="pencil" class="w-3.5 h-3.5 text-indigo-500"></i></button><button @click.stop="downloadFile(file)" class="p-1.5 hover:bg-slate-100 rounded"><i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i></button><button @click.stop="deleteFile(file)" class="p-1.5 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-500"></i></button></div></td></tr></template></tbody>
         </table>
         <div x-show="filteredFiles.length === 0 && !driveLoading" class="p-12 text-center text-slate-400 text-sm">Tidak ada file</div>
       </div>
-
-      <div x-show="filteredFiles.length > displayLimit" class="mt-4 text-center">
-        <button @click="displayLimit += 30" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 mx-auto">
-          <i data-lucide="chevron-down" class="w-4 h-4"></i>
-          Muat Lebih (<span x-text="filteredFiles.length - displayLimit"></span> lagi)
-        </button>
-      </div>
+      <div x-show="filteredFiles.length > displayLimit" class="mt-4 text-center"><button @click="displayLimit += 30" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 mx-auto"><i data-lucide="chevron-down" class="w-4 h-4"></i>Muat Lebih (<span x-text="filteredFiles.length - displayLimit"></span> lagi)</button></div>
     </div>
 
+    <!-- SETTINGS (tetap sama) -->
     <div x-show="activeMenu === 'settings'" class="fade-in">
       <div class="mb-5"><h2 class="text-xl font-bold">Pengaturan</h2></div>
       <div class="grid lg:grid-cols-2 gap-4">
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-          <h3 class="font-semibold text-sm mb-4">🎨 Tema Warna</h3>
-          <div class="grid grid-cols-4 gap-3">
-            <template x-for="theme in themePresets" :key="theme.id">
-              <button @click="changeTheme(theme.id)" class="theme-swatch aspect-square rounded-xl relative overflow-hidden" :style="'background:'+theme.gradient" :class="currentTheme.id === theme.id ? 'active' : ''">
-                <i x-show="currentTheme.id === theme.id" data-lucide="check" class="w-6 h-6 text-white drop-shadow-lg absolute inset-0 m-auto"></i>
-              </button>
-            </template>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-          <h3 class="font-semibold text-sm mb-4">⚡ Fitur Ultimate v8.0</h3>
-          <div class="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="sparkles" class="w-5 h-5 text-indigo-500"></i>
-              <span class="text-sm font-bold text-indigo-800 dark:text-indigo-300">Ultimate Architecture</span>
-            </div>
-            <div class="text-[11px] space-y-1 text-slate-600 dark:text-slate-400">
-              <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Drag & Drop antar kategori</div>
-              <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Bulk Actions (select, delete, move, download)</div>
-              <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Advanced Search & Filter</div>
-              <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Smart Cache + Skeleton UI</div>
-              <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Parallel API + Lazy Loading</div>
-              <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Optimistic UI updates</div>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-          <h3 class="font-semibold text-sm mb-4">⚙️ Tampilan</h3>
-          <label class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer"><div class="flex items-center gap-3"><i data-lucide="moon" class="w-4 h-4"></i><span class="text-sm font-medium">Mode Gelap</span></div><input type="checkbox" x-model="darkMode" class="accent-indigo-600 w-4 h-4"></label>
-        </div>
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-          <h3 class="font-semibold text-sm mb-4">💾 Data Lokal</h3>
-          <p class="text-xs text-slate-500 mb-3">Hapus cache metadata & preferensi (file di Drive tidak terpengaruh).</p>
-          <button @click="clearLocalData()" class="w-full py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition flex items-center justify-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Reset Cache & Settings</button>
-        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800"><h3 class="font-semibold text-sm mb-4">🎨 Tema Warna</h3><div class="grid grid-cols-4 gap-3"><template x-for="theme in themePresets" :key="theme.id"><button @click="changeTheme(theme.id)" class="theme-swatch aspect-square rounded-xl relative overflow-hidden" :style="'background:'+theme.gradient" :class="currentTheme.id === theme.id ? 'active' : ''"><i x-show="currentTheme.id === theme.id" data-lucide="check" class="w-6 h-6 text-white drop-shadow-lg absolute inset-0 m-auto"></i></button></template></div></div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800"><h3 class="font-semibold text-sm mb-4">⚙️ Tampilan</h3><label class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer"><div class="flex items-center gap-3"><i data-lucide="moon" class="w-4 h-4"></i><span class="text-sm font-medium">Mode Gelap</span></div><input type="checkbox" x-model="darkMode" class="accent-indigo-600 w-4 h-4"></label></div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800"><h3 class="font-semibold text-sm mb-4">💾 Data Lokal</h3><p class="text-xs text-slate-500 mb-3">Hapus cache metadata & preferensi (file di Drive tidak terpengaruh).</p><button @click="clearLocalData()" class="w-full py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition flex items-center justify-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Reset Cache & Settings</button></div>
       </div>
     </div>
   </main>
 </div>
 </div>
 
+<!-- BULK BAR -->
 <div x-show="selectionMode && selectedCount > 0" x-transition class="bulk-bar fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-3 flex items-center gap-3 min-w-[320px] max-w-[90vw]">
-  <div class="flex items-center gap-2 pl-2 pr-3 border-r border-slate-200 dark:border-slate-700">
-    <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center text-white text-sm font-bold" x-text="selectedCount"></div>
-    <span class="text-sm font-semibold">terpilih</span>
-  </div>
+  <div class="flex items-center gap-2 pl-2 pr-3 border-r border-slate-200 dark:border-slate-700"><div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center text-white text-sm font-bold" x-text="selectedCount"></div><span class="text-sm font-semibold">terpilih</span></div>
   <div class="flex gap-1.5 flex-1 flex-wrap">
-    <button @click="bulkMove()" class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 flex items-center gap-1.5">
-      <i data-lucide="folder-input" class="w-3.5 h-3.5"></i> Pindah
-    </button>
-    <button @click="bulkDownload()" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 flex items-center gap-1.5">
-      <i data-lucide="download" class="w-3.5 h-3.5"></i> Download
-    </button>
-    <button @click="bulkDelete()" class="px-3 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 rounded-lg text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-500/20 flex items-center gap-1.5">
-      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus
-    </button>
-    <button @click="deselectAllFiles()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-xs font-semibold hover:bg-slate-200 flex items-center gap-1.5">
-      <i data-lucide="x" class="w-3.5 h-3.5"></i> Batal
-    </button>
+    <button @click="bulkMove()" class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold hover:bg-indigo-100 flex items-center gap-1.5"><i data-lucide="folder-input" class="w-3.5 h-3.5"></i> Pindah</button>
+    <button @click="bulkDownload()" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-semibold hover:bg-blue-100 flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Download</button>
+    <button @click="bulkDelete()" class="px-3 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 rounded-lg text-xs font-semibold hover:bg-red-100 flex items-center gap-1.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus</button>
+    <button @click="deselectAllFiles()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-xs font-semibold hover:bg-slate-200 flex items-center gap-1.5"><i data-lucide="x" class="w-3.5 h-3.5"></i> Batal</button>
   </div>
 </div>
 
-<nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 z-30">
-  <div class="grid grid-cols-4 h-16">
-    <button @click="activeMenu='dashboard'; exitSelectionMode()" :class="activeMenu==='dashboard' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="text-[10px]">Home</span></button>
-    <button @click="activeMenu='files'; filterFiles()" :class="activeMenu==='files' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="folder" class="w-5 h-5"></i><span class="text-[10px]">Files</span></button>
-    <button @click="driveConnected ? (showUpload = true) : (showDriveSetup = true)" class="flex flex-col items-center justify-center gap-0.5 text-slate-500"><div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center -mt-5 shadow-lg"><i data-lucide="plus" class="w-5 h-5 text-white"></i></div><span class="text-[10px] -mt-0.5">Upload</span></button>
-    <button @click="activeMenu='settings'; exitSelectionMode()" :class="activeMenu==='settings' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-[10px]">Settings</span></button>
-  </div>
-</nav>
+<!-- MOBILE NAV -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 z-30"><div class="grid grid-cols-4 h-16"><button @click="activeMenu='dashboard'; exitSelectionMode()" :class="activeMenu==='dashboard' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="text-[10px]">Home</span></button><button @click="activeMenu='files'; filterFiles()" :class="activeMenu==='files' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="folder" class="w-5 h-5"></i><span class="text-[10px]">Files</span></button><button @click="driveConnected ? (showUpload = true) : (showDriveSetup = true)" class="flex flex-col items-center justify-center gap-0.5 text-slate-500"><div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center -mt-5 shadow-lg"><i data-lucide="plus" class="w-5 h-5 text-white"></i></div><span class="text-[10px] -mt-0.5">Upload</span></button><button @click="activeMenu='settings'; exitSelectionMode()" :class="activeMenu==='settings' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-[10px]">Settings</span></button></div></nav>
+<!-- ============ MODALS ============ -->
 
+<!-- UPLOAD MODAL -->
 <div x-show="showUpload" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div @click.away="showUpload = false; pendingUploadFiles = []" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
     <div class="gradient-bg px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="upload-cloud" class="w-5 h-5"></i><h3 class="font-bold">Upload ke Google Drive</h3></div><button @click="showUpload = false; pendingUploadFiles = []" class="p-1 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
@@ -731,6 +464,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- EDIT FILE MODAL -->
 <div x-show="showEditFile" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div @click.away="showEditFile = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
     <div class="gradient-bg px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="pencil" class="w-5 h-5"></i><h3 class="font-bold">Edit Metadata</h3></div><button @click="showEditFile = false" class="p-1 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
@@ -750,6 +484,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- DELETE CONFIRM MODAL -->
 <div x-show="showDeleteConfirm" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div @click.away="showDeleteConfirm = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
     <div class="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-4 text-white flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i><h3 class="font-bold">Hapus dari Drive</h3></div>
@@ -764,19 +499,17 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- BULK MOVE MODAL -->
 <div x-show="showBulkMove" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div @click.away="showBulkMove = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
     <div class="gradient-bg px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="folder-input" class="w-5 h-5"></i><h3 class="font-bold">Pindahkan <span x-text="selectedCount"></span> File</h3></div><button @click="showBulkMove = false" class="p-1 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
     <div class="p-5 space-y-3">
-      <p class="text-sm text-slate-600 dark:text-slate-400">Pilih kategori tujuan untuk memindahkan <strong x-text="selectedCount"></strong> file yang dipilih:</p>
+      <p class="text-sm text-slate-600 dark:text-slate-400">Pilih kategori tujuan untuk memindahkan <strong x-text="selectedCount"></strong> file:</p>
       <div class="space-y-1.5 max-h-60 overflow-y-auto scrollbar">
         <template x-for="cat in categories" :key="cat.name">
           <button @click="bulkMoveTarget = cat.name" class="w-full flex items-center gap-3 p-3 rounded-lg border-2 transition text-left" :class="bulkMoveTarget === cat.name ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'">
             <i :class="cat.icon" class="w-5 text-center" :style="'color:'+cat.color"></i>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold" x-text="cat.name"></p>
-              <p class="text-[11px] text-slate-500" x-text="cat.count + ' file'"></p>
-            </div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-semibold" x-text="cat.name"></p><p class="text-[11px] text-slate-500" x-text="cat.count + ' file'"></p></div>
             <i x-show="bulkMoveTarget === cat.name" data-lucide="check" class="w-4 h-4 text-indigo-600"></i>
           </button>
         </template>
@@ -784,13 +517,12 @@ tr.selected{background:rgba(99,102,241,.08)!important}
     </div>
     <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t flex gap-2">
       <button @click="showBulkMove = false" class="flex-1 py-2.5 bg-white dark:bg-slate-700 border rounded-lg text-sm font-medium">Batal</button>
-      <button @click="confirmBulkMove()" :disabled="!bulkMoveTarget" class="flex-1 py-2.5 gradient-bg text-white rounded-lg text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2">
-        <i data-lucide="move" class="w-4 h-4"></i> Pindahkan
-      </button>
+      <button @click="confirmBulkMove()" :disabled="!bulkMoveTarget" class="flex-1 py-2.5 gradient-bg text-white rounded-lg text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2"><i data-lucide="move" class="w-4 h-4"></i> Pindahkan</button>
     </div>
   </div>
 </div>
 
+<!-- BULK DELETE MODAL -->
 <div x-show="showBulkDelete" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div @click.away="showBulkDelete = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
     <div class="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-4 text-white flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i><h3 class="font-bold">Hapus <span x-text="selectedCount"></span> File</h3></div>
@@ -805,6 +537,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- PREVIEW MODAL -->
 <div x-show="previewFile" x-transition class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
   <div @click.away="previewFile = null" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-2xl max-h-[88vh] overflow-hidden flex flex-col shadow-2xl">
     <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
@@ -834,6 +567,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- NEW CATEGORY MODAL -->
 <div x-show="showNewCategory" x-transition class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
   <div @click.away="showNewCategory = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
     <div class="gradient-bg px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="tag" class="w-5 h-5"></i><h3 class="font-bold">Kategori Baru</h3></div><button @click="showNewCategory = false" class="p-1 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
@@ -845,6 +579,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- DELETE CATEGORY MODAL -->
 <div x-show="showDeleteCategory" x-transition class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
   <div @click.away="showDeleteCategory = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
     <div class="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-4 text-white flex items-center gap-2"><i data-lucide="trash-2" class="w-5 h-5"></i><h3 class="font-bold">Hapus Kategori</h3></div>
@@ -860,11 +595,15 @@ tr.selected{background:rgba(99,102,241,.08)!important}
     </div>
     <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t flex gap-2">
       <button @click="showDeleteCategory = false" :disabled="driveDeletingCategory" class="flex-1 py-2 bg-white dark:bg-slate-700 border rounded-lg text-sm font-medium disabled:opacity-50">Batal</button>
-      <button @click="deleteCategory()" :disabled="driveDeletingCategory" class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold disabled:opacity-50">Hapus</button>
+      <button @click="deleteCategory()" :disabled="driveDeletingCategory" class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold disabled:opacity-50">
+        <span x-show="!driveDeletingCategory">Hapus</span>
+        <span x-show="driveDeletingCategory" class="flex items-center gap-2 justify-center"><svg class="w-4 h-4 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Menghapus...</span>
+      </button>
     </div>
   </div>
 </div>
 
+<!-- DRIVE SETUP MODAL -->
 <div x-show="showDriveSetup" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
   <div @click.away="showDriveSetup = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg max-h-[88vh] overflow-y-auto scrollbar shadow-2xl">
     <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 text-white flex items-center justify-between"><div class="flex items-center gap-3"><svg class="w-6 h-6 drive-float" viewBox="0 0 87.3 78"><path fill="#fff" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45z" opacity=".8"/></svg><div><h3 class="font-bold text-base">Hubungkan Google Drive</h3><p class="text-[11px] text-white/70">Wajib untuk full cloud storage</p></div></div><button @click="showDriveSetup = false" class="p-1.5 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button></div>
@@ -872,12 +611,28 @@ tr.selected{background:rgba(99,102,241,.08)!important}
       <div class="border-2 rounded-lg p-4" :class="driveSetupStep >= 1 ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-slate-200 dark:border-slate-700'">
         <label class="text-xs font-medium mb-1 block">OAuth 2.0 Client ID</label>
         <input x-model="driveConfig.clientId" type="text" placeholder="...apps.googleusercontent.com" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-mono border-0">
+        <p class="text-[10px] text-slate-500 mt-1">Dapatkan dari <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-blue-500 underline">Google Cloud Console</a></p>
       </div>
-      <button x-show="driveConfig.clientId && driveConfig.clientId.trim() && !driveConnected" @click="signInToDrive()" :disabled="driveLoading" class="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition disabled:opacity-50">
+      <!-- ★ FIX: Status GIS loading -->
+      <div x-show="!window._gisLoaded && !window._gisLoadError" class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+        <svg class="w-4 h-4 spin flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+        <span>Memuat Google Identity Services...</span>
+      </div>
+      <div x-show="window._gisLoadError" class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+        <div>
+          <p class="font-semibold">Google Identity Services gagal dimuat</p>
+          <p class="mt-0.5">Cek koneksi internet atau coba reload halaman.</p>
+        </div>
+      </div>
+      <button x-show="driveConfig.clientId && driveConfig.clientId.trim() && !driveConnected" @click="signInToDrive()" :disabled="driveLoading || window._gisLoadError" class="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition disabled:opacity-50">
         <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
         <span x-text="driveLoading ? 'Menghubungkan...' : 'Masuk dengan Google'"></span>
       </button>
-      <div x-show="driveAuthError" class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-700 dark:text-red-400"><p x-text="driveAuthError"></p></div>
+      <div x-show="driveAuthError" class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+        <div><p class="font-semibold">Error Autentikasi</p><p class="mt-0.5" x-text="driveAuthError"></p></div>
+      </div>
       <div x-show="driveSetupStep >= 3" class="border-2 border-green-300 bg-green-50 dark:bg-green-900/10 rounded-lg p-4">
         <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-green-100 text-green-600 flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></div><div><h4 class="font-medium text-sm text-green-800 dark:text-green-300">Terhubung!</h4><p class="text-xs text-green-600" x-text="driveUser ? driveUser.email : ''"></p></div></div>
       </div>
@@ -885,6 +640,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- DISCONNECT DRIVE MODAL -->
 <div x-show="showDisconnectDrive" x-transition class="fixed inset-0 bg-black/60 z-[55] flex items-center justify-center p-4">
   <div @click.away="showDisconnectDrive = false; confirmDisconnectCheck = false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
     <div class="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-4 text-white flex items-center gap-2"><i data-lucide="unlink" class="w-5 h-5"></i><h3 class="font-bold">Putuskan Google Drive</h3></div>
@@ -899,6 +655,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- DRIVE BROWSER MODAL -->
 <div x-show="showDriveBrowser" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
   <div @click.away="showDriveBrowser = false; driveCurrentFolderId = 'root'" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-3xl max-h-[88vh] overflow-hidden shadow-2xl flex flex-col">
     <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-white flex items-center justify-between">
@@ -948,6 +705,7 @@ tr.selected{background:rgba(99,102,241,.08)!important}
   </div>
 </div>
 
+<!-- TOAST NOTIFICATIONS -->
 <div class="fixed top-5 right-5 z-[200] space-y-2">
   <template x-for="toast in toasts" :key="toast.id">
     <div x-show="toast.show" x-transition class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 min-w-[280px]">
@@ -956,10 +714,11 @@ tr.selected{background:rgba(99,102,241,.08)!important}
     </div>
   </template>
 </div>
+
+<!-- ============ JAVASCRIPT (FIXED) ============ -->
 <script>
 // ============================================================
-//  DocuCloud v8.0 — ULTIMATE EDITION (FIXED UPLOAD)
-//  Full Cloud + Smart Cache + Drag & Drop + Bulk + Advanced Search
+//  DocuCloud v8.0 — ULTIMATE EDITION (FIXED DRIVE CONNECTION)
 // ============================================================
 function docuCloud() {
   return {
@@ -994,34 +753,18 @@ function docuCloud() {
     driveTokenClient: null,
     isRefreshing: false,
     cacheStatus: 'Checking...',
-
     // DRAG & DROP
-    draggedFileId: null,
-    dropTargetCategory: null,
-
+    draggedFileId: null, dropTargetCategory: null,
     // BULK ACTIONS
-    selectionMode: false,
-    selectedFiles: {},
-    showBulkMove: false,
-    showBulkDelete: false,
-    bulkMoveTarget: '',
-    bulkOperationInProgress: false,
-    bulkOperationTitle: '',
-    bulkOperationDesc: '',
-    bulkOperationProgress: 0,
-
+    selectionMode: false, selectedFiles: {},
+    showBulkMove: false, showBulkDelete: false, bulkMoveTarget: '',
+    bulkOperationInProgress: false, bulkOperationTitle: '', bulkOperationDesc: '', bulkOperationProgress: 0,
     // ADVANCED FILTER
-    showAdvancedFilter: false,
-    searchField: 'all',
-    filterDateFrom: '',
-    filterDateTo: '',
-    filterSizeMin: '',
-    filterSizeMax: '',
-    filterSizeUnit: 'MB',
-    sortBy: 'date',
-    sortDir: 'desc',
-    debounceTimer: null,
-
+    showAdvancedFilter: false, searchField: 'all',
+    filterDateFrom: '', filterDateTo: '',
+    filterSizeMin: '', filterSizeMax: '', filterSizeUnit: 'MB',
+    sortBy: 'date', sortDir: 'desc', debounceTimer: null,
+    // Stats
     stats:[
       {label:'Total File',value:'0',icon:'file-text',color:'#6366f1',bg:'#eef2ff'},
       {label:'Total Ukuran',value:'0 B',icon:'hard-drive',color:'#3b82f6',bg:'#dbeafe'},
@@ -1042,6 +785,9 @@ function docuCloud() {
     currentTheme:{id:'indigo',gradient:'linear-gradient(135deg,#667eea,#764ba2)'},
     usedStorage:'0 B',
 
+    // ================================================================
+    //  ★ FIXED: init() — tunggu GIS loaded sebelum auto-reconnect
+    // ================================================================
     init(){
       var self = this;
       var t = localStorage.getItem('dc_theme');
@@ -1081,12 +827,16 @@ function docuCloud() {
             var savedClient = localStorage.getItem('dc_drive_client');
             if(savedToken && savedClient){
               self.driveConfig.clientId = savedClient;
+              // ★ FIX: Tunggu GIS loaded sebelum reconnect
+              await self.waitForGIS();
+              
               try {
                 var vr = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {headers:{Authorization:'Bearer '+savedToken}});
                 if(vr.ok){
                   var u = await vr.json();
                   self.driveUser = {name:u.name||u.email.split('@')[0],email:u.email,picture:u.picture};
                   self.driveConnected = true; self.driveSetupStep = 3;
+                  // ★ FIX: init token client SETELAH GIS loaded
                   await self.initTokenClient(savedClient);
                   await self.ensureDriveFolder();
                   await self.syncAllCategoryFolders();
@@ -1096,6 +846,7 @@ function docuCloud() {
                   self.cacheStatus = 'No Connection';
                 }
               } catch(e){
+                console.warn('[DocuCloud] Auto-reconnect error:', e);
                 self.cacheStatus = 'Error';
               }
             } else {
@@ -1105,6 +856,7 @@ function docuCloud() {
           },300); 
         }
       },300);
+      
       this.$watch('darkMode',function(v){ localStorage.setItem('dc_dark',v); self.refreshIcons() });
       this.$watch('activeMenu',function(){ self.filterFiles(); self.refreshIcons() });
       setInterval(function(){ self.refreshIcons() },500);
@@ -1118,6 +870,30 @@ function docuCloud() {
     },
 
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
+
+    // ================================================================
+    //  ★ NEW: waitForGIS — tunggu Google Identity Services loaded
+    // ================================================================
+    waitForGIS(){
+      return new Promise(function(resolve, reject){
+        var attempts = 0;
+        var maxAttempts = 80; // max 8 detik
+        var check = function(){
+          attempts++;
+          if(window.google && window.google.accounts && window.google.accounts.oauth2){
+            console.log('[DocuCloud] ✅ GIS ready after', attempts, 'checks');
+            resolve();
+          } else if(window._gisLoadError){
+            reject(new Error('GIS failed to load'));
+          } else if(attempts >= maxAttempts){
+            reject(new Error('GIS load timeout'));
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        check();
+      });
+    },
 
     // ================================================================
     //  SMART METADATA CACHE
@@ -1152,11 +928,7 @@ function docuCloud() {
     
     saveToCache(){
       try {
-        var data = {
-          files: this.files,
-          categories: this.categories,
-          timestamp: Date.now()
-        };
+        var data = { files: this.files, categories: this.categories, timestamp: Date.now() };
         localStorage.setItem('dc_metadata_cache', JSON.stringify(data));
         this.cacheStatus = 'Saved (' + this.files.length + ' files)';
       } catch(e){
@@ -1165,60 +937,93 @@ function docuCloud() {
     },
 
     // ================================================================
-    //  SILENT AUTO-REFRESH TOKEN
+    //  ★ FIXED: initTokenClient — robust init dengan fallback
     // ================================================================
     async initTokenClient(clientId){
       var self = this;
+      
+      // Pastikan GIS sudah loaded
       if(!window.google || !window.google.accounts || !window.google.accounts.oauth2){
-        console.warn('Google Identity Services not loaded');
-        return;
+        console.warn('[DocuCloud] GIS not loaded yet, waiting...');
+        try {
+          await this.waitForGIS();
+        } catch(e){
+          console.error('[DocuCloud] Cannot init token client - GIS not available');
+          return;
+        }
       }
-      this.driveTokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-        ux_mode: 'popup',
-        callback: function(resp){}
-      });
+      
+      try {
+        this.driveTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+          ux_mode: 'popup',
+          callback: function(resp){}
+        });
+        console.log('[DocuCloud] ✅ Token client initialized');
+      } catch(e){
+        console.error('[DocuCloud] Token client init error:', e);
+        this.driveTokenClient = null;
+      }
     },
 
+    // ================================================================
+    //  ★ FIXED: getValidToken — re-init token client kalau null
+    // ================================================================
     async getValidToken(){
       var token = localStorage.getItem('dc_drive_token');
       if(!token) throw new Error('No token');
+      
+      // Test token validity
       try {
         var test = await fetch('https://www.googleapis.com/drive/v3/about?fields=storageQuota', {
           headers: { Authorization: 'Bearer ' + token }
         });
         if(test.ok) return token;
-      } catch(e){}
+      } catch(e){
+        console.warn('[DocuCloud] Token test failed, trying refresh...');
+      }
+
+      // ★ FIX: Re-init token client kalau null
+      if(!this.driveTokenClient){
+        var clientId = localStorage.getItem('dc_drive_client');
+        if(clientId){
+          await this.initTokenClient(clientId);
+        }
+      }
 
       if(this.driveTokenClient && !this.isRefreshing){
         this.isRefreshing = true;
         var self = this;
         return new Promise(function(resolve, reject){
+          var timeout = setTimeout(function(){
+            self.isRefreshing = false;
+            reject(new Error('Token refresh timeout'));
+          }, 15000);
+          
           self.driveTokenClient.callback = function(resp){
+            clearTimeout(timeout);
             self.isRefreshing = false;
             if(resp.error){
+              console.error('[DocuCloud] Token refresh error:', resp.error);
               self.driveConnected = false;
               localStorage.removeItem('dc_drive_token');
-              reject(new Error('Session expired'));
+              reject(new Error('Session expired: ' + resp.error));
             } else {
               localStorage.setItem('dc_drive_token', resp.access_token);
+              console.log('[DocuCloud] ✅ Token refreshed');
               resolve(resp.access_token);
             }
           };
           self.driveTokenClient.requestAccessToken({prompt: ''});
         });
       }
-      throw new Error('Cannot refresh token');
+      throw new Error('Cannot refresh token - no token client');
     },
 
     async backgroundRefresh(){
       if(!this.driveConnected || this.driveLoading) return;
-      try {
-        await this.refreshFromDrive();
-      } catch(e){
-        console.warn('Background refresh failed:', e);
-      }
+      try { await this.refreshFromDrive(); } catch(e){ console.warn('Background refresh failed:', e); }
     },
 
     // ================================================================
@@ -1272,6 +1077,7 @@ function docuCloud() {
         this.filterFiles();
         this.saveToCache();
       } catch(e){
+        console.error('[DocuCloud] Refresh error:', e);
         this.cacheStatus = 'Refresh Failed';
         this.showToast('Refresh gagal', 'Menggunakan data cache', 'warning');
       } finally {
@@ -1281,47 +1087,79 @@ function docuCloud() {
     },
 
     // ================================================================
+    //  ★ FIXED: syncDriveFiles (tambah parents field)
+    // ================================================================
+    async syncDriveFiles(){
+      var token = await this.getValidToken();
+      if(!token) return;
+      this.driveLoading = true;
+      try{
+        var folderQ = this.driveFolderId ? ("'"+this.driveFolderId+"' in parents and ") : '';
+        var fieldsStr = 'files(id,name,mimeType,size,modifiedTime,description,parents)';
+        var r = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=200&fields='+fieldsStr+'&q='+encodeURIComponent(folderQ+'trashed=false'),{headers:{Authorization:'Bearer '+token}});
+        if(!r.ok) throw new Error('Token expired');
+        var d = await r.json();
+        var allItems = d.files || [];
+        var folders = [], files = [];
+        for(var i = 0; i < allItems.length; i++){
+          if(allItems[i].mimeType === 'application/vnd.google-apps.folder'){
+            allItems[i].children = [];
+            folders.push(allItems[i]);
+          } else {
+            files.push(allItems[i]);
+          }
+        }
+        
+        var childPromises = folders.map(function(folder){
+          return fetch('https://www.googleapis.com/drive/v3/files?pageSize=200&fields='+fieldsStr+'&q='+encodeURIComponent("'"+folder.id+"' in parents and trashed=false"),{headers:{Authorization:'Bearer '+token}})
+            .then(function(res){ return res.ok ? res.json() : {files:[]} })
+            .then(function(data){ folder.children = data.files || []; })
+            .catch(function(){ folder.children = []; });
+        });
+        await Promise.all(childPromises);
+        folders.sort(function(a,b){ return a.name.localeCompare(b.name) });
+        this.driveFiles = files;
+        this.driveFolders = folders;
+        this.syncCategoryFolderIds(folders);
+        
+      } catch(e){
+        this.driveConnected = false;
+        localStorage.removeItem('dc_drive_token');
+        throw e;
+      }
+      this.driveLoading = false;
+      this.refreshIcons();
+    },
+
+    // ================================================================
     //  ★ FIXED: buildFileListFromDrive (lebih robust)
     // ================================================================
     buildFileListFromDrive(){
       var result = [];
       var self = this;
-      
-      // Build folder-to-category mapping
       var folderToCat = {};
       for(var c = 0; c < this.categories.length; c++){
         if(this.categories[c].driveFolderId){
           folderToCat[this.categories[c].driveFolderId] = this.categories[c].name;
         }
       }
-      
-      // Build name-to-category mapping sebagai fallback
       var nameToCat = {};
       for(var c2 = 0; c2 < this.categories.length; c2++){
         nameToCat[this.categories[c2].name.toLowerCase()] = this.categories[c2].name;
       }
-      
-      // Process root-level files
       for(var i = 0; i < this.driveFiles.length; i++){
         var rootFile = this.driveFiles[i];
         var rootCat = '';
         if(rootFile.parents && rootFile.parents.length > 0){
           for(var p = 0; p < rootFile.parents.length; p++){
-            if(folderToCat[rootFile.parents[p]]){
-              rootCat = folderToCat[rootFile.parents[p]];
-              break;
-            }
+            if(folderToCat[rootFile.parents[p]]){ rootCat = folderToCat[rootFile.parents[p]]; break; }
           }
         }
         result.push(self.mapDriveFileToApp(rootFile, rootCat));
       }
-      
-      // Process files inside category folders
       for(var j = 0; j < this.driveFolders.length; j++){
         var folder = this.driveFolders[j];
         var catName = folderToCat[folder.id] || '';
-        
-        // Fallback - cek nama folder cocok dengan kategori
         if(!catName){
           var lowerName = folder.name.toLowerCase();
           if(nameToCat[lowerName]){
@@ -1333,11 +1171,8 @@ function docuCloud() {
                 break;
               }
             }
-          } else {
-            catName = folder.name;
-          }
+          } else { catName = folder.name; }
         }
-        
         if(folder.children){
           for(var k = 0; k < folder.children.length; k++){
             var cf = folder.children[k];
@@ -1347,17 +1182,11 @@ function docuCloud() {
           }
         }
       }
-      
-      // Deduplicate by ID
       var seen = {};
       var deduped = [];
       for(var d = 0; d < result.length; d++){
-        if(!seen[result[d].id]){
-          seen[result[d].id] = true;
-          deduped.push(result[d]);
-        }
+        if(!seen[result[d].id]){ seen[result[d].id] = true; deduped.push(result[d]); }
       }
-      
       deduped.sort(function(a,b){ return (b.modifiedTime||0) - (a.modifiedTime||0) });
       this.files = deduped;
     },
@@ -1372,11 +1201,7 @@ function docuCloud() {
       var color = this.getFileColor(type);
       var sizeBytes = parseInt(driveFile.size) || 0;
       var thumbUrl = null;
-      if(type === 'Gambar'){
-        thumbUrl = 'https://drive.google.com/thumbnail?id=' + driveFile.id + '&sz=w400';
-      }
-      
-      // Parse title DAN category dari description
+      if(type === 'Gambar') thumbUrl = 'https://drive.google.com/thumbnail?id=' + driveFile.id + '&sz=w400';
       var title = '';
       var descCategory = '';
       if(driveFile.description){
@@ -1384,17 +1209,10 @@ function docuCloud() {
         title = parts[0] || '';
         for(var p = 1; p < parts.length; p++){
           var segment = parts[p].trim();
-          if(segment.indexOf('category:') === 0){
-            descCategory = segment.substring(9).trim();
-            break;
-          }
+          if(segment.indexOf('category:') === 0){ descCategory = segment.substring(9).trim(); break; }
         }
       }
-      
-      // Prioritas kategori: folder mapping > description > kosong
       var finalCategory = categoryName || descCategory || '';
-      
-      // Verifikasi kategori masih ada di daftar categories
       if(finalCategory){
         var catExists = false;
         for(var c = 0; c < this.categories.length; c++){
@@ -1402,24 +1220,15 @@ function docuCloud() {
         }
         if(!catExists) finalCategory = descCategory || '';
       }
-      
       return {
-        id: driveFile.id,
-        name: driveFile.name,
-        title: title,
-        type: type,
-        icon: icon,
-        color: color,
-        size: this.formatBytes(sizeBytes),
-        sizeBytes: sizeBytes,
-        mimeType: mime,
-        category: finalCategory,
+        id: driveFile.id, name: driveFile.name, title: title,
+        type: type, icon: icon, color: color,
+        size: this.formatBytes(sizeBytes), sizeBytes: sizeBytes,
+        mimeType: mime, category: finalCategory,
         date: driveFile.modifiedTime ? new Date(driveFile.modifiedTime).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '-',
         modifiedTime: driveFile.modifiedTime ? new Date(driveFile.modifiedTime).getTime() : 0,
-        thumbUrl: thumbUrl,
-        driveId: driveFile.id,
-        parents: driveFile.parents || [],
-        source: 'drive'
+        thumbUrl: thumbUrl, driveId: driveFile.id,
+        parents: driveFile.parents || [], source: 'drive'
       };
     },
 
@@ -1437,11 +1246,7 @@ function docuCloud() {
         var response = await fetch('https://www.googleapis.com/drive/v3/files', {
           method: 'POST',
           headers: {'Authorization':'Bearer '+token, 'Content-Type':'application/json'},
-          body: JSON.stringify({
-            name: categoryName,
-            mimeType: 'application/vnd.google-apps.folder',
-            parents: [rootFolder]
-          })
+          body: JSON.stringify({ name: categoryName, mimeType: 'application/vnd.google-apps.folder', parents: [rootFolder] })
         });
         if(response.ok){ var folder = await response.json(); return folder.id; }
       } catch(e){}
@@ -1464,8 +1269,7 @@ function docuCloud() {
       if(!token) return false;
       try {
         var r = await fetch('https://www.googleapis.com/drive/v3/files/' + folderId, {
-          method: 'PATCH',
-          headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+          method: 'PATCH', headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
           body: JSON.stringify({ trashed: true })
         });
         if(r.ok || r.status === 200 || r.status === 204) return true;
@@ -1520,8 +1324,6 @@ function docuCloud() {
       }
       return folderId;
     },
-
-    // ★ NEW: syncCategoryFolderIds
     syncCategoryFolderIds(driveFoldersList){
       var updated = false;
       for(var c = 0; c < this.categories.length; c++){
@@ -1531,10 +1333,7 @@ function docuCloud() {
           for(var f = 0; f < driveFoldersList.length; f++){
             if(driveFoldersList[f].id === cat.driveFolderId){ found = true; break; }
           }
-          if(!found){
-            cat.driveFolderId = null;
-            updated = true;
-          }
+          if(!found){ cat.driveFolderId = null; updated = true; }
         }
         if(!cat.driveFolderId){
           for(var f2 = 0; f2 < driveFoldersList.length; f2++){
@@ -1588,30 +1387,22 @@ function docuCloud() {
       dragImage.style.top = '-1000px';
       document.body.appendChild(dragImage);
       event.dataTransfer.setDragImage(dragImage, 100, 50);
-      setTimeout(function(){ document.body.removeChild(dragImage) }, 0);
+      var self = this;
+      setTimeout(function(){ try{document.body.removeChild(dragImage)}catch(e){} }, 0);
     },
-    onDragEndFile(event){
-      this.draggedFileId = null;
-      this.dropTargetCategory = null;
-    },
+    onDragEndFile(event){ this.draggedFileId = null; this.dropTargetCategory = null; },
     onDragOverCategory(categoryName, event){
       event.dataTransfer.dropEffect = 'move';
-      if(this.draggedFileId){
-        this.dropTargetCategory = categoryName;
-      }
+      if(this.draggedFileId) this.dropTargetCategory = categoryName;
     },
     onDragLeaveCategory(event){
-      if(!event.currentTarget.contains(event.relatedTarget)){
-        this.dropTargetCategory = null;
-      }
+      if(!event.currentTarget.contains(event.relatedTarget)) this.dropTargetCategory = null;
     },
     async onDropCategory(categoryName, event){
       this.dropTargetCategory = null;
       if(!this.draggedFileId) return;
-      
       var filesToMove = [];
       if(this.selectionMode && this.selectedFiles[this.draggedFileId]){
-        var self = this;
         for(var id in this.selectedFiles){
           if(this.selectedFiles[id]){
             var f = this.files.find(function(file){ return file.id === id });
@@ -1619,30 +1410,19 @@ function docuCloud() {
           }
         }
       } else {
-        var singleFile = this.files.find(function(f){ return f.id === this.draggedFileId }.bind(this));
-        if(singleFile && singleFile.category !== categoryName){
-          filesToMove.push(singleFile);
-        }
+        var self = this;
+        var singleFile = this.files.find(function(f){ return f.id === self.draggedFileId });
+        if(singleFile && singleFile.category !== categoryName) filesToMove.push(singleFile);
       }
-      
-      if(filesToMove.length === 0){
-        this.draggedFileId = null;
-        return;
-      }
-
+      if(filesToMove.length === 0){ this.draggedFileId = null; return; }
       var self = this;
-      var originalCategories = filesToMove.map(function(f){ 
-        return { id: f.id, category: f.category };
-      });
+      var originalCategories = filesToMove.map(function(f){ return { id: f.id, category: f.category } });
       filesToMove.forEach(function(f){ f.category = categoryName });
-      this.updateCategoryCounts();
-      this.filterFiles();
+      this.updateCategoryCounts(); this.filterFiles();
       this.showToast('Memindahkan...', filesToMove.length + ' file ke ' + categoryName, 'info');
-      
       try {
         var folderId = await this.ensureCategoryFolder(categoryName);
         if(!folderId) throw new Error('Folder not found');
-        
         var token = await this.getValidToken();
         var success = 0;
         for(var i = 0; i < filesToMove.length; i++){
@@ -1653,18 +1433,14 @@ function docuCloud() {
               var fileData = await fileRes.json();
               var oldParents = (fileData.parents || []).join(',');
               var updateRes = await fetch('https://www.googleapis.com/drive/v3/files/' + file.id + '?addParents=' + folderId + '&removeParents=' + oldParents, {
-                method: 'PATCH',
-                headers: {'Authorization': 'Bearer ' + token}
+                method: 'PATCH', headers: {'Authorization': 'Bearer ' + token}
               });
               if(updateRes.ok) success++;
             }
-          } catch(e){
-            console.warn('Move failed for', file.name, e);
-          }
+          } catch(e){ console.warn('Move failed for', file.name, e); }
         }
-        
         if(success === filesToMove.length){
-          this.showToast('Berhasil dipindahkan!', success + ' file ke ' + categoryName, 'success');
+          this.showToast('Berhasil!', success + ' file ke ' + categoryName, 'success');
           this.saveToCache();
         } else {
           this.showToast('Sebagian gagal', success + '/' + filesToMove.length + ' berhasil', 'warning');
@@ -1675,344 +1451,164 @@ function docuCloud() {
           var f = self.files.find(function(file){ return file.id === oc.id });
           if(f) f.category = oc.category;
         });
-        this.updateCategoryCounts();
-        this.filterFiles();
-        this.showToast('Gagal memindahkan', 'File tetap di kategori asal', 'error');
+        this.updateCategoryCounts(); this.filterFiles();
+        this.showToast('Gagal', 'File tetap di kategori asal', 'error');
       }
-      
       this.draggedFileId = null;
     },
 
     // ================================================================
     //  BULK ACTIONS
     // ================================================================
-    get selectedCount(){
-      var count = 0;
-      for(var id in this.selectedFiles){
-        if(this.selectedFiles[id]) count++;
-      }
-      return count;
-    },
-    get isAllSelected(){
-      if(this.displayedFiles.length === 0) return false;
-      var self = this;
-      return this.displayedFiles.every(function(f){ return self.selectedFiles[f.id] });
-    },
-    get displayedFiles(){
-      return this.filteredFiles.slice(0, this.displayLimit);
-    },
-    get hasActiveFilters(){
-      return !!(this.searchQuery || this.filterCategory || this.fileType !== 'Semua' || this.filterDateFrom || this.filterDateTo || this.filterSizeMin || this.filterSizeMax);
-    },
+    get selectedCount(){ var c=0; for(var id in this.selectedFiles) if(this.selectedFiles[id]) c++; return c; },
+    get isAllSelected(){ if(this.displayedFiles.length===0)return false; var self=this; return this.displayedFiles.every(function(f){return self.selectedFiles[f.id]}) },
+    get displayedFiles(){ return this.filteredFiles.slice(0, this.displayLimit) },
+    get hasActiveFilters(){ return !!(this.searchQuery||this.filterCategory||this.fileType!=='Semua'||this.filterDateFrom||this.filterDateTo||this.filterSizeMin||this.filterSizeMax) },
     get activeFilterCount(){
-      var c = 0;
-      if(this.searchQuery) c++;
-      if(this.filterCategory) c++;
-      if(this.fileType !== 'Semua') c++;
-      if(this.filterDateFrom) c++;
-      if(this.filterDateTo) c++;
-      if(this.filterSizeMin) c++;
-      if(this.filterSizeMax) c++;
+      var c=0;
+      if(this.searchQuery)c++; if(this.filterCategory)c++; if(this.fileType!=='Semua')c++;
+      if(this.filterDateFrom)c++; if(this.filterDateTo)c++; if(this.filterSizeMin)c++; if(this.filterSizeMax)c++;
       return c;
     },
-
-    toggleSelectionMode(){
-      this.selectionMode = !this.selectionMode;
-      if(!this.selectionMode) this.deselectAllFiles();
-      this.refreshIcons();
-    },
-    exitSelectionMode(){
-      this.selectionMode = false;
-      this.deselectAllFiles();
-    },
+    toggleSelectionMode(){ this.selectionMode=!this.selectionMode; if(!this.selectionMode)this.deselectAllFiles(); this.refreshIcons() },
+    exitSelectionMode(){ this.selectionMode=false; this.deselectAllFiles() },
     toggleSelectFile(id){
-      if(this.selectedFiles[id]){
-        var copy = Object.assign({}, this.selectedFiles);
-        delete copy[id];
-        this.selectedFiles = copy;
-      } else {
-        this.selectedFiles = Object.assign({}, this.selectedFiles, {[id]: true});
-      }
-      if(!this.selectionMode) this.selectionMode = true;
-      this.refreshIcons();
+      if(this.selectedFiles[id]){ var copy=Object.assign({},this.selectedFiles); delete copy[id]; this.selectedFiles=copy; }
+      else{ this.selectedFiles=Object.assign({},this.selectedFiles,{[id]:true}) }
+      if(!this.selectionMode)this.selectionMode=true; this.refreshIcons();
     },
     selectAllFiles(){
-      var copy = {};
-      for(var i = 0; i < this.displayedFiles.length; i++){
-        copy[this.displayedFiles[i].id] = true;
-      }
-      this.selectedFiles = copy;
-      this.refreshIcons();
+      var copy={};
+      for(var i=0;i<this.displayedFiles.length;i++) copy[this.displayedFiles[i].id]=true;
+      this.selectedFiles=copy; this.refreshIcons();
     },
-    deselectAllFiles(){
-      this.selectedFiles = {};
-      this.refreshIcons();
-    },
-    toggleSelectAll(event){
-      if(event.target.checked){
-        this.selectAllFiles();
-      } else {
-        this.deselectAllFiles();
-      }
-    },
-
-    bulkMove(){
-      this.bulkMoveTarget = '';
-      this.showBulkMove = true;
-      this.refreshIcons();
-    },
+    deselectAllFiles(){ this.selectedFiles={}; this.refreshIcons() },
+    toggleSelectAll(event){ if(event.target.checked)this.selectAllFiles(); else this.deselectAllFiles() },
+    bulkMove(){ this.bulkMoveTarget=''; this.showBulkMove=true; this.refreshIcons() },
     async confirmBulkMove(){
-      if(!this.bulkMoveTarget || this.selectedCount === 0) return;
-      var categoryName = this.bulkMoveTarget;
-      var self = this;
-      var filesToMove = [];
+      if(!this.bulkMoveTarget||this.selectedCount===0)return;
+      var categoryName=this.bulkMoveTarget, self=this, filesToMove=[];
       for(var id in this.selectedFiles){
-        if(this.selectedFiles[id]){
-          var f = this.files.find(function(file){ return file.id === id });
-          if(f) filesToMove.push(f);
-        }
+        if(this.selectedFiles[id]){ var f=this.files.find(function(file){return file.id===id}); if(f)filesToMove.push(f); }
       }
-      if(filesToMove.length === 0) return;
-
-      this.showBulkMove = false;
-      this.bulkOperationInProgress = true;
-      this.bulkOperationTitle = 'Memindahkan ' + filesToMove.length + ' File';
-      this.bulkOperationDesc = '→ ' + categoryName;
-      this.bulkOperationProgress = 0;
-
-      var originalCats = filesToMove.map(function(f){ return {id: f.id, category: f.category} });
-      filesToMove.forEach(function(f){ f.category = categoryName });
-      this.updateCategoryCounts();
-      this.filterFiles();
-
-      try {
-        var folderId = await this.ensureCategoryFolder(categoryName);
-        if(!folderId) throw new Error('Folder not found');
-        var token = await this.getValidToken();
-        var success = 0;
-
-        for(var i = 0; i < filesToMove.length; i++){
-          var file = filesToMove[i];
-          try {
-            var fileRes = await fetch('https://www.googleapis.com/drive/v3/files/' + file.id + '?fields=parents', {headers:{Authorization:'Bearer '+token}});
+      if(filesToMove.length===0)return;
+      this.showBulkMove=false;
+      this.bulkOperationInProgress=true; this.bulkOperationTitle='Memindahkan '+filesToMove.length+' File'; this.bulkOperationDesc='→ '+categoryName; this.bulkOperationProgress=0;
+      var originalCats=filesToMove.map(function(f){return{id:f.id,category:f.category}});
+      filesToMove.forEach(function(f){f.category=categoryName});
+      this.updateCategoryCounts(); this.filterFiles();
+      try{
+        var folderId=await this.ensureCategoryFolder(categoryName);
+        if(!folderId)throw new Error('Folder not found');
+        var token=await this.getValidToken(), success=0;
+        for(var i=0;i<filesToMove.length;i++){
+          var file=filesToMove[i];
+          try{
+            var fileRes=await fetch('https://www.googleapis.com/drive/v3/files/'+file.id+'?fields=parents',{headers:{Authorization:'Bearer '+token}});
             if(fileRes.ok){
-              var fileData = await fileRes.json();
-              var oldParents = (fileData.parents || []).join(',');
-              var updateRes = await fetch('https://www.googleapis.com/drive/v3/files/' + file.id + '?addParents=' + folderId + '&removeParents=' + oldParents, {
-                method: 'PATCH',
-                headers: {'Authorization': 'Bearer ' + token}
-              });
-              if(updateRes.ok) success++;
+              var fileData=await fileRes.json();
+              var oldParents=(fileData.parents||[]).join(',');
+              var updateRes=await fetch('https://www.googleapis.com/drive/v3/files/'+file.id+'?addParents='+folderId+'&removeParents='+oldParents,{method:'PATCH',headers:{'Authorization':'Bearer '+token}});
+              if(updateRes.ok)success++;
             }
-          } catch(e){}
-          this.bulkOperationProgress = Math.round(((i+1) / filesToMove.length) * 100);
+          }catch(e){}
+          this.bulkOperationProgress=Math.round(((i+1)/filesToMove.length)*100);
         }
-
-        this.bulkOperationInProgress = false;
-        this.exitSelectionMode();
-        if(success === filesToMove.length){
-          this.showToast(success + ' file dipindahkan!', '→ ' + categoryName, 'success');
-          this.saveToCache();
-        } else {
-          this.showToast('Sebagian gagal', success + '/' + filesToMove.length + ' berhasil', 'warning');
-          await this.refreshFromDrive();
-        }
-      } catch(e){
-        originalCats.forEach(function(oc){
-          var f = self.files.find(function(file){ return file.id === oc.id });
-          if(f) f.category = oc.category;
-        });
-        this.updateCategoryCounts();
-        this.filterFiles();
-        this.bulkOperationInProgress = false;
-        this.showToast('Gagal memindahkan', e.message, 'error');
+        this.bulkOperationInProgress=false; this.exitSelectionMode();
+        if(success===filesToMove.length){ this.showToast(success+' file dipindahkan!','→ '+categoryName,'success'); this.saveToCache(); }
+        else{ this.showToast('Sebagian gagal',success+'/'+filesToMove.length+' berhasil','warning'); await this.refreshFromDrive(); }
+      }catch(e){
+        originalCats.forEach(function(oc){ var f=self.files.find(function(file){return file.id===oc.id}); if(f)f.category=oc.category; });
+        this.updateCategoryCounts(); this.filterFiles();
+        this.bulkOperationInProgress=false; this.showToast('Gagal',e.message,'error');
       }
     },
-
     bulkDownload(){
-      var self = this;
-      var count = 0;
+      var count=0;
       for(var id in this.selectedFiles){
         if(this.selectedFiles[id]){
-          var f = this.files.find(function(file){ return file.id === id });
-          if(f){
-            setTimeout(function(file){
-              var url = 'https://drive.google.com/uc?export=download&id=' + file.id;
-              var a = document.createElement('a');
-              a.href = url;
-              a.download = file.name;
-              a.target = '_blank';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-            }, count * 500, f);
-            count++;
-          }
+          var f=this.files.find(function(file){return file.id===id});
+          if(f){ setTimeout(function(file){ var a=document.createElement('a'); a.href='https://drive.google.com/uc?export=download&id='+file.id; a.download=file.name; a.target='_blank'; document.body.appendChild(a); a.click(); document.body.removeChild(a); },count*500,f); count++; }
         }
       }
-      this.showToast('Download ' + count + ' file', 'Cek folder Downloads', 'info');
-      this.exitSelectionMode();
+      this.showToast('Download '+count+' file','Cek folder Downloads','info'); this.exitSelectionMode();
     },
-
-    bulkDelete(){
-      this.showBulkDelete = true;
-      this.refreshIcons();
-    },
+    bulkDelete(){ this.showBulkDelete=true; this.refreshIcons() },
     async confirmBulkDelete(){
-      if(this.selectedCount === 0) return;
-      var self = this;
-      var filesToDelete = [];
+      if(this.selectedCount===0)return;
+      var self=this, filesToDelete=[];
       for(var id in this.selectedFiles){
-        if(this.selectedFiles[id]){
-          var f = this.files.find(function(file){ return file.id === id });
-          if(f) filesToDelete.push(f);
-        }
+        if(this.selectedFiles[id]){ var f=this.files.find(function(file){return file.id===id}); if(f)filesToDelete.push(f); }
       }
-      if(filesToDelete.length === 0) return;
-
-      this.showBulkDelete = false;
-      this.bulkOperationInProgress = true;
-      this.bulkOperationTitle = 'Menghapus ' + filesToDelete.length + ' File';
-      this.bulkOperationDesc = 'Memindahkan ke Trash...';
-      this.bulkOperationProgress = 0;
-
-      var deleteIds = filesToDelete.map(function(f){ return f.id });
-      this.files = this.files.filter(function(f){ return deleteIds.indexOf(f.id) === -1 });
-      this.updateCategoryCounts();
-      this.filterFiles();
-      this.updateStats();
-
-      var success = 0;
-      for(var i = 0; i < filesToDelete.length; i++){
-        var ok = await this.deleteFromDrive(filesToDelete[i].id);
-        if(ok) success++;
-        this.bulkOperationProgress = Math.round(((i+1) / filesToDelete.length) * 100);
+      if(filesToDelete.length===0)return;
+      this.showBulkDelete=false;
+      this.bulkOperationInProgress=true; this.bulkOperationTitle='Menghapus '+filesToDelete.length+' File'; this.bulkOperationDesc='Memindahkan ke Trash...'; this.bulkOperationProgress=0;
+      var deleteIds=filesToDelete.map(function(f){return f.id});
+      this.files=this.files.filter(function(f){return deleteIds.indexOf(f.id)===-1});
+      this.updateCategoryCounts(); this.filterFiles(); this.updateStats();
+      var success=0;
+      for(var i=0;i<filesToDelete.length;i++){
+        var ok=await this.deleteFromDrive(filesToDelete[i].id); if(ok)success++;
+        this.bulkOperationProgress=Math.round(((i+1)/filesToDelete.length)*100);
       }
-
-      this.bulkOperationInProgress = false;
-      this.exitSelectionMode();
-      if(success === filesToDelete.length){
-        this.showToast(success + ' file dihapus!', 'Dipindah ke Trash', 'warning');
-        this.saveToCache();
-      } else {
-        this.showToast('Sebagian gagal', success + '/' + filesToDelete.length + ' dihapus', 'warning');
-        await this.refreshFromDrive();
-      }
+      this.bulkOperationInProgress=false; this.exitSelectionMode();
+      if(success===filesToDelete.length){ this.showToast(success+' file dihapus!','Dipindah ke Trash','warning'); this.saveToCache(); }
+      else{ this.showToast('Sebagian gagal',success+'/'+filesToDelete.length+' dihapus','warning'); await this.refreshFromDrive(); }
     },
 
     // ================================================================
     //  ADVANCED FILTER & SEARCH
     // ================================================================
     debouncedFilter(){
-      var self = this;
+      var self=this;
       clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(function(){
+      this.debounceTimer=setTimeout(function(){
         self.filterFiles();
-        try {
-          localStorage.setItem('dc_filters', JSON.stringify({
-            searchField: self.searchField,
-            filterSizeUnit: self.filterSizeUnit,
-            sortBy: self.sortBy,
-            sortDir: self.sortDir
-          }));
-        } catch(e){}
-      }, 250);
+        try{ localStorage.setItem('dc_filters',JSON.stringify({searchField:self.searchField,filterSizeUnit:self.filterSizeUnit,sortBy:self.sortBy,sortDir:self.sortDir})); }catch(e){}
+      },250);
     },
-
     resetAllFilters(){
-      this.searchQuery = '';
-      this.filterCategory = '';
-      this.fileType = 'Semua';
-      this.filterDateFrom = '';
-      this.filterDateTo = '';
-      this.filterSizeMin = '';
-      this.filterSizeMax = '';
-      this.searchField = 'all';
-      this.sortBy = 'date';
-      this.sortDir = 'desc';
-      this.displayLimit = 30;
+      this.searchQuery=''; this.filterCategory=''; this.fileType='Semua';
+      this.filterDateFrom=''; this.filterDateTo=''; this.filterSizeMin=''; this.filterSizeMax='';
+      this.searchField='all'; this.sortBy='date'; this.sortDir='desc'; this.displayLimit=30;
       this.filterFiles();
     },
-
     filterFiles(){
-      var result = [];
-      var self = this;
-      
-      var minBytes = 0, maxBytes = Infinity;
-      if(this.filterSizeMin){
-        var minVal = parseFloat(this.filterSizeMin);
-        if(!isNaN(minVal)){
-          var unitMultiplier = this.filterSizeUnit === 'GB' ? 1073741824 : (this.filterSizeUnit === 'MB' ? 1048576 : 1024);
-          minBytes = minVal * unitMultiplier;
+      var result=[], self=this;
+      var minBytes=0, maxBytes=Infinity;
+      if(this.filterSizeMin){ var v=parseFloat(this.filterSizeMin); if(!isNaN(v)){ var m=this.filterSizeUnit==='GB'?1073741824:(this.filterSizeUnit==='MB'?1048576:1024); minBytes=v*m; } }
+      if(this.filterSizeMax){ var v2=parseFloat(this.filterSizeMax); if(!isNaN(v2)){ var m2=this.filterSizeUnit==='GB'?1073741824:(this.filterSizeUnit==='MB'?1048576:1024); maxBytes=v2*m2; } }
+      var fromDate=this.filterDateFrom?new Date(this.filterDateFrom).getTime():0;
+      var toDate=this.filterDateTo?new Date(this.filterDateTo+'T23:59:59').getTime():Infinity;
+      var q=this.searchQuery?this.searchQuery.toLowerCase().trim():'';
+      for(var i=0;i<this.files.length;i++){
+        var f=this.files[i], pass=true;
+        if(q&&pass){
+          if(this.searchField==='name'){ if((f.name||'').toLowerCase().indexOf(q)===-1)pass=false; }
+          else if(this.searchField==='title'){ if((f.title||'').toLowerCase().indexOf(q)===-1)pass=false; }
+          else if(this.searchField==='category'){ if((f.category||'').toLowerCase().indexOf(q)===-1)pass=false; }
+          else{ if((f.title||f.name||'').toLowerCase().indexOf(q)===-1&&(f.category||'').toLowerCase().indexOf(q)===-1&&(f.type||'').toLowerCase().indexOf(q)===-1)pass=false; }
         }
+        if(pass&&this.fileType!=='Semua'&&f.type!==this.fileType)pass=false;
+        if(pass&&this.filterCategory&&f.category!==this.filterCategory)pass=false;
+        if(pass&&f.modifiedTime){ if(f.modifiedTime<fromDate)pass=false; if(f.modifiedTime>toDate)pass=false; }
+        if(pass){ var sb=f.sizeBytes||0; if(sb<minBytes||sb>maxBytes)pass=false; }
+        if(pass)result.push(f);
       }
-      if(this.filterSizeMax){
-        var maxVal = parseFloat(this.filterSizeMax);
-        if(!isNaN(maxVal)){
-          var unitMultiplier2 = this.filterSizeUnit === 'GB' ? 1073741824 : (this.filterSizeUnit === 'MB' ? 1048576 : 1024);
-          maxBytes = maxVal * unitMultiplier2;
-        }
-      }
-
-      var fromDate = this.filterDateFrom ? new Date(this.filterDateFrom).getTime() : 0;
-      var toDate = this.filterDateTo ? new Date(this.filterDateTo + 'T23:59:59').getTime() : Infinity;
-
-      var q = this.searchQuery ? this.searchQuery.toLowerCase().trim() : '';
-
-      for(var i = 0; i < this.files.length; i++){
-        var f = this.files[i];
-        var pass = true;
-
-        if(q && pass){
-          if(this.searchField === 'name'){
-            if((f.name || '').toLowerCase().indexOf(q) === -1) pass = false;
-          } else if(this.searchField === 'title'){
-            if((f.title || '').toLowerCase().indexOf(q) === -1) pass = false;
-          } else if(this.searchField === 'category'){
-            if((f.category || '').toLowerCase().indexOf(q) === -1) pass = false;
-          } else {
-            if((f.title || f.name || '').toLowerCase().indexOf(q) === -1 && (f.category || '').toLowerCase().indexOf(q) === -1 && (f.type || '').toLowerCase().indexOf(q) === -1) pass = false;
-          }
-        }
-
-        if(pass && this.fileType !== 'Semua' && f.type !== this.fileType) pass = false;
-        if(pass && this.filterCategory && f.category !== this.filterCategory) pass = false;
-
-        if(pass && f.modifiedTime){
-          if(f.modifiedTime < fromDate) pass = false;
-          if(f.modifiedTime > toDate) pass = false;
-        }
-
-        if(pass){
-          var sizeBytes = f.sizeBytes || 0;
-          if(sizeBytes < minBytes || sizeBytes > maxBytes) pass = false;
-        }
-
-        if(pass) result.push(f);
-      }
-
-      var sortBy = this.sortBy;
-      var sortDir = this.sortDir === 'asc' ? 1 : -1;
-      result.sort(function(a, b){
-        if(sortBy === 'name'){
-          return sortDir * (a.name || '').localeCompare(b.name || '');
-        } else if(sortBy === 'size'){
-          return sortDir * ((a.sizeBytes || 0) - (b.sizeBytes || 0));
-        } else {
-          return sortDir * ((a.modifiedTime || 0) - (b.modifiedTime || 0));
-        }
+      var sortBy=this.sortBy, sortDir=this.sortDir==='asc'?1:-1;
+      result.sort(function(a,b){
+        if(sortBy==='name')return sortDir*(a.name||'').localeCompare(b.name||'');
+        else if(sortBy==='size')return sortDir*((a.sizeBytes||0)-(b.sizeBytes||0));
+        else return sortDir*((a.modifiedTime||0)-(b.modifiedTime||0));
       });
-
-      this.filteredFiles = result;
-      this.displayLimit = 30;
-      this.refreshIcons();
+      this.filteredFiles=result; this.displayLimit=30; this.refreshIcons();
     },
 
     // ================================================================
     //  UPLOAD
     // ================================================================
-    handleFileSelect(e){ if(e.target.files) this.addPendingFiles(Array.from(e.target.files)) },
-    handleDrop(e){ this.isDragging=false; if(e.dataTransfer&&e.dataTransfer.files) this.addPendingFiles(Array.from(e.dataTransfer.files)) },
+    handleFileSelect(e){ if(e.target.files)this.addPendingFiles(Array.from(e.target.files)) },
+    handleDrop(e){ this.isDragging=false; if(e.dataTransfer&&e.dataTransfer.files)this.addPendingFiles(Array.from(e.dataTransfer.files)) },
     addPendingFiles(list){
       var np=[];
       for(var i=0;i<list.length;i++){
@@ -2020,7 +1616,7 @@ function docuCloud() {
         if(f.type&&f.type.indexOf('image/')===0){ try{pu=URL.createObjectURL(f)}catch(e){} }
         np.push({file:f,previewUrl:pu});
       }
-      this.pendingUploadFiles = this.pendingUploadFiles.concat(np);
+      this.pendingUploadFiles=this.pendingUploadFiles.concat(np);
     },
     removePendingFile(idx){ if(this.pendingUploadFiles[idx]&&this.pendingUploadFiles[idx].previewUrl){try{URL.revokeObjectURL(this.pendingUploadFiles[idx].previewUrl)}catch(e){}} this.pendingUploadFiles.splice(idx,1) },
 
@@ -2028,142 +1624,77 @@ function docuCloud() {
     //  ★ FIXED: confirmUpload (dengan verifikasi)
     // ================================================================
     async confirmUpload(){
-      if(!this.driveConnected){ this.showDriveSetup = true; return; }
-      var count = this.pendingUploadFiles.length;
-      if(count === 0) return;
-      
-      // Pastikan kategori valid
-      var targetCategory = this.uploadCategory;
-      var catValid = false;
-      for(var v = 0; v < this.categories.length; v++){
-        if(this.categories[v].name === targetCategory){ catValid = true; break; }
-      }
-      if(!catValid){
-        this.showToast('Error', 'Kategori "' + targetCategory + '" tidak ditemukan', 'error');
-        return;
-      }
-      
-      // Pastikan folder di Drive siap
-      var folderId = await this.ensureCategoryFolder(targetCategory);
-      if(!folderId){
-        this.showToast('Error', 'Gagal membuat folder untuk "' + targetCategory + '"', 'error');
-        return;
-      }
-      
-      // Verifikasi folder benar-benar ada di Drive
-      try {
-        var token = await this.getValidToken();
-        var verifyRes = await fetch('https://www.googleapis.com/drive/v3/files/' + folderId + '?fields=id,name', {headers:{Authorization:'Bearer '+token}});
+      if(!this.driveConnected){ this.showDriveSetup=true; return; }
+      var count=this.pendingUploadFiles.length;
+      if(count===0)return;
+      var targetCategory=this.uploadCategory, catValid=false;
+      for(var v=0;v<this.categories.length;v++){ if(this.categories[v].name===targetCategory){catValid=true;break} }
+      if(!catValid){ this.showToast('Error','Kategori tidak ditemukan','error'); return; }
+      var folderId=await this.ensureCategoryFolder(targetCategory);
+      if(!folderId){ this.showToast('Error','Gagal membuat folder','error'); return; }
+      try{
+        var token=await this.getValidToken();
+        var verifyRes=await fetch('https://www.googleapis.com/drive/v3/files/'+folderId+'?fields=id,name',{headers:{Authorization:'Bearer '+token}});
         if(!verifyRes.ok){
-          for(var r = 0; r < this.categories.length; r++){
-            if(this.categories[r].name === targetCategory){
-              this.categories[r].driveFolderId = null;
-              break;
-            }
-          }
+          for(var r=0;r<this.categories.length;r++){ if(this.categories[r].name===targetCategory){this.categories[r].driveFolderId=null;break} }
           this.saveCategories();
-          folderId = await this.ensureCategoryFolder(targetCategory);
-          if(!folderId){
-            this.showToast('Error', 'Folder tidak bisa diverifikasi', 'error');
-            return;
-          }
+          folderId=await this.ensureCategoryFolder(targetCategory);
+          if(!folderId){ this.showToast('Error','Folder tidak bisa diverifikasi','error'); return; }
         }
-      } catch(e){}
-
-      this.showUpload = false;
-      this.isUploading = true;
-      var successCount = 0, failCount = 0;
-      var uploadedIds = [];
-
-      for(var i = 0; i < count; i++){
-        var pf = this.pendingUploadFiles[i];
-        var f = pf.file;
-        this.uploadProgressFile = f.name + ' (' + (i+1) + '/' + count + ')';
-        this.uploadProgress = Math.round(((i) / count) * 100);
-        try {
-          var result = await this.uploadFileToDrive(f, targetCategory, folderId, this.uploadDefaultTitle.trim());
-          if(result && result.id) uploadedIds.push(result.id);
+      }catch(e){}
+      this.showUpload=false; this.isUploading=true;
+      var successCount=0, failCount=0, uploadedIds=[];
+      for(var i=0;i<count;i++){
+        var pf=this.pendingUploadFiles[i], f=pf.file;
+        this.uploadProgressFile=f.name+' ('+(i+1)+'/'+count+')';
+        this.uploadProgress=Math.round((i/count)*100);
+        try{
+          var result=await this.uploadFileToDrive(f,targetCategory,folderId,this.uploadDefaultTitle.trim());
+          if(result&&result.id)uploadedIds.push(result.id);
           successCount++;
-        } catch(e){
-          console.error('Upload failed for', f.name, e);
-          failCount++;
-        }
-        if(pf.previewUrl){ try{URL.revokeObjectURL(pf.previewUrl)}catch(e){} }
+        }catch(e){ console.error('Upload failed for',f.name,e); failCount++; }
+        if(pf.previewUrl){try{URL.revokeObjectURL(pf.previewUrl)}catch(e){}}
       }
-
-      this.isUploading = false;
-      this.uploadProgress = 0;
-      this.uploadProgressFile = '';
-      this.pendingUploadFiles = [];
-      this.uploadDefaultTitle = '';
-      
-      // Tunggu Drive indexing, lalu refresh
-      if(successCount > 0){
-        await new Promise(function(resolve){ setTimeout(resolve, 1000) });
+      this.isUploading=false; this.uploadProgress=0; this.uploadProgressFile='';
+      this.pendingUploadFiles=[]; this.uploadDefaultTitle='';
+      if(successCount>0){
+        await new Promise(function(resolve){setTimeout(resolve,1000)});
         await this.refreshFromDrive();
-        
-        // Verifikasi file yang diupload masuk ke kategori yang benar
-        var misplaced = 0;
-        for(var m = 0; m < uploadedIds.length; m++){
-          var uploadedFile = this.files.find(function(ff){ return ff.id === uploadedIds[m] });
-          if(uploadedFile && uploadedFile.category !== targetCategory){
-            misplaced++;
-            uploadedFile.category = targetCategory;
-          }
+        var misplaced=0;
+        for(var m=0;m<uploadedIds.length;m++){
+          var uploadedFile=this.files.find(function(ff){return ff.id===uploadedIds[m]});
+          if(uploadedFile&&uploadedFile.category!==targetCategory){ misplaced++; uploadedFile.category=targetCategory; }
         }
-        if(misplaced > 0){
-          this.updateCategoryCounts();
-          this.filterFiles();
-          this.saveToCache();
-        }
-        
-        this.showToast(successCount + ' file uploaded!', '→ ' + targetCategory, 'success');
+        if(misplaced>0){ this.updateCategoryCounts(); this.filterFiles(); this.saveToCache(); }
+        this.showToast(successCount+' file uploaded!','→ '+targetCategory,'success');
       }
-      if(failCount > 0) this.showToast(failCount + ' gagal', 'Coba upload ulang', 'error');
-      this.activeMenu = 'files';
-      this.refreshIcons();
+      if(failCount>0)this.showToast(failCount+' gagal','Coba upload ulang','error');
+      this.activeMenu='files'; this.refreshIcons();
     },
 
     // ================================================================
-    //  ★ FIXED: uploadFileToDrive (dengan logging)
+    //  ★ FIXED: uploadFileToDrive
     // ================================================================
     async uploadFileToDrive(fileObj, categoryName, folderId, title){
-      var token = await this.getValidToken();
-      if(!token) throw new Error('No token');
-      
-      var fileName = title 
-        ? (title + (fileObj.name.indexOf('.') !== -1 ? fileObj.name.substring(fileObj.name.lastIndexOf('.')) : '')) 
-        : fileObj.name;
-      
-      var description = (title || '') + '||category:' + categoryName;
-      
-      var metadata = {
-        name: fileName,
-        description: description,
-        parents: [folderId]
-      };
-      
-      console.log('[DocuCloud] Uploading:', fileName, '→ Category:', categoryName, 'Folder:', folderId);
-      
-      var formData = new FormData();
-      formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-      formData.append('file', fileObj);
-      
-      var response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: formData
+      var token=await this.getValidToken();
+      if(!token)throw new Error('No token');
+      var fileName=title?(title+(fileObj.name.indexOf('.')!==-1?fileObj.name.substring(fileObj.name.lastIndexOf('.')):'')):fileObj.name;
+      var description=(title||'')+'||category:'+categoryName;
+      var metadata={name:fileName,description:description,parents:[folderId]};
+      console.log('[DocuCloud] Uploading:',fileName,'→ Category:',categoryName,'Folder:',folderId);
+      var formData=new FormData();
+      formData.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+      formData.append('file',fileObj);
+      var response=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+        method:'POST', headers:{'Authorization':'Bearer '+token}, body:formData
       });
-      
       if(!response.ok){
-        var errBody = '';
-        try { errBody = await response.text(); } catch(e){}
-        console.error('[DocuCloud] Upload error:', response.status, errBody);
-        throw new Error('Upload failed: ' + response.status);
+        var errBody=''; try{errBody=await response.text()}catch(e){}
+        console.error('[DocuCloud] Upload error:',response.status,errBody);
+        throw new Error('Upload failed: '+response.status);
       }
-      
-      var result = await response.json();
-      console.log('[DocuCloud] Upload success:', result.name, 'ID:', result.id);
+      var result=await response.json();
+      console.log('[DocuCloud] Upload success:',result.name,'ID:',result.id);
       return result;
     },
 
@@ -2171,147 +1702,107 @@ function docuCloud() {
     //  DRIVE CORE
     // ================================================================
     async ensureDriveFolder(){
-      var token = await this.getValidToken();
-      if(!token || !this.driveConnected) return null;
-      if(this.driveFolderId){ try{ var c = await fetch('https://www.googleapis.com/drive/v3/files/'+this.driveFolderId+'?fields=id', {headers:{Authorization:'Bearer '+token}}); if(c.ok) return this.driveFolderId; }catch(e){} }
+      var token=await this.getValidToken();
+      if(!token||!this.driveConnected)return null;
+      if(this.driveFolderId){try{var c=await fetch('https://www.googleapis.com/drive/v3/files/'+this.driveFolderId+'?fields=id',{headers:{Authorization:'Bearer '+token}});if(c.ok)return this.driveFolderId;}catch(e){}}
       try{
-        var q = "name='DocuCloud' and mimeType='application/vnd.google-apps.folder' and trashed=false";
-        var sr = await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)', {headers:{Authorization:'Bearer '+token}});
-        if(sr.ok){ var sd = await sr.json(); if(sd.files && sd.files.length > 0){ this.driveFolderId = sd.files[0].id; localStorage.setItem('dc_drive_folder', this.driveFolderId); return this.driveFolderId; } }
-        var cr = await fetch('https://www.googleapis.com/drive/v3/files', { method:'POST', headers:{'Authorization':'Bearer '+token, 'Content-Type':'application/json'}, body: JSON.stringify({name:'DocuCloud',mimeType:'application/vnd.google-apps.folder'}) });
-        if(cr.ok){ var folder = await cr.json(); this.driveFolderId = folder.id; localStorage.setItem('dc_drive_folder', this.driveFolderId); return this.driveFolderId; }
+        var q="name='DocuCloud' and mimeType='application/vnd.google-apps.folder' and trashed=false";
+        var sr=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)',{headers:{Authorization:'Bearer '+token}});
+        if(sr.ok){var sd=await sr.json();if(sd.files&&sd.files.length>0){this.driveFolderId=sd.files[0].id;localStorage.setItem('dc_drive_folder',this.driveFolderId);return this.driveFolderId;}}
+        var cr=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({name:'DocuCloud',mimeType:'application/vnd.google-apps.folder'})});
+        if(cr.ok){var folder=await cr.json();this.driveFolderId=folder.id;localStorage.setItem('dc_drive_folder',this.driveFolderId);return this.driveFolderId;}
       }catch(e){}
       return null;
     },
     async deleteFromDrive(driveId){
-      var token = await this.getValidToken();
-      if(!token || !driveId) return false;
-      try {
-        var r = await fetch('https://www.googleapis.com/drive/v3/files/'+driveId, { method: 'PATCH', headers: {'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'}, body: JSON.stringify({trashed: true}) });
-        if(r.ok || r.status === 200) return true;
-      } catch(e){}
+      var token=await this.getValidToken();
+      if(!token||!driveId)return false;
+      try{var r=await fetch('https://www.googleapis.com/drive/v3/files/'+driveId,{method:'PATCH',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});if(r.ok||r.status===200)return true;}catch(e){}
       return false;
     },
     async updateFileOnDrive(driveId, updates){
-      var token = await this.getValidToken();
-      if(!token || !driveId) return false;
-      try {
-        var r = await fetch('https://www.googleapis.com/drive/v3/files/' + driveId + '?fields=id,name,description', {
-          method: 'PATCH', headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}, body: JSON.stringify(updates)
-        });
-        return r.ok;
-      } catch(e){ return false; }
+      var token=await this.getValidToken();
+      if(!token||!driveId)return false;
+      try{var r=await fetch('https://www.googleapis.com/drive/v3/files/'+driveId+'?fields=id,name,description',{method:'PATCH',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(updates)});return r.ok;}catch(e){return false;}
     },
 
     // ================================================================
     //  FILE OPERATIONS
     // ================================================================
     startEditFile(file){
-      this.fileToEdit = file;
-      this.editFileTitle = file.title || '';
-      this.editFileName = file.name;
-      this.editFileCategory = file.category || '';
-      this.showEditFile = true;
-      this.refreshIcons();
+      this.fileToEdit=file; this.editFileTitle=file.title||''; this.editFileName=file.name; this.editFileCategory=file.category||'';
+      this.showEditFile=true; this.refreshIcons();
     },
     async saveEditFile(){
-      if(!this.fileToEdit) return;
-      var oldCategory = this.fileToEdit.category;
-      var newCategory = this.editFileCategory;
-      var newName = this.editFileName;
-      var newTitle = this.editFileTitle.trim();
-      var driveId = this.fileToEdit.id;
-      var updates = { name: newName, description: newTitle + '||category:' + newCategory };
-      var moveFolderId = null;
-      if(newCategory !== oldCategory && newCategory){
-        moveFolderId = await this.ensureCategoryFolder(newCategory);
-      }
-      var ok = await this.updateFileOnDrive(driveId, updates);
-      if(ok && moveFolderId){
-        var token = await this.getValidToken();
-        try {
-          var fileRes = await fetch('https://www.googleapis.com/drive/v3/files/' + driveId + '?fields=parents', {headers:{Authorization:'Bearer '+token}});
+      if(!this.fileToEdit)return;
+      var oldCategory=this.fileToEdit.category, newCategory=this.editFileCategory;
+      var newName=this.editFileName, newTitle=this.editFileTitle.trim(), driveId=this.fileToEdit.id;
+      var updates={name:newName,description:newTitle+'||category:'+newCategory};
+      var moveFolderId=null;
+      if(newCategory!==oldCategory&&newCategory){ moveFolderId=await this.ensureCategoryFolder(newCategory); }
+      var ok=await this.updateFileOnDrive(driveId,updates);
+      if(ok&&moveFolderId){
+        var token=await this.getValidToken();
+        try{
+          var fileRes=await fetch('https://www.googleapis.com/drive/v3/files/'+driveId+'?fields=parents',{headers:{Authorization:'Bearer '+token}});
           if(fileRes.ok){
-            var fileData = await fileRes.json();
-            var oldParents = (fileData.parents || []).join(',');
-            await fetch('https://www.googleapis.com/drive/v3/files/' + driveId + '?addParents=' + moveFolderId + '&removeParents=' + oldParents, {
-              method: 'PATCH', headers: {'Authorization': 'Bearer ' + token}
-            });
+            var fileData=await fileRes.json();
+            var oldParents=(fileData.parents||[]).join(',');
+            await fetch('https://www.googleapis.com/drive/v3/files/'+driveId+'?addParents='+moveFolderId+'&removeParents='+oldParents,{method:'PATCH',headers:{'Authorization':'Bearer '+token}});
           }
-        } catch(e){}
+        }catch(e){}
       }
-      this.showEditFile = false;
-      this.showToast('Tersimpan', 'Metadata diupdate', 'success');
-      await this.refreshFromDrive();
+      this.showEditFile=false; this.showToast('Tersimpan','Metadata diupdate','success'); await this.refreshFromDrive();
     },
-
-    deleteFile(file){ this.fileToDelete = file; this.showDeleteConfirm = true },
+    deleteFile(file){ this.fileToDelete=file; this.showDeleteConfirm=true },
     async confirmDeleteFile(){
-      if(!this.fileToDelete) return;
-      var nm = this.fileToDelete.name;
-      var ok = await this.deleteFromDrive(this.fileToDelete.id);
-      this.showDeleteConfirm = false;
-      this.fileToDelete = null;
-      if(ok) this.showToast('Dihapus', nm, 'warning');
-      else this.showToast('Gagal', nm, 'error');
+      if(!this.fileToDelete)return;
+      var nm=this.fileToDelete.name;
+      var ok=await this.deleteFromDrive(this.fileToDelete.id);
+      this.showDeleteConfirm=false; this.fileToDelete=null;
+      if(ok)this.showToast('Dihapus',nm,'warning'); else this.showToast('Gagal',nm,'error');
       await this.refreshFromDrive();
     },
-
-    openFile(file){ this.previewFile = file; this.refreshIcons() },
+    openFile(file){ this.previewFile=file; this.refreshIcons() },
     downloadFile(file){
-      if(file && file.id){
-        var url = 'https://drive.google.com/uc?export=download&id=' + file.id;
-        var a = document.createElement('a');
-        a.href = url; a.download = file.name; a.target = '_blank';
+      if(file&&file.id){
+        var a=document.createElement('a');
+        a.href='https://drive.google.com/uc?export=download&id='+file.id; a.download=file.name; a.target='_blank';
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        this.showToast('Download', file.name, 'info');
+        this.showToast('Download',file.name,'info');
       }
     },
     toggleFileMenu(id,e){ if(e)e.stopPropagation(); this.openFileMenuId=(this.openFileMenuId===id)?null:id; this.refreshIcons() },
     openNewCategoryModal(){ this.newCategoryName=''; this.newCategoryColor='#6366f1'; this.showNewCategory=true; this.refreshIcons() },
-
     async addCategory(){
       var n=this.newCategoryName.trim(); if(!n)return;
       if(this.categories.some(function(c){return c.name.toLowerCase()===n.toLowerCase()})){this.showToast('Error','Kategori sudah ada','error');return}
-      var newCat = {name:n, color:this.newCategoryColor, icon:'fa-solid fa-folder', count:0, driveFolderId:null};
+      var newCat={name:n,color:this.newCategoryColor,icon:'fa-solid fa-folder',count:0,driveFolderId:null};
       if(this.driveConnected){
-        var folderId = await this.createCategoryFolderOnDrive(n);
-        if(folderId){ newCat.driveFolderId = folderId; this.showToast('Kategori dibuat!', n, 'success'); }
+        var folderId=await this.createCategoryFolderOnDrive(n);
+        if(folderId){newCat.driveFolderId=folderId;this.showToast('Kategori dibuat!',n,'success');}
       }
-      this.categories = this.categories.concat([newCat]);
-      this.uploadCategory = n;
-      this.saveCategories();
-      this.showNewCategory = false;
-      this.updateStats();
-      this.refreshIcons();
+      this.categories=this.categories.concat([newCat]);
+      this.uploadCategory=n; this.saveCategories(); this.showNewCategory=false; this.updateStats(); this.refreshIcons();
     },
-
     openDeleteCategoryModal(idx){
-      this.categoryDeleteIndex = idx;
-      this.categoryToDelete = Object.assign({}, this.categories[idx]);
-      this.driveDeletingCategory = false;
-      this.showDeleteCategory = true;
+      this.categoryDeleteIndex=idx; this.categoryToDelete=Object.assign({},this.categories[idx]);
+      this.driveDeletingCategory=false; this.showDeleteCategory=true;
     },
-
     async deleteCategory(){
-      if(this.categoryDeleteIndex < 0) return;
-      var idx = this.categoryDeleteIndex;
-      var cat = this.categories[idx];
-      if(!cat) return;
-      var nm = cat.name;
-      var folderId = cat.driveFolderId || null;
+      if(this.categoryDeleteIndex<0)return;
+      var idx=this.categoryDeleteIndex, cat=this.categories[idx];
+      if(!cat)return;
+      var nm=cat.name, folderId=cat.driveFolderId||null;
       if(this.driveConnected){
-        this.driveDeletingCategory = true;
-        if(!folderId) folderId = await this.findFolderByNameOnDrive(nm);
-        if(folderId) await this.deleteCategoryFolderOnDrive(folderId, nm);
-        this.driveDeletingCategory = false;
+        this.driveDeletingCategory=true;
+        if(!folderId)folderId=await this.findFolderByNameOnDrive(nm);
+        if(folderId)await this.deleteCategoryFolderOnDrive(folderId,nm);
+        this.driveDeletingCategory=false;
       }
-      var self = this;
-      this.categories = this.categories.filter(function(c, i){ return i !== idx });
-      this.saveCategories();
-      this.showDeleteCategory = false;
-      this.updateStats();
-      await this.refreshFromDrive();
+      var self=this;
+      this.categories=this.categories.filter(function(c,i){return i!==idx});
+      this.saveCategories(); this.showDeleteCategory=false; this.updateStats(); await this.refreshFromDrive();
     },
 
     // ================================================================
@@ -2319,41 +1810,37 @@ function docuCloud() {
     // ================================================================
     formatBytes(b){ if(!b||b===0)return'0 B'; var u=['B','KB','MB','GB']; var i=Math.floor(Math.log(b)/Math.log(1024)); return(b/Math.pow(1024,i)).toFixed(1)+' '+u[i] },
     getFileType(mime){
-      if(typeof mime !== 'string') mime = '';
-      if(mime.indexOf('image/')===0) return 'Gambar';
-      if(mime==='application/pdf') return 'PDF';
-      if(mime.indexOf('video/')===0) return 'Video';
-      if(mime.indexOf('audio/')===0) return 'Audio';
-      if(mime.indexOf('spreadsheet')!==-1||mime.indexOf('excel')!==-1||mime.indexOf('csv')!==-1) return 'Spreadsheet';
-      return 'Dokumen';
+      if(typeof mime!=='string')mime='';
+      if(mime.indexOf('image/')===0)return'Gambar';
+      if(mime==='application/pdf')return'PDF';
+      if(mime.indexOf('video/')===0)return'Video';
+      if(mime.indexOf('audio/')===0)return'Audio';
+      if(mime.indexOf('spreadsheet')!==-1||mime.indexOf('excel')!==-1||mime.indexOf('csv')!==-1)return'Spreadsheet';
+      return'Dokumen';
     },
-    getFileIcon(t){ return ({'Gambar':'image','PDF':'file-text','Spreadsheet':'table','Video':'video','Audio':'music','Dokumen':'file-text'})[t]||'file' },
-    getFileColor(t){ return ({'Gambar':'#ec4899','PDF':'#ef4444','Spreadsheet':'#10b981','Video':'#8b5cf6','Audio':'#f59e0b','Dokumen':'#6366f1'})[t]||'#6366f1' },
-    getDriveFileIcon(m){ if(!m)return'file'; if(m.indexOf('image/')===0)return'image'; if(m==='application/pdf')return'file-text'; if(m.indexOf('sheet')!==-1||m.indexOf('excel')!==-1)return'table'; if(m.indexOf('video/')===0)return'video'; return'file' },
-    getDriveFileColor(m){ if(!m)return'#6366f1'; if(m.indexOf('image/')===0)return'#ec4899'; if(m==='application/pdf')return'#ef4444'; if(m.indexOf('sheet')!==-1||m.indexOf('excel')!==-1)return'#10b981'; if(m.indexOf('video/')===0)return'#8b5cf6'; return'#6366f1' },
-    catColor(n){ var f=this.categories.find(function(c){return c.name===n}); return f?f.color:'#64748b' },
-
-    updateCategoryCounts(){ var f=this.files; this.categories.forEach(function(c){ c.count=0; for(var i=0;i<f.length;i++) if(f[i].category===c.name) c.count++ }) },
+    getFileIcon(t){return({'Gambar':'image','PDF':'file-text','Spreadsheet':'table','Video':'video','Audio':'music','Dokumen':'file-text'})[t]||'file'},
+    getFileColor(t){return({'Gambar':'#ec4899','PDF':'#ef4444','Spreadsheet':'#10b981','Video':'#8b5cf6','Audio':'#f59e0b','Dokumen':'#6366f1'})[t]||'#6366f1'},
+    getDriveFileIcon(m){if(!m)return'file';if(m.indexOf('image/')===0)return'image';if(m==='application/pdf')return'file-text';if(m.indexOf('sheet')!==-1||m.indexOf('excel')!==-1)return'table';if(m.indexOf('video/')===0)return'video';return'file'},
+    getDriveFileColor(m){if(!m)return'#6366f1';if(m.indexOf('image/')===0)return'#ec4899';if(m==='application/pdf')return'#ef4444';if(m.indexOf('sheet')!==-1||m.indexOf('excel')!==-1)return'#10b981';if(m.indexOf('video/')===0)return'#8b5cf6';return'#6366f1'},
+    catColor(n){var f=this.categories.find(function(c){return c.name===n});return f?f.color:'#64748b'},
+    updateCategoryCounts(){var f=this.files;this.categories.forEach(function(c){c.count=0;for(var i=0;i<f.length;i++)if(f[i].category===c.name)c.count++})},
     updateStats(){
-      var totalSize = 0;
-      for(var i=0;i<this.files.length;i++) totalSize += (this.files[i].sizeBytes||0);
-      this.usedStorage = this.formatBytes(totalSize);
-      this.stats[0].value = this.files.length.toString();
-      this.stats[1].value = this.usedStorage;
-      this.stats[2].value = this.categories.filter(function(c){return c.driveFolderId}).length.toString();
-      this.stats[3].value = this.categories.length.toString();
+      var totalSize=0;
+      for(var i=0;i<this.files.length;i++)totalSize+=(this.files[i].sizeBytes||0);
+      this.usedStorage=this.formatBytes(totalSize);
+      this.stats[0].value=this.files.length.toString();
+      this.stats[1].value=this.usedStorage;
+      this.stats[2].value=this.categories.filter(function(c){return c.driveFolderId}).length.toString();
+      this.stats[3].value=this.categories.length.toString();
     },
-    changeTheme(id){ var t=this.themePresets.find(function(p){return p.id===id}); if(t){this.currentTheme=t;localStorage.setItem('dc_theme',id)} },
+    changeTheme(id){var t=this.themePresets.find(function(p){return p.id===id});if(t){this.currentTheme=t;localStorage.setItem('dc_theme',id)}},
     async clearLocalData(){
       if(!confirm('Reset cache & settings? File di Drive TIDAK terpengaruh.'))return;
-      localStorage.removeItem('dc_metadata_cache');
-      localStorage.removeItem('dc_theme');
-      localStorage.removeItem('dc_dark');
-      localStorage.removeItem('dc_filters');
+      localStorage.removeItem('dc_metadata_cache'); localStorage.removeItem('dc_theme');
+      localStorage.removeItem('dc_dark'); localStorage.removeItem('dc_filters');
       try{var db=await this.openDB();var tx=db.transaction('categories','readwrite');tx.objectStore('categories').clear();await new Promise(function(r){tx.oncomplete=r})}catch(e){}
       this.files=[]; this.filteredFiles=[];
-      this.showToast('Cache direset','','warning');
-      location.reload();
+      this.showToast('Cache direset','','warning'); location.reload();
     },
     showToast(title,desc,type){
       var map={success:{icon:'check-circle',color:'#10b981',bg:'#d1fae5'},error:{icon:'alert-circle',color:'#ef4444',bg:'#fee2e2'},warning:{icon:'alert-triangle',color:'#f59e0b',bg:'#fef3c7'},info:{icon:'info',color:'#3b82f6',bg:'#dbeafe'}};
@@ -2363,90 +1850,70 @@ function docuCloud() {
       setTimeout(function(){self.toasts=self.toasts.filter(function(t){return t.id!==id})},4000);
     },
 
-    // ===== DRIVE AUTH =====
+    // ================================================================
+    //  ★ FIXED: signInToDrive — error handling lebih baik
+    // ================================================================
     async signInToDrive(){
-      if(!this.driveConfig.clientId||!this.driveConfig.clientId.trim()){this.driveAuthError='Client ID kosong';return}
+      if(!this.driveConfig.clientId||!this.driveConfig.clientId.trim()){
+        this.driveAuthError='Client ID kosong'; return;
+      }
       this.driveLoading=true; this.driveAuthError='';
       var clientId=this.driveConfig.clientId.trim(), self=this;
-      var waitGIS=function(){return new Promise(function(resolve,reject){
-        var a=0,ck=function(){a++;if(window.google&&window.google.accounts&&window.google.accounts.oauth2)resolve();else if(a>50)reject(new Error('Timeout'));else setTimeout(ck,100)};ck()
-      })};
+      
+      // ★ FIX: Tunggu GIS loaded dulu
+      try {
+        await this.waitForGIS();
+      } catch(e){
+        this.driveAuthError='Google Identity Services belum siap. Cek koneksi internet dan reload halaman.';
+        this.driveLoading=false;
+        return;
+      }
+      
       try{
-        await waitGIS();
         await self.initTokenClient(clientId);
+        
+        if(!self.driveTokenClient){
+          throw new Error('Token client gagal diinisialisasi');
+        }
+        
         var tc=google.accounts.oauth2.initTokenClient({
           client_id:clientId,
           scope:'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
           ux_mode:'popup',
           callback:async function(resp){
-            if(resp.error){self.driveAuthError=resp.error_description||'Error';self.driveLoading=false;return}
+            if(resp.error){
+              self.driveAuthError=resp.error_description||resp.error||'Autentikasi gagal';
+              self.driveLoading=false;
+              return;
+            }
             try{
               var ur=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
-              if(!ur.ok)throw new Error('Gagal'); var u=await ur.json();
+              if(!ur.ok)throw new Error('Gagal mengambil data user');
+              var u=await ur.json();
               self.driveUser={name:u.name||u.email.split('@')[0],email:u.email,picture:u.picture};
               self.driveConnected=true; self.driveSetupStep=3;
               localStorage.setItem('dc_drive_token',resp.access_token);
               localStorage.setItem('dc_drive_client',clientId);
+              await self.initTokenClient(clientId);
               await self.ensureDriveFolder();
               await self.syncAllCategoryFolders();
               await self.refreshFromDrive();
               self.showToast('Drive terhubung!','Ultimate mode aktif','success');
               self.driveLoading=false;
               setTimeout(function(){self.showDriveSetup=false},1500);
-            }catch(e){self.driveAuthError='Gagal: '+e.message;self.driveLoading=false}
+            }catch(e){
+              console.error('[DocuCloud] Sign in error:', e);
+              self.driveAuthError='Gagal: '+e.message;
+              self.driveLoading=false;
+            }
           }
         });
         tc.requestAccessToken({prompt:'consent'});
-      }catch(e){this.driveAuthError=e.message||'Gagal';this.driveLoading=false}
-    },
-
-    // ================================================================
-    //  ★ FIXED: syncDriveFiles (tambah parents field)
-    // ================================================================
-    async syncDriveFiles(){
-      var token = await this.getValidToken();
-      if(!token) return;
-      this.driveLoading = true;
-      try{
-        // Tambahkan 'parents' di fields
-        var folderQ = this.driveFolderId ? ("'"+this.driveFolderId+"' in parents and ") : '';
-        var fieldsStr = 'files(id,name,mimeType,size,modifiedTime,description,parents)';
-        var r = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=200&fields='+fieldsStr+'&q='+encodeURIComponent(folderQ+'trashed=false'),{headers:{Authorization:'Bearer '+token}});
-        if(!r.ok) throw new Error('Token expired');
-        var d = await r.json();
-        var allItems = d.files || [];
-        var folders = [], files = [];
-        for(var i = 0; i < allItems.length; i++){
-          if(allItems[i].mimeType === 'application/vnd.google-apps.folder'){
-            allItems[i].children = [];
-            folders.push(allItems[i]);
-          } else {
-            files.push(allItems[i]);
-          }
-        }
-        
-        // PARALLEL fetch children untuk semua folder
-        var childPromises = folders.map(function(folder){
-          return fetch('https://www.googleapis.com/drive/v3/files?pageSize=200&fields='+fieldsStr+'&q='+encodeURIComponent("'"+folder.id+"' in parents and trashed=false"),{headers:{Authorization:'Bearer '+token}})
-            .then(function(res){ return res.ok ? res.json() : {files:[]} })
-            .then(function(data){ folder.children = data.files || []; })
-            .catch(function(){ folder.children = []; });
-        });
-        await Promise.all(childPromises);
-        folders.sort(function(a,b){ return a.name.localeCompare(b.name) });
-        this.driveFiles = files;
-        this.driveFolders = folders;
-        
-        // Sinkronkan driveFolderId categories dengan folder yang ada di Drive
-        this.syncCategoryFolderIds(folders);
-        
-      } catch(e){
-        this.driveConnected = false;
-        localStorage.removeItem('dc_drive_token');
-        throw e;
+      }catch(e){
+        console.error('[DocuCloud] Sign in error:', e);
+        this.driveAuthError=e.message||'Gagal terhubung ke Google';
+        this.driveLoading=false;
       }
-      this.driveLoading = false;
-      this.refreshIcons();
     },
 
     async confirmDisconnectDrive(){
@@ -2455,18 +1922,15 @@ function docuCloud() {
       localStorage.removeItem('dc_metadata_cache');
       this.driveConnected=false; this.driveUser=null; this.driveFiles=[]; this.driveFolders=[]; this.driveFolderId=null;
       this.files=[]; this.filteredFiles=[];
-      this.driveCurrentFolderId='root';
-      this.driveTokenClient = null;
-      this.cacheStatus = 'Disconnected';
-      for(var i=0;i<this.categories.length;i++){ this.categories[i].driveFolderId = null; }
+      this.driveCurrentFolderId='root'; this.driveTokenClient=null;
+      this.cacheStatus='Disconnected';
+      for(var i=0;i<this.categories.length;i++){this.categories[i].driveFolderId=null}
       this.saveCategories();
       this.showDisconnectDrive=false; this.confirmDisconnectCheck=false;
-      this.updateStats();
-      this.showToast('Drive diputuskan','','warning');
+      this.updateStats(); this.showToast('Drive diputuskan','','warning');
     }
   };
 }
 </script>
 </body>
 </html>
-
