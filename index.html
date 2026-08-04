@@ -614,21 +614,26 @@ tr.selected{background:rgba(99,102,241,.08)!important}
         <p class="text-[10px] text-slate-500 mt-1">Dapatkan dari <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-blue-500 underline">Google Cloud Console</a></p>
       </div>
       <!-- ★ FIX: Status GIS loading -->
-      <div x-show="!window._gisLoaded && !window._gisLoadError" class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
-        <svg class="w-4 h-4 spin flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
-        <span>Memuat Google Identity Services...</span>
-      </div>
-      <div x-show="window._gisLoadError" class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
-        <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-        <div>
-          <p class="font-semibold">Google Identity Services gagal dimuat</p>
-          <p class="mt-0.5">Cek koneksi internet atau coba reload halaman.</p>
-        </div>
-      </div>
-      <button x-show="driveConfig.clientId && driveConfig.clientId.trim() && !driveConnected" @click="signInToDrive()" :disabled="driveLoading || window._gisLoadError" class="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition disabled:opacity-50">
-        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
-        <span x-text="driveLoading ? 'Menghubungkan...' : 'Masuk dengan Google'"></span>
-      </button>
+<div x-show="!gisLoaded && !gisLoadError" class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+  <svg class="w-4 h-4 spin flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+  <span>Memuat Google Identity Services...</span>
+</div>
+<div x-show="gisLoadError" class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
+  <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+  <div>
+    <p class="font-semibold">Google Identity Services gagal dimuat</p>
+    <p class="mt-0.5">Cek koneksi internet atau coba reload halaman.</p>
+  </div>
+</div>
+<!-- ★ NEW: Status GIS siap -->
+<div x-show="gisLoaded && !driveConnected" class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-xs text-green-700 dark:text-green-400 flex items-center gap-2">
+  <i data-lucide="check-circle" class="w-4 h-4 flex-shrink-0"></i>
+  <span>Google Identity Services siap! Masukkan Client ID dan klik tombol di bawah.</span>
+</div>
+      <button x-show="driveConfig.clientId && driveConfig.clientId.trim().length > 10 && !driveConnected" @click="signInToDrive()" :disabled="driveLoading" class="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50 cursor-pointer">
+  <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
+  <span x-text="driveLoading ? 'Menghubungkan...' : 'Masuk dengan Google'"></span>
+</button>
       <div x-show="driveAuthError" class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
         <div><p class="font-semibold">Error Autentikasi</p><p class="mt-0.5" x-text="driveAuthError"></p></div>
@@ -749,6 +754,8 @@ function docuCloud() {
     showDriveSetup:false, showDriveBrowser:false, showDriveMenu:false,
     showDisconnectDrive:false, confirmDisconnectCheck:false,
     driveConfig:{clientId:''},
+    gisLoaded: false,
+    gisLoadError: false,
     driveFolderId:null,
     driveTokenClient: null,
     isRefreshing: false,
@@ -856,6 +863,21 @@ function docuCloud() {
           },300); 
         }
       },300);
+
+            // ★ FIX: Poll window._gisLoaded dan sync ke Alpine
+      var gisPoll = setInterval(function(){
+        if(window.google && window.google.accounts && window.google.accounts.oauth2){
+          self.gisLoaded = true;
+          window._gisLoaded = true;
+          console.log('[DocuCloud] ✅ GIS reactive state updated');
+          clearInterval(gisPoll);
+        } else if(window._gisLoadError){
+          self.gisLoadError = true;
+          console.error('[DocuCloud] ❌ GIS load error detected');
+          clearInterval(gisPoll);
+        }
+      }, 200);
+      setTimeout(function(){ clearInterval(gisPoll); if(!self.gisLoaded){ self.gisLoadError = true; console.warn('[DocuCloud] ⚠️ GIS load timeout (15s)'); } }, 15000);
       
       this.$watch('darkMode',function(v){ localStorage.setItem('dc_dark',v); self.refreshIcons() });
       this.$watch('activeMenu',function(){ self.filterFiles(); self.refreshIcons() });
