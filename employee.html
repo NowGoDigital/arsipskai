@@ -243,7 +243,7 @@ tr:hover .file-actions-btn{opacity:1}
                   <p class="text-[11px] text-white/80 truncate" x-text="currentUser ? (currentUser.department || 'Staff') : ''"></p>
                   <div class="flex items-center gap-1 mt-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                    <span class="text-[10px] text-white/70" x-text="currentUser && (!currentUser.access || currentUser.access === 'all') ? 'Akses: Semua Kategori' : 'Akses: ' + (currentUser ? currentUser.access : '')"></span>
+                    <span class="text-[10px] text-white/70" x-text="accessLabel"></span>
                   </div>
                 </div>
               </div>
@@ -558,7 +558,7 @@ function employeeApp() {
     usedStorage: '0 B',
 
     init(){
-      if(this._booted) return;   // guard: cegah init dobel
+      if(this._booted) return;
       this._booted = true;
       window.__employeeApp = this;
       var self = this;
@@ -591,7 +591,7 @@ function employeeApp() {
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
 
     // ================================================================
-    //  KATEGORI — IndexedDB DocuCloudV8 + fallback dari folder Drive
+    //  KATEGORI — IndexedDB DocuCloudV8 + fallback folder Drive
     // ================================================================
     openDB(){
       return new Promise(function(resolve,reject){
@@ -621,21 +621,12 @@ function employeeApp() {
         console.log('[Employee] 📂 Kategori dari IndexedDB:', this.categories.length, this.categories.map(function(c){return c.name}).join(', ') || '(kosong)');
       }catch(e){ console.warn('[Employee] loadCategories error:', e); }
     },
-
-    // ★ FIX: kalau IndexedDB kosong, buat kategori otomatis dari folder Drive
     ensureCategoriesFromDrive(){
       if(this.categories.length > 0) return;
       var palette = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
       for(var i=0;i<this.driveFolders.length;i++){
         var f = this.driveFolders[i];
-        this.categories.push({
-          name: f.name,
-          color: palette[i % palette.length],
-          icon: 'folder',
-          driveFolderId: f.id,
-          count: 0,
-          auto: true
-        });
+        this.categories.push({ name: f.name, color: palette[i % palette.length], icon: 'folder', driveFolderId: f.id, count: 0, auto: true });
       }
       if(this.categories.length > 0){
         console.log('[Employee] 📂 Kategori dibuat dari folder Drive:', this.categories.map(function(c){return c.name}).join(', '));
@@ -661,7 +652,6 @@ function employeeApp() {
         }
       }
     },
-
     login(){
       this.loginError = '';
       var self = this;
@@ -676,7 +666,6 @@ function employeeApp() {
       else if(u.status === 'pending'){ this.showToast('Menunggu persetujuan','Akun belum disetujui Admin','info'); }
       this.refreshIcons();
     },
-
     register(){
       this.regError = '';
       if(!this.regName || !this.regUsername || !this.regPassword){ this.regError = 'Data wajib diisi'; return; }
@@ -698,7 +687,6 @@ function employeeApp() {
       this.showRegister = false;
       this.refreshIcons();
     },
-
     recheckStatus(){
       var self = this;
       var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
@@ -711,7 +699,6 @@ function employeeApp() {
       }
       this.refreshIcons();
     },
-
     logout(){
       localStorage.removeItem('dc_employee_session');
       this.currentUser = null; this.isLoggedIn = false;
@@ -746,7 +733,6 @@ function employeeApp() {
         this.showToast('Gagal memulai login Drive', e.message, 'error');
       }
     },
-
     async connectDrive(){
       this.driveError = '';
       var token = localStorage.getItem('dc_drive_token');
@@ -777,6 +763,7 @@ function employeeApp() {
         this.filterFiles();
         this.driveConnected = true;
         this.driveError = '';
+        this.warnInvalidAccess();
         console.log('[Employee] ✅ Total file Drive:', this.files.length, '| Dapat diakses:', this.accessibleFiles.length);
       }catch(e){
         console.error('[Employee] Drive error:', e);
@@ -792,7 +779,6 @@ function employeeApp() {
         this.refreshIcons();
       }
     },
-
     async refreshFromDrive(){
       if(!localStorage.getItem('dc_drive_token')){ this.connectDrive(); return; }
       this.driveLoading = true;
@@ -816,7 +802,6 @@ function employeeApp() {
         this.refreshIcons();
       }
     },
-
     async syncDriveFiles(){
       var token = localStorage.getItem('dc_drive_token');
       if(!token) throw new Error('NO_TOKEN');
@@ -855,7 +840,6 @@ function employeeApp() {
       }
       this.driveLoading = false;
     },
-
     buildFileListFromDrive(){
       var result = [];
       var self = this;
@@ -869,7 +853,6 @@ function employeeApp() {
       for(var c2 = 0; c2 < this.categories.length; c2++){
         nameToCat[this.categories[c2].name.toLowerCase()] = this.categories[c2].name;
       }
-      // file langsung di root
       for(var i = 0; i < this.driveFiles.length; i++){
         var rootFile = this.driveFiles[i];
         var rootCat = '';
@@ -880,10 +863,8 @@ function employeeApp() {
         }
         result.push(self.mapDriveFileToApp(rootFile, rootCat));
       }
-      // file di dalam folder kategori
       for(var j = 0; j < this.driveFolders.length; j++){
         var folder = this.driveFolders[j];
-        // ★ FIX: fallback terakhir = nama folder itu sendiri
         var catName = folderToCat[folder.id] || nameToCat[folder.name.toLowerCase()] || folder.name;
         if(folder.children){
           for(var k = 0; k < folder.children.length; k++){
@@ -903,7 +884,6 @@ function employeeApp() {
       this.files = deduped;
       console.log('[Employee] File list:', deduped.length, '| contoh kategori:', deduped.slice(0,3).map(function(f){return f.category||'(kosong)'}).join(', '));
     },
-
     mapDriveFileToApp(driveFile, categoryName){
       var mime = driveFile.mimeType || '';
       var type = this.getFileType(mime);
@@ -934,7 +914,6 @@ function employeeApp() {
           if(p2.length >= 2 && p2[1].trim()) descCategory = p2[1].trim();
         }
       }
-      // ★ FIX: pakai kategori dari folder/description apa adanya (tanpa di-reset)
       var finalCategory = categoryName || descCategory || '';
       return {
         id: driveFile.id, name: driveFile.name, title: title,
@@ -949,12 +928,19 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  HAK AKSES
+    //  HAK AKSES (★ FIX: nilai access lama/invalid → fallback semua)
     // ================================================================
     get accessibleCategories(){
       if(!this.currentUser) return [];
-      if(!this.currentUser.access || this.currentUser.access === 'all') return this.categories.map(function(c){return c.name});
-      return this.currentUser.access.split(',').map(function(s){return s.trim()});
+      var all = this.categories.map(function(c){return c.name});
+      if(!this.currentUser.access || this.currentUser.access === 'all') return all;
+      var list = this.currentUser.access.split(',').map(function(s){return s.trim()}).filter(Boolean);
+      var valid = list.filter(function(a){ return all.indexOf(a) !== -1 });
+      if(valid.length === 0){
+        console.warn('[Employee] ⚠️ Access "'+this.currentUser.access+'" tidak cocok dengan kategori manapun → fallback: semua kategori');
+        return all;
+      }
+      return list;
     },
     hasAccess(file){
       if(!this.currentUser) return false;
@@ -971,6 +957,25 @@ function employeeApp() {
         return this.categories.filter(function(c){ return self.accessibleCategories.indexOf(c.name) !== -1 });
       }
       return this.categories;
+    },
+    get accessLabel(){
+      if(!this.currentUser) return '';
+      if(!this.currentUser.access || this.currentUser.access === 'all') return 'Akses: Semua Kategori';
+      var all = this.categories.map(function(c){return c.name});
+      var list = this.currentUser.access.split(',').map(function(s){return s.trim()}).filter(Boolean);
+      var valid = list.filter(function(a){ return all.indexOf(a) !== -1 });
+      if(valid.length === 0) return 'Akses: Semua Kategori (fallback)';
+      return 'Akses: ' + list.join(', ');
+    },
+    warnInvalidAccess(){
+      if(this.currentUser && this.currentUser.access && this.currentUser.access !== 'all'){
+        var accList = this.currentUser.access.split(',').map(function(s){return s.trim()}).filter(Boolean);
+        var catNames = this.categories.map(function(c){return c.name});
+        var adaCocok = accList.some(function(a){ return catNames.indexOf(a) !== -1 });
+        if(!adaCocok){
+          this.showToast('Hak akses "'+this.currentUser.access+'" tidak valid','Minta Admin atur ulang di Approval Center. Sementara semua file ditampilkan.','warning');
+        }
+      }
     },
 
     // ================================================================
@@ -1098,7 +1103,6 @@ function employeeApp() {
       if(e) e.stopPropagation();
       this.openFileMenuId = this.openFileMenuId===id ? null : id;
     },
-
     updateCategoryCounts(){
       var counts={};
       for(var i=0;i<this.files.length;i++){
@@ -1109,7 +1113,6 @@ function employeeApp() {
         this.categories[j].count=counts[this.categories[j].name]||0;
       }
     },
-
     updateStats(){
       var totalSize=0;
       for(var i=0;i<this.accessibleFiles.length;i++) totalSize+=this.accessibleFiles[i].sizeBytes;
@@ -1119,7 +1122,6 @@ function employeeApp() {
       this.stats[3].value=this.bookmarks.length;
       this.usedStorage=this.formatBytes(totalSize);
     },
-
     showToast(title,desc,type){
       var icons={success:'check-circle',error:'x-circle',info:'info',warning:'alert-triangle'};
       var colors={success:'#10b981',error:'#ef4444',info:'#3b82f6',warning:'#f59e0b'};
