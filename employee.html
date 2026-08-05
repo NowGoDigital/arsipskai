@@ -73,21 +73,14 @@ tr:hover .file-actions-btn{opacity:1}
   </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- ★ LANDING + LOGIN / REGISTER (COMPACT — MUAT SATU LAYAR)     -->
-<!-- ============================================================ -->
+<!-- ============ LANDING + LOGIN / DAFTAR (COMPACT) ============ -->
 <div x-show="!isLoggedIn && !isLoading" class="fixed inset-0 z-50 overflow-y-auto gradient-bg">
-
-  <!-- Dekorasi latar -->
   <div class="pointer-events-none absolute inset-0 overflow-hidden">
     <div class="absolute -top-32 -left-32 w-[380px] h-[380px] bg-white/10 rounded-full blur-3xl floaty-slow"></div>
     <div class="absolute -bottom-40 -right-32 w-[460px] h-[460px] bg-fuchsia-400/20 rounded-full blur-3xl floaty"></div>
     <div class="absolute inset-0 opacity-[0.06]" style="background-image:radial-gradient(#fff 1px,transparent 1px);background-size:26px 26px"></div>
   </div>
-
   <div class="relative min-h-full flex flex-col">
-
-    <!-- Topbar mini -->
     <div class="flex items-center justify-between px-6 lg:px-10 py-3">
       <div class="flex items-center gap-2.5 text-white">
         <div class="w-8 h-8 rounded-lg bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center shadow-lg"><i data-lucide="cloud-cog" class="w-4 h-4"></i></div>
@@ -97,17 +90,13 @@ tr:hover .file-actions-btn{opacity:1}
         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> Sistem Aktif
       </span>
     </div>
-
-    <!-- Konten utama: split-screen -->
     <div class="flex-1 flex items-center justify-center px-6 lg:px-10 py-2">
       <div class="w-full max-w-6xl grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-center">
-
-        <!-- ========== KOLOM KIRI: BRANDING & INFO ========== -->
+        <!-- KOLOM KIRI -->
         <div class="text-white fade-in">
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[9px] font-semibold tracking-wide mb-3 backdrop-blur">
             <i data-lucide="sparkles" class="w-3 h-3 text-amber-300"></i> PLATFORM DOKUMEN INTERNAL PERUSAHAAN
           </span>
-
           <h2 class="text-2xl lg:text-[1.9rem] font-extrabold leading-tight mb-2">
             Satu Portal untuk<br>
             <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-pink-200 to-indigo-200">Semua Dokumen Perusahaan</span>
@@ -115,8 +104,6 @@ tr:hover .file-actions-btn{opacity:1}
           <p class="text-white/75 text-xs lg:text-[13px] leading-relaxed mb-4 max-w-lg">
             Akses terkontrol ke dokumen perusahaan yang tersinkron langsung dengan Google Drive — terkategori, aman, dan tersedia kapan pun Anda butuhkan.
           </p>
-
-          <!-- Fitur unggulan -->
           <div class="grid sm:grid-cols-2 gap-2 max-w-lg mb-4">
             <div class="flex items-start gap-2.5 bg-white/10 backdrop-blur border border-white/15 rounded-lg p-2.5 hover:bg-white/15 transition">
               <div class="w-8 h-8 rounded-md bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="hard-drive" class="w-3.5 h-3.5"></i></div>
@@ -135,8 +122,6 @@ tr:hover .file-actions-btn{opacity:1}
               <div><p class="text-[13px] font-bold leading-tight">Pencarian Cerdas</p><p class="text-[10px] text-white/70 mt-0.5">Filter tanggal, ukuran, tipe, kategori.</p></div>
             </div>
           </div>
-
-          <!-- Cara bergabung -->
           <div class="bg-white/10 backdrop-blur border border-white/15 rounded-xl p-3.5 max-w-lg">
             <p class="text-[9px] uppercase tracking-[0.2em] font-bold text-white/60 mb-2.5">Cara Bergabung</p>
             <div class="space-y-2">
@@ -155,8 +140,7 @@ tr:hover .file-actions-btn{opacity:1}
             </div>
           </div>
         </div>
-
-        <!-- ========== KOLOM KANAN: KARTU LOGIN / DAFTAR ========== -->
+        <!-- KOLOM KANAN: KARTU LOGIN / DAFTAR -->
         <div class="fade-in">
           <div class="w-full max-w-[400px] mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6">
             <div class="text-center mb-4">
@@ -166,13 +150,10 @@ tr:hover .file-actions-btn{opacity:1}
               <h3 class="text-xl font-extrabold">Employee Portal</h3>
               <p class="text-xs text-slate-500 mt-0.5">Masuk atau daftar untuk mengakses dokumen</p>
             </div>
-
-            <!-- Tabs -->
             <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mb-4">
               <button @click="showRegister=false" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="!showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'">Login</button>
               <button @click="showRegister=true" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'">Daftar</button>
             </div>
-
             <!-- FORM LOGIN -->
             <div x-show="!showRegister">
               <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">Username</label>
@@ -190,8 +171,7 @@ tr:hover .file-actions-btn{opacity:1}
                 <i data-lucide="log-in" class="w-4 h-4"></i> Masuk
               </button>
             </div>
-
-                        <!-- FORM DAFTAR -->
+            <!-- FORM DAFTAR (tanpa email, departemen dropdown) -->
             <div x-show="showRegister">
               <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Lengkap</label>
               <div class="relative mb-2.5">
@@ -236,11 +216,8 @@ tr:hover .file-actions-btn{opacity:1}
           </div>
           <p class="text-center text-[10px] text-white/60 mt-3 flex items-center justify-center gap-1.5"><i data-lucide="lock" class="w-3 h-3"></i> Data perusahaan terproteksi. Akses hanya untuk karyawan terdaftar.</p>
         </div>
-
       </div>
     </div>
-
-    <!-- Footer -->
     <div class="px-6 lg:px-10 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-1 text-[10px] text-white/50">
       <p>© 2026 DocuCloud — Internal Use Only</p>
       <p class="flex items-center gap-1.5"><i data-lucide="life-buoy" class="w-3 h-3"></i> Butuh bantuan? Hubungi Admin IT</p>
@@ -503,6 +480,59 @@ tr:hover .file-actions-btn{opacity:1}
             </div>
           </div>
         </div>
+
+        <!-- ★ RIWAYAT AKTIVITAS PEMILIK AKUN -->
+        <div class="mt-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-bold flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5 text-indigo-500"></i> Riwayat Aktivitas Saya</h3>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-slate-400" x-text="historyLog.length + ' aktivitas tersimpan'"></span>
+              <button @click="clearHistory()" x-show="historyLog.length > 0" class="text-[10px] text-red-400 hover:text-red-500 font-semibold flex items-center gap-1 transition"><i data-lucide="trash-2" class="w-3 h-3"></i> Bersihkan</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-md p-2 text-center">
+              <p class="text-sm font-bold text-blue-500" x-text="totalViews"></p>
+              <p class="text-[9px] text-slate-500">Kali Melihat File</p>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-md p-2 text-center">
+              <p class="text-sm font-bold text-green-500" x-text="totalDownloads"></p>
+              <p class="text-[9px] text-slate-500">Kali Download File</p>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-md p-2 text-center min-w-0">
+              <p class="text-sm font-bold text-amber-500 truncate" x-text="topDownloads.length ? topDownloads[0].name : '-'"></p>
+              <p class="text-[9px] text-slate-500">Paling Sering Diunduh</p>
+            </div>
+          </div>
+          <div x-show="topDownloads.length > 0" class="flex flex-wrap gap-1.5 mb-2">
+            <template x-for="t in topDownloads" :key="t.name">
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                <i data-lucide="download" class="w-3 h-3"></i>
+                <span class="max-w-[140px] truncate" x-text="t.name"></span>
+                <span class="bg-amber-200 dark:bg-amber-800 rounded-full px-1.5 text-[9px] font-bold" x-text="'×'+t.count"></span>
+              </span>
+            </template>
+          </div>
+          <div class="max-h-52 overflow-y-auto scrollbar space-y-1 pr-1">
+            <template x-for="h in historyLog" :key="h.id">
+              <div class="flex items-center gap-2.5 p-2 rounded-md bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" :class="h.type === 'download' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-blue-100 dark:bg-blue-900/30'">
+                  <i :data-lucide="h.type === 'download' ? 'download' : 'eye'" class="w-3.5 h-3.5" :class="h.type === 'download' ? 'text-green-500' : 'text-blue-500'"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold truncate" x-text="h.fileName"></p>
+                  <p class="text-[10px] text-slate-400" x-text="(h.fileCategory || 'Tanpa Kategori') + ' • ' + timeAgo(h.time)"></p>
+                </div>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0" :class="h.type === 'download' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'" x-text="h.type === 'download' ? 'DOWNLOAD' : 'DILIHAT'"></span>
+              </div>
+            </template>
+            <div x-show="historyLog.length === 0" class="py-6 text-center">
+              <i data-lucide="history" class="w-8 h-8 mx-auto text-slate-300 mb-1.5"></i>
+              <p class="text-xs text-slate-500 font-medium">Belum ada aktivitas</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">Riwayat melihat & mengunduh file akan tercatat otomatis di sini.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- SEMUA FILE -->
@@ -643,6 +673,10 @@ tr:hover .file-actions-btn{opacity:1}
   </template>
 </div>
 
+<!-- ============================================================ -->
+<!-- ★ END OF PART 1 — balas "lanjut" untuk PART 2 (JavaScript)  -->
+<!-- ============================================================ -->
+
 <script>
 // ============================================================
 //  GOOGLE DRIVE AUTH (Client ID SAMA dengan index.html)
@@ -682,6 +716,7 @@ function employeeApp() {
     driveConnected: false, driveUser: null, driveLoading: false,
     driveFolderId: null, driveFiles: [], driveFolders: [], driveError: '',
     bookmarks: [],
+    historyLog: [],
     stats: [
       {label:'Total File',value:'0',icon:'file-text',color:'#6366f1',bg:'#eef2ff'},
       {label:'Total Ukuran',value:'0 B',icon:'hard-drive',color:'#3b82f6',bg:'#dbeafe'},
@@ -735,6 +770,9 @@ function employeeApp() {
 
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
 
+    // ================================================================
+    //  KATEGORI — IndexedDB DocuCloudV8 + fallback folder Drive
+    // ================================================================
     openDB(){
       return new Promise(function(resolve,reject){
         var req = indexedDB.open('DocuCloudV8',1);
@@ -775,6 +813,9 @@ function employeeApp() {
       }
     },
 
+    // ================================================================
+    //  AUTH
+    // ================================================================
     checkSession(){
       var sessionId = localStorage.getItem('dc_employee_session');
       if(sessionId){
@@ -784,6 +825,7 @@ function employeeApp() {
           this.currentUser = u;
           this.isLoggedIn = true;
           this.loadBookmarks();
+          this.loadHistory();
           console.log('[Employee] 👤 Login sebagai:', u.username, '| status:', u.status, '| access:', u.access || 'all');
           if(u.status === 'approved') this.connectDrive();
         } else {
@@ -801,6 +843,7 @@ function employeeApp() {
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', u.id);
       this.loadBookmarks();
+      this.loadHistory();
       if(u.status === 'approved'){ this.connectDrive(); this.showToast('Selamat datang', u.name, 'success'); }
       else if(u.status === 'pending'){ this.showToast('Menunggu persetujuan','Akun belum disetujui Admin','info'); }
       this.refreshIcons();
@@ -814,7 +857,7 @@ function employeeApp() {
       if(users.some(function(x){return x.username === self.regUsername})){ this.regError = 'Username sudah dipakai'; return; }
       var newUser = {
         id: 'user_' + Date.now(), name: this.regName, username: this.regUsername,
-        email: this.regEmail, password: this.regPassword, department: this.regDepartment,
+        email: '', password: this.regPassword, department: this.regDepartment,
         status: 'pending', access: 'all', registeredAt: new Date().toISOString()
       };
       users.push(newUser);
@@ -822,6 +865,7 @@ function employeeApp() {
       this.currentUser = newUser;
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', newUser.id);
+      this.loadHistory();
       this.showToast('Pendaftaran berhasil!','Menunggu approval Admin','info');
       this.showRegister = false;
       this.refreshIcons();
@@ -841,7 +885,7 @@ function employeeApp() {
     logout(){
       localStorage.removeItem('dc_employee_session');
       this.currentUser = null; this.isLoggedIn = false;
-      this.files = []; this.filteredFiles = []; this.bookmarks = [];
+      this.files = []; this.filteredFiles = []; this.bookmarks = []; this.historyLog = [];
       this.driveConnected = false; this.driveUser = null; this.driveError = '';
       this.activeMenu = 'dashboard';
       this.loginUsername = ''; this.loginPassword = '';
@@ -849,6 +893,9 @@ function employeeApp() {
       this.refreshIcons();
     },
 
+    // ================================================================
+    //  DRIVE AUTH + SYNC
+    // ================================================================
     startDriveAuth(){
       try{
         if(!window.google || !google.accounts){
@@ -1063,7 +1110,9 @@ function employeeApp() {
       };
     },
 
-    // HAK AKSES (fallback kalau nilai access lama/invalid)
+    // ================================================================
+    //  HAK AKSES (fallback nilai access lama/invalid)
+    // ================================================================
     get accessibleCategories(){
       if(!this.currentUser) return [];
       var all = this.categories.map(function(c){return c.name});
@@ -1112,6 +1161,9 @@ function employeeApp() {
       }
     },
 
+    // ================================================================
+    //  FILTER & SEARCH
+    // ================================================================
     get displayedFiles(){ return this.filteredFiles.slice(0, this.displayLimit) },
     get hasActiveFilters(){ return !!(this.searchQuery||this.filterCategory||this.fileType!=='Semua'||this.filterDateFrom||this.filterDateTo||this.filterSizeMin||this.filterSizeMax) },
     get activeFilterCount(){
@@ -1147,7 +1199,7 @@ function employeeApp() {
         if(this.searchQuery){
           var q=this.searchQuery.toLowerCase();
           var match=false;
-                    if(this.searchField==='all'){
+          if(this.searchField==='all'){
             match=(f.name&&f.name.toLowerCase().indexOf(q)!==-1)||(f.title&&f.title.toLowerCase().indexOf(q)!==-1)||(f.category&&f.category.toLowerCase().indexOf(q)!==-1);
           } else if(this.searchField==='name'){ match=f.name&&f.name.toLowerCase().indexOf(q)!==-1; }
           else if(this.searchField==='title'){ match=f.title&&f.title.toLowerCase().indexOf(q)!==-1; }
@@ -1194,6 +1246,64 @@ function employeeApp() {
     },
 
     // ================================================================
+    //  RIWAYAT AKTIVITAS (per-akun, localStorage)
+    // ================================================================
+    loadHistory(){
+      if(!this.currentUser) return;
+      var key='dc_history_'+this.currentUser.id;
+      this.historyLog=JSON.parse(localStorage.getItem(key)||'[]');
+    },
+    saveHistory(){
+      if(!this.currentUser) return;
+      var key='dc_history_'+this.currentUser.id;
+      localStorage.setItem(key,JSON.stringify(this.historyLog.slice(0,200)));
+    },
+    logActivity(type,file){
+      if(!file||!this.currentUser) return;
+      this.historyLog.unshift({
+        id: Date.now()+'_'+Math.random().toString(36).substr(2,5),
+        fileId: file.id,
+        fileName: file.title||file.name,
+        fileCategory: file.category||'',
+        type: type,
+        time: new Date().toISOString()
+      });
+      if(this.historyLog.length>200) this.historyLog=this.historyLog.slice(0,200);
+      this.saveHistory();
+    },
+    clearHistory(){
+      this.historyLog=[];
+      this.saveHistory();
+      this.showToast('Riwayat dibersihkan','','info');
+      this.refreshIcons();
+    },
+    get totalViews(){ return this.historyLog.filter(function(h){return h.type==='view'}).length },
+    get totalDownloads(){ return this.historyLog.filter(function(h){return h.type==='download'}).length },
+    get topDownloads(){
+      var counts={};
+      for(var i=0;i<this.historyLog.length;i++){
+        var h=this.historyLog[i];
+        if(h.type==='download'){ if(!counts[h.fileName]) counts[h.fileName]=0; counts[h.fileName]++; }
+      }
+      var arr=[];
+      for(var k in counts){ arr.push({name:k,count:counts[k]}); }
+      arr.sort(function(a,b){return b.count-a.count});
+      return arr.slice(0,5);
+    },
+    timeAgo(iso){
+      var d=new Date(iso);
+      var diff=Date.now()-d.getTime();
+      var m=Math.floor(diff/60000);
+      if(m<1) return 'Baru saja';
+      if(m<60) return m+' mnt lalu';
+      var h=Math.floor(m/60);
+      if(h<24) return h+' jam lalu';
+      var days=Math.floor(h/24);
+      if(days<7) return days+' hari lalu';
+      return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+    },
+
+    // ================================================================
     //  HELPERS
     // ================================================================
     getFileType(mime){
@@ -1224,10 +1334,11 @@ function employeeApp() {
       var k=1024,s=['B','KB','MB','GB'],i=Math.floor(Math.log(b)/Math.log(k));
       return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i];
     },
-    openFile(file){ this.previewFile=file; this.refreshIcons(); },
+    openFile(file){ this.previewFile=file; this.logActivity('view',file); this.refreshIcons(); },
     downloadFile(file){
       if(!file) return;
       window.open('https://drive.google.com/uc?export=download&id='+file.id,'_blank');
+      this.logActivity('download',file);
       this.showToast('Mengunduh...',file.name,'info');
     },
     toggleFileMenu(id,e){
@@ -1268,3 +1379,5 @@ function employeeApp() {
 </script>
 </body>
 </html>
+
+
