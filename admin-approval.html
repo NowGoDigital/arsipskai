@@ -1,603 +1,161 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>DocuCloud — Admin Approval Center</title>
+<title>Admin Approval Center</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  * { font-family: 'Inter', sans-serif; font-size: 14px; }
-  [x-cloak] { display: none !important; }
-  .scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-  .scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.35); border-radius: 10px; }
-  .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,.8); }
-  .dark .glass { background: rgba(15,23,42,.8); }
-  .gradient-bg { background: var(--theme-gradient, linear-gradient(135deg,#667eea 0%,#764ba2 100%)); }
-  .fade-in { animation: fadeIn .35s ease; }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-  .pulse-dot { animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .user-row { transition: all .15s ease; }
-  .user-row:hover { background: rgba(99,102,241,.04); }
-  .user-row.selected { background: rgba(99,102,241,.08); }
-  .theme-swatch { transition: all .2s ease; cursor: pointer; }
-  .theme-swatch:hover { transform: scale(1.05); }
-  .theme-swatch.active { box-shadow: 0 0 0 3px white, 0 0 0 5px currentColor; }
-  @media (max-width: 768px) { main { padding-bottom: 4.5rem !important; } }
+*{font-family:'Inter',sans-serif} [x-cloak]{display:none!important}
 </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200"
-      x-data="approvalApp()" x-init="init()" x-cloak :class="{'dark': darkMode}" :style="`--theme-gradient: ${currentTheme.gradient}`">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200" x-data="adminApproval()" x-init="init()">
 
-<!-- LOGIN SCREEN -->
-<div x-show="!isLoggedIn" class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <div class="text-center mb-6">
-      <div class="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-3">
-        <i data-lucide="shield-check" class="w-8 h-8 text-white"></i>
-      </div>
-      <h1 class="text-2xl font-bold">Approval Center</h1>
-      <p class="text-sm text-slate-500 mt-1">Login khusus admin</p>
+<div class="max-w-5xl mx-auto p-6">
+  <header class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-2xl font-extrabold">Admin Approval Center</h1>
+      <p class="text-sm text-slate-500">Kelola pendaftaran karyawan & hak akses</p>
     </div>
-    <div class="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-lg border border-slate-200 dark:border-slate-800">
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs font-medium mb-1 block">Username Admin</label>
-          <input x-model="loginUsername" type="text" placeholder="admin"
-                 class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="text-xs font-medium mb-1 block">Password</label>
-          <input x-model="loginPassword" @keydown.enter="login()" type="password" placeholder="admin123"
-                 class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div x-show="loginError" class="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg text-xs text-red-700">
-          <i data-lucide="alert-circle" class="w-4 h-4"></i><span x-text="loginError"></span>
-        </div>
-        <button @click="login()" class="w-full py-2.5 gradient-bg text-white rounded-lg text-sm font-medium hover:opacity-90">
-          Login sebagai Admin
-        </button>
-      </div>
-      <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-        <a href="index.html" class="text-slate-400 hover:text-slate-600">← Admin Dashboard</a>
-        <a href="employee.html" class="text-slate-400 hover:text-slate-600">Portal Karyawan →</a>
-      </div>
+    <div class="flex gap-3">
+      <button @click="loadUsers()" class="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold flex items-center gap-2">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Data
+      </button>
+      <a href="index.html" target="_blank" class="px-4 py-2 rounded-lg gradient-bg text-white text-sm font-bold flex items-center gap-2">
+        <i data-lucide="external-link" class="w-4 h-4"></i> Buka Dashboard Utama
+      </a>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+      <p class="text-xs font-bold text-slate-500 uppercase">Total Pendaftar</p>
+      <p class="text-2xl font-extrabold mt-1" x-text="users.length"></p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+      <p class="text-xs font-bold text-yellow-500 uppercase">Menunggu Persetujuan</p>
+      <p class="text-2xl font-extrabold mt-1" x-text="users.filter(u=>u.status==='pending').length"></p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+      <p class="text-xs font-bold text-green-500 uppercase">User Aktif</p>
+      <p class="text-2xl font-extrabold mt-1" x-text="users.filter(u=>u.status==='approved').length"></p>
     </div>
   </div>
-</div>
 
-<!-- DASHBOARD -->
-<div x-show="isLoggedIn" class="flex h-screen overflow-hidden">
-
-  <div class="flex-1 flex flex-col overflow-hidden">
-
-    <!-- Topbar -->
-    <header class="h-14 glass border-b border-slate-200 dark:border-slate-800 flex items-center px-4 gap-2">
-      <div class="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0">
-        <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
-      </div>
-      <div class="hidden sm:block">
-        <h1 class="font-semibold text-sm">Approval Center</h1>
-        <p class="text-[11px] text-slate-400">Admin Panel</p>
-      </div>
-
-      <div class="ml-auto max-w-md relative">
-        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input x-model="searchQuery" type="text" placeholder="Cari user..."
-               class="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-transparent">
-      </div>
-
-      <div class="flex items-center gap-1.5">
-        <a href="index.html" class="hidden sm:flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-          <span class="hidden md:inline">Dashboard</span>
-        </a>
-
-        <button @click="darkMode = !darkMode" class="hidden sm:block p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-          <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
-        </button>
-
-        <div class="relative">
-          <button @click="showProfileDropdown = !showProfileDropdown"
-                  class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-semibold cursor-pointer">A</button>
-          <div x-show="showProfileDropdown" @click.away="showProfileDropdown = false" x-transition
-               class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
-            <div class="gradient-bg px-4 py-3 text-white">
-              <p class="font-semibold text-sm">Admin User</p>
-              <p class="text-[11px] text-white/80">admin@docucloud.id</p>
-            </div>
-            <div class="py-2">
-              <button @click="showThemeModal = true; showProfileDropdown = false" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm">
-                <i data-lucide="palette" class="w-4 h-4 text-slate-400"></i><span class="font-medium">Ganti Tema</span>
-              </button>
-              <button @click="exportCSV()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm">
-                <i data-lucide="download" class="w-4 h-4 text-slate-400"></i><span class="font-medium">Export CSV</span>
-              </button>
-              <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
-              <button @click="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
-                <i data-lucide="log-out" class="w-4 h-4"></i><span class="font-medium">Keluar</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main -->
-    <main class="flex-1 overflow-y-auto scrollbar p-5">
-
-      <!-- Stats -->
-      <div class="grid grid-cols-2 gap-3 mb-5">
-        <template x-for="s in stats" :key="s.label">
-          <div class="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" :style="`background:${s.bg}`">
-                <i :data-lucide="s.icon" class="w-4 h-4" :style="`color:${s.color}`"></i>
+  <!-- Tabel User -->
+  <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+    <table class="w-full text-sm text-left">
+      <thead class="bg-slate-50 dark:bg-slate-800 text-xs uppercase font-bold text-slate-500">
+        <tr>
+          <th class="px-6 py-4">Nama / Username</th>
+          <th class="px-6 py-4">Departemen</th>
+          <th class="px-6 py-4">Status</th>
+          <th class="px-6 py-4">Hak Akses Kategori</th>
+          <th class="px-6 py-4 text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        <template x-for="u in users" :key="u.id">
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="px-6 py-4">
+              <p class="font-bold" x-text="u.name"></p>
+              <p class="text-xs text-slate-500" x-text="u.username"></p>
+            </td>
+            <td class="px-6 py-4 text-slate-500" x-text="u.department || '-'"></td>
+            <td class="px-6 py-4">
+              <span class="px-2 py-1 rounded text-[10px] font-bold" 
+                    :class="u.status==='approved' ? 'bg-green-100 text-green-700' : u.status==='rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'"
+                    x-text="u.status.toUpperCase()"></span>
+            </td>
+            <td class="px-6 py-4">
+              <select x-model="u.access" @change="saveUserAccess(u)" class="bg-slate-100 dark:bg-slate-800 border-0 rounded text-xs p-1.5 outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="all">Semua Kategori</option>
+                <template x-for="cat in categories" :key="cat.name">
+                  <option :value="cat.name" x-text="cat.name"></option>
+                </template>
+              </select>
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button x-show="u.status==='pending'" @click="approveUser(u)" class="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition" title="Setujui">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                </button>
+                <button x-show="u.status==='pending'" @click="rejectUser(u)" class="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Tolak">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <button @click="deleteUser(u)" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition" title="Hapus Permanen">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
               </div>
-              <div class="flex-1"><p class="text-xl font-bold" x-text="s.value"></p></div>
-            </div>
-            <p class="text-xs text-slate-500 mt-2 pl-12" x-text="s.label"></p>
-          </div>
+            </td>
+          </tr>
         </template>
-      </div>
-
-      <!-- Tabs & Actions -->
-      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div class="flex gap-2 flex-wrap">
-          <template x-for="tab in ['Semua','Pending','Approved','Rejected','Revoked']" :key="tab">
-            <button @click="userTab = tab"
-                    :class="userTab === tab ? 'gradient-bg text-white' : 'bg-white dark:bg-slate-800 hover:bg-slate-100'"
-                    class="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 transition">
-              <span x-text="tab"></span>
-              <span class="ml-1" x-text="'(' + usersByStatus(tab) + ')'"></span>
-            </button>
-          </template>
-        </div>
-        <div class="flex gap-2">
-          <button x-show="selectedUsers.length > 0 && userTab === 'Pending'" @click="bulkApprove()"
-                  class="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 flex items-center gap-1.5">
-            <i data-lucide="check-circle" class="w-4 h-4"></i> Approve (<span x-text="selectedUsers.length"></span>)
-          </button>
-          <button x-show="selectedUsers.length > 0 && userTab === 'Pending'" @click="showBulkReject = true"
-                  class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 flex items-center gap-1.5">
-            <i data-lucide="x-circle" class="w-4 h-4"></i> Reject (<span x-text="selectedUsers.length"></span>)
-          </button>
-          <button @click="simulateRegistration()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center gap-1.5">
-            <i data-lucide="user-plus" class="w-4 h-4"></i> Simulasi Pendaftaran
-          </button>
-        </div>
-      </div>
-
-      <!-- Users Table -->
-      <div class="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 uppercase">
-              <tr>
-                <th x-show="userTab === 'Pending'" class="text-left px-4 py-2.5 w-10">
-                  <input type="checkbox" @change="toggleSelectAll($event)" class="accent-indigo-600">
-                </th>
-                <th class="text-left px-4 py-2.5">Nama</th>
-                <th class="text-left px-4 py-2.5">Username</th>
-                <th class="text-left px-4 py-2.5 hidden md:table-cell">Departemen</th>
-                <th class="text-left px-4 py-2.5">Status</th>
-                <th class="text-left px-4 py-2.5 hidden lg:table-cell">Daftar</th>
-                <th class="text-right px-4 py-2.5">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="u in filteredUsers" :key="u.id">
-                <tr class="user-row border-t border-slate-100 dark:border-slate-800" :class="selectedUsers.includes(u.id) ? 'selected' : ''">
-                  <td x-show="userTab === 'Pending'" class="px-4 py-2.5">
-                    <input type="checkbox" :value="u.id" x-model="selectedUsers" class="accent-indigo-600">
-                  </td>
-                  <td class="px-4 py-2.5">
-                    <div class="flex items-center gap-2.5">
-                      <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-semibold flex-shrink-0" x-text="u.name ? u.name[0].toUpperCase() : '?'"></div>
-                      <div class="min-w-0">
-                        <p class="font-medium text-sm truncate" x-text="u.name"></p>
-                        <p class="text-xs text-slate-500 truncate" x-text="u.email"></p>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-4 py-2.5 text-xs font-mono" x-text="u.username"></td>
-                  <td class="px-4 py-2.5 text-xs hidden md:table-cell" x-text="u.department || '-'"></td>
-                  <td class="px-4 py-2.5">
-                    <span :class="{
-                      'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': u.status === 'pending',
-                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': u.status === 'approved',
-                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': u.status === 'rejected' || u.status === 'revoked'
-                    }" class="text-xs px-2 py-0.5 rounded-full capitalize" x-text="u.status"></span>
-                  </td>
-                  <td class="px-4 py-2.5 text-xs text-slate-500 hidden lg:table-cell" x-text="formatDate(u.registeredAt)"></td>
-                  <td class="px-4 py-2.5 text-right">
-                    <div class="inline-flex gap-1">
-                      <template x-if="u.status === 'pending'">
-                        <>
-                          <button @click="approveUser(u.id)" class="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 rounded" title="Approve">
-                            <i data-lucide="check" class="w-4 h-4"></i>
-                          </button>
-                          <button @click="userToReject = u; showRejectModal = true" class="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded" title="Reject">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                          </button>
-                        </>
-                      </template>
-                      <template x-if="u.status === 'approved'">
-                        <button @click="revokeUser(u.id)" class="p-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 rounded" title="Revoke">
-                          <i data-lucide="shield-off" class="w-4 h-4"></i>
-                        </button>
-                      </template>
-                      <template x-if="u.status === 'rejected' || u.status === 'revoked'">
-                        <button @click="approveUser(u.id)" class="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 rounded" title="Re-approve">
-                          <i data-lucide="check" class="w-4 h-4"></i>
-                        </button>
-                      </template>
-                      <button @click="deleteUser(u.id)" class="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded" title="Hapus">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-        <div x-show="filteredUsers.length === 0" class="p-12 text-center">
-          <i data-lucide="users" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
-          <p class="text-sm text-slate-500">Belum ada user dengan status ini</p>
-        </div>
-      </div>
-
-      <!-- Activity Log -->
-      <div class="mt-5 bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200 dark:border-slate-800">
-        <h3 class="font-semibold text-sm mb-4">Activity Log Terbaru</h3>
-        <div class="space-y-3 max-h-[300px] overflow-y-auto scrollbar">
-          <template x-for="a in activities" :key="a.id">
-            <div class="flex gap-2.5 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :style="`background:${a.bg}`">
-                <i :data-lucide="a.icon" class="w-4 h-4" :style="`color:${a.color}`"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm"><span class="font-medium" x-text="a.user"></span> <span x-text="a.action"></span></p>
-                <p class="text-xs text-slate-500" x-text="a.file"></p>
-              </div>
-              <span class="text-xs text-slate-400 flex-shrink-0" x-text="a.time"></span>
-            </div>
-          </template>
-          <div x-show="activities.length === 0" class="text-center py-6 text-slate-400 text-sm">Belum ada aktivitas</div>
-        </div>
-      </div>
-
-    </main>
+      </tbody>
+    </table>
+    <div x-show="users.length===0" class="p-8 text-center text-slate-500">Belum ada data pendaftar.</div>
   </div>
-</div>
-
-<!-- Bottom Nav Mobile -->
-<nav x-show="isLoggedIn" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 z-40">
-  <div class="grid grid-cols-4 h-16">
-    <button @click="userTab='Pending'" :class="userTab==='Pending' ? 'gradient-bg text-white' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 relative">
-      <i data-lucide="clock" class="w-5 h-5"></i><span class="text-[10px] font-medium">Pending</span>
-      <span x-show="usersByStatus('Pending') > 0" x-text="usersByStatus('Pending')" class="absolute top-1 right-4 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1"></span>
-    </button>
-    <button @click="userTab='Approved'" :class="userTab==='Approved' ? 'gradient-bg text-white' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5">
-      <i data-lucide="check-circle" class="w-5 h-5"></i><span class="text-[10px] font-medium">Approved</span>
-    </button>
-    <button @click="userTab='Semua'" :class="userTab==='Semua' ? 'gradient-bg text-white' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5">
-      <i data-lucide="users" class="w-5 h-5"></i><span class="text-[10px] font-medium">Semua</span>
-    </button>
-    <button @click="logout()" class="flex flex-col items-center justify-center gap-0.5 text-slate-500">
-      <i data-lucide="log-out" class="w-5 h-5"></i><span class="text-[10px] font-medium">Keluar</span>
-    </button>
-  </div>
-</nav>
-
-<!-- Reject Modal -->
-<div x-show="showRejectModal" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <div @click.away="showRejectModal=false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm p-5 shadow-xl">
-    <h3 class="font-semibold text-sm mb-3">Reject Pendaftaran</h3>
-    <p class="text-sm mb-3">User: <span class="font-medium" x-text="userToReject?.name"></span></p>
-    <textarea x-model="rejectReason" placeholder="Alasan penolakan..." class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 mb-3" rows="3"></textarea>
-    <div class="flex gap-2">
-      <button @click="showRejectModal=false" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">Batal</button>
-      <button @click="rejectUser()" class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm">Reject</button>
-    </div>
-  </div>
-</div>
-
-<!-- Bulk Reject Modal -->
-<div x-show="showBulkReject" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <div @click.away="showBulkReject=false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm p-5 shadow-xl">
-    <h3 class="font-semibold text-sm mb-3">Bulk Reject</h3>
-    <p class="text-sm mb-3">Reject <span class="font-medium" x-text="selectedUsers.length"></span> user sekaligus?</p>
-    <textarea x-model="bulkRejectReason" placeholder="Alasan penolakan..." class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 mb-3" rows="3"></textarea>
-    <div class="flex gap-2">
-      <button @click="showBulkReject=false" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">Batal</button>
-      <button @click="bulkReject()" class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm">Reject Semua</button>
-    </div>
-  </div>
-</div>
-
-<!-- Theme Modal -->
-<div x-show="showThemeModal" x-transition class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <div @click.away="showThemeModal=false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md p-5 shadow-xl">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="font-semibold text-sm">Pilih Tema</h3>
-      <button @click="showThemeModal=false"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-    <div class="grid grid-cols-4 gap-3">
-      <template x-for="theme in themePresets" :key="theme.id">
-        <button @click="changeTheme(theme.id)"
-                class="theme-swatch aspect-square rounded-xl relative"
-                :style="`background: ${theme.gradient}; color: ${theme.colors[0]}`"
-                :class="currentTheme.id === theme.id ? 'active' : ''">
-          <i x-show="currentTheme.id === theme.id" data-lucide="check" class="w-6 h-6 text-white absolute inset-0 m-auto drop-shadow-lg"></i>
-        </button>
-      </template>
-    </div>
-  </div>
-</div>
-
-<!-- Toast -->
-<div x-show="toast.show" x-transition class="fixed bottom-20 md:bottom-5 right-5 z-[60] bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 max-w-sm">
-  <i :data-lucide="toast.icon" class="w-4 h-4" :class="toast.type==='success' ? 'text-green-400' : toast.type==='info' ? 'text-blue-400' : 'text-red-400'"></i>
-  <span x-text="toast.message" class="text-sm"></span>
 </div>
 
 <script>
-function approvalApp() {
+function adminApproval() {
   return {
-    isLoggedIn: false, darkMode: false,
-    loginUsername: '', loginPassword: '', loginError: '',
-    searchQuery: '', userTab: 'Pending',
-    showRejectModal: false, showBulkReject: false, showThemeModal: false,
-    showProfileDropdown: false,
-    userToReject: null, rejectReason: '', bulkRejectReason: '',
-    selectedUsers: [],
-    toast: { show: false, message: '', type: 'success', icon: 'check-circle' },
-    allUsers: [], activities: [],
-
-    currentTheme: { id: 'indigo-purple', gradient: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)' },
-    themePresets: [
-      { id: 'indigo-purple', gradient: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)', colors: ['#667eea'] },
-      { id: 'ocean-blue', gradient: 'linear-gradient(135deg,#2193b0 0%,#6dd5ed 100%)', colors: ['#2193b0'] },
-      { id: 'sunset', gradient: 'linear-gradient(135deg,#ff6e7f 0%,#bfe9ff 100%)', colors: ['#ff6e7f'] },
-      { id: 'forest', gradient: 'linear-gradient(135deg,#134e5e 0%,#71b280 100%)', colors: ['#134e5e'] },
-      { id: 'gold', gradient: 'linear-gradient(135deg,#f7971e 0%,#ffd200 100%)', colors: ['#f7971e'] },
-      { id: 'rose', gradient: 'linear-gradient(135deg,#ee0979 0%,#ff6a00 100%)', colors: ['#ee0979'] },
-      { id: 'midnight', gradient: 'linear-gradient(135deg,#232526 0%,#414345 100%)', colors: ['#232526'] },
-      { id: 'mint', gradient: 'linear-gradient(135deg,#00b09b 0%,#96c93d 100%)', colors: ['#00b09b'] },
-    ],
-
-    get stats() {
-      const total = this.allUsers.length;
-      const pending = this.allUsers.filter(u => u.status === 'pending').length;
-      const approved = this.allUsers.filter(u => u.status === 'approved').length;
-      const rejected = this.allUsers.filter(u => u.status === 'rejected' || u.status === 'revoked').length;
-      return [
-        {label:'Total Pendaftaran', value: total, icon:'users', bg:'#dbeafe', color:'#2563eb'},
-        {label:'Menunggu Approval', value: pending, icon:'clock', bg:'#fef3c7', color:'#d97706'},
-        {label:'Disetujui', value: approved, icon:'check-circle', bg:'#dcfce7', color:'#16a34a'},
-        {label:'Ditolak/Revoked', value: rejected, icon:'x-circle', bg:'#fee2e2', color:'#dc2626'},
-      ];
-    },
-    get filteredUsers() {
-      return this.allUsers.filter(u => {
-        const matchSearch = !this.searchQuery || u.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || u.username.toLowerCase().includes(this.searchQuery.toLowerCase());
-        if (this.userTab === 'Semua') return matchSearch;
-        return matchSearch && u.status === this.userTab.toLowerCase();
-      });
-    },
-
-    usersByStatus(status) {
-      if (status === 'Semua') return this.allUsers.length;
-      return this.allUsers.filter(u => u.status === status.toLowerCase()).length;
-    },
-
+    users: [], categories: [],
+    
     init() {
-      this.loadTheme();
-      this.checkSession();
+      this.loadUsers();
+      this.loadCategories();
+      setInterval(() => { this.loadUsers(); }, 5000); // Auto-refresh
       this.$nextTick(() => lucide.createIcons());
-      ['isLoggedIn','showRejectModal','showBulkReject','showThemeModal','showProfileDropdown','allUsers','activities'].forEach(prop => {
-        this.$watch(prop, () => this.$nextTick(() => lucide.createIcons()));
-      });
-      setInterval(() => { if (this.isLoggedIn) { this.loadUsers(); this.loadActivities(); } }, 5000);
     },
 
-    loadTheme() {
-      const saved = localStorage.getItem('dc_theme');
-      if (saved) {
-        const t = this.themePresets.find(x => x.id === saved);
-        if (t) { this.currentTheme = t; document.documentElement.style.setProperty('--theme-gradient', t.gradient); }
-      }
-    },
-    changeTheme(id) {
-      const t = this.themePresets.find(x => x.id === id);
-      if (t) {
-        this.currentTheme = t;
-        localStorage.setItem('dc_theme', id);
-        document.documentElement.style.setProperty('--theme-gradient', t.gradient);
-        this.showToast('Tema diterapkan');
-        this.showThemeModal = false;
-      }
-    },
-    checkSession() {
-      if (localStorage.getItem('dc_admin_session') === 'admin') {
-        this.isLoggedIn = true;
-        this.loadUsers();
-        this.loadActivities();
-      }
-    },
     loadUsers() {
-      const saved = localStorage.getItem('dc_users');
-      this.allUsers = saved ? JSON.parse(saved) : [];
+      this.users = JSON.parse(localStorage.getItem('dc_users') || '[]');
     },
-    saveUsers() { localStorage.setItem('dc_users', JSON.stringify(this.allUsers)); },
-    loadActivities() {
-      const saved = localStorage.getItem('dc_activities');
-      this.activities = saved ? JSON.parse(saved).slice(0, 20) : [];
-    },
-    logActivity(user, action, file, icon, bg, color) {
-      const acts = JSON.parse(localStorage.getItem('dc_activities') || '[]');
-      acts.unshift({
-        id: Date.now(), user, action, file, icon, bg, color,
-        time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})
-      });
-      localStorage.setItem('dc_activities', JSON.stringify(acts.slice(0, 50)));
-      this.loadActivities();
+    
+    loadCategories() {
+      // Membaca kategori dari index.html
+      const saved = localStorage.getItem('dc_categories');
+      this.categories = saved ? JSON.parse(saved) : [];
     },
 
-    login() {
-      this.loginError = '';
-      if (this.loginUsername === 'admin' && this.loginPassword === 'admin123') {
-        this.isLoggedIn = true;
-        localStorage.setItem('dc_admin_session', 'admin');
-        this.loadUsers();
-        this.loadActivities();
-        this.loginUsername = ''; this.loginPassword = '';
-        this.showToast('Login berhasil!');
-      } else {
-        this.loginError = 'Username atau password salah (gunakan admin/admin123)';
-      }
-    },
-    logout() {
-      localStorage.removeItem('dc_admin_session');
-      this.isLoggedIn = false;
-      this.showProfileDropdown = false;
-      this.showToast('Anda telah keluar', 'info');
-    },
-
-    approveUser(id) {
-      const u = this.allUsers.find(x => x.id === id);
-      if (!u) return;
+    approveUser(u) {
+      if(!confirm('Setujui akun ' + u.name + '?')) return;
       u.status = 'approved';
-      u.approvedAt = new Date().toISOString();
-      u.approvedBy = 'admin';
       this.saveUsers();
-      const notifs = JSON.parse(localStorage.getItem('dc_user_notifications_' + u.username) || '[]');
-      notifs.unshift({id: Date.now(), title:'Pendaftaran Disetujui! 🎉', desc:'Akun Anda telah di-approve. Silakan login kembali.', icon:'check-circle', bg:'#dcfce7', color:'#16a34a', time:'Baru saja', read:false});
-      localStorage.setItem('dc_user_notifications_' + u.username, JSON.stringify(notifs));
-      this.logActivity('Admin', 'approve user', u.name, 'user-check', '#dcfce7', '#16a34a');
-      this.showToast(u.name + ' disetujui');
+      this.showToast('User disetujui!', 'success');
     },
-    rejectUser() {
-      if (!this.userToReject) return;
-      this.userToReject.status = 'rejected';
-      this.userToReject.rejectionReason = this.rejectReason || 'Tidak memenuhi syarat';
-      this.userToReject.rejectedAt = new Date().toISOString();
+
+    rejectUser(u) {
+      if(!confirm('Tolak akun ' + u.name + '?')) return;
+      u.status = 'rejected';
       this.saveUsers();
-      const notifs = JSON.parse(localStorage.getItem('dc_user_notifications_' + this.userToReject.username) || '[]');
-      notifs.unshift({id: Date.now(), title:'Pendaftaran Ditolak', desc:'Alasan: ' + this.userToReject.rejectionReason, icon:'x-circle', bg:'#fee2e2', color:'#dc2626', time:'Baru saja', read:false});
-      localStorage.setItem('dc_user_notifications_' + this.userToReject.username, JSON.stringify(notifs));
-      this.logActivity('Admin', 'reject user', this.userToReject.name, 'user-x', '#fee2e2', '#dc2626');
-      this.showToast(this.userToReject.name + ' ditolak', 'info');
-      this.showRejectModal = false;
-      this.userToReject = null;
-      this.rejectReason = '';
+      this.showToast('User ditolak', 'info');
     },
-    revokeUser(id) {
-      const u = this.allUsers.find(x => x.id === id);
-      if (!u) return;
-      if (!confirm('Revoke akses ' + u.name + '?')) return;
-      u.status = 'revoked';
+
+    deleteUser(u) {
+      if(!confirm('Hapus permanen user ' + u.name + '?')) return;
+      this.users = this.users.filter(x => x.id !== u.id);
       this.saveUsers();
-      this.logActivity('Admin', 'revoke user', u.name, 'shield-off', '#fef3c7', '#d97706');
-      this.showToast(u.name + ' di-revoke');
+      this.showToast('User dihapus', 'error');
     },
-    deleteUser(id) {
-      const u = this.allUsers.find(x => x.id === id);
-      if (!u) return;
-      if (!confirm('Hapus permanen user ' + u.name + '?')) return;
-      this.allUsers = this.allUsers.filter(x => x.id !== id);
+
+    saveUserAccess(u) {
+      // Menyimpan perubahan hak akses ke localStorage
       this.saveUsers();
-      localStorage.removeItem('dc_user_notifications_' + u.username);
-      localStorage.removeItem('dc_bookmarks_' + u.username);
-      this.logActivity('Admin', 'menghapus user', u.name, 'trash-2', '#fee2e2', '#dc2626');
-      this.showToast(u.name + ' dihapus');
+      this.showToast('Hak akses ' + u.name + ' diperbarui', 'success');
     },
-    toggleSelectAll(event) {
-      if (event.target.checked) {
-        this.selectedUsers = this.filteredUsers.filter(u => u.status === 'pending').map(u => u.id);
-      } else {
-        this.selectedUsers = [];
-      }
+
+    saveUsers() {
+      localStorage.setItem('dc_users', JSON.stringify(this.users));
     },
-    bulkApprove() {
-      let count = 0;
-      this.selectedUsers.forEach(id => {
-        const u = this.allUsers.find(x => x.id === id);
-        if (u && u.status === 'pending') {
-          u.status = 'approved';
-          u.approvedAt = new Date().toISOString();
-          const notifs = JSON.parse(localStorage.getItem('dc_user_notifications_' + u.username) || '[]');
-          notifs.unshift({id: Date.now(), title:'Pendaftaran Disetujui! 🎉', desc:'Akun Anda telah di-approve.', icon:'check-circle', bg:'#dcfce7', color:'#16a34a', time:'Baru saja', read:false});
-          localStorage.setItem('dc_user_notifications_' + u.username, JSON.stringify(notifs));
-          count++;
-        }
-      });
-      this.saveUsers();
-      this.logActivity('Admin', 'bulk approve', count + ' user', 'users', '#dcfce7', '#16a34a');
-      this.showToast(count + ' user disetujui');
-      this.selectedUsers = [];
-    },
-    bulkReject() {
-      let count = 0;
-      this.selectedUsers.forEach(id => {
-        const u = this.allUsers.find(x => x.id === id);
-        if (u && u.status === 'pending') {
-          u.status = 'rejected';
-          u.rejectionReason = this.bulkRejectReason || 'Tidak memenuhi syarat';
-          const notifs = JSON.parse(localStorage.getItem('dc_user_notifications_' + u.username) || '[]');
-          notifs.unshift({id: Date.now(), title:'Pendaftaran Ditolak', desc:'Alasan: ' + u.rejectionReason, icon:'x-circle', bg:'#fee2e2', color:'#dc2626', time:'Baru saja', read:false});
-          localStorage.setItem('dc_user_notifications_' + u.username, JSON.stringify(notifs));
-          count++;
-        }
-      });
-      this.saveUsers();
-      this.logActivity('Admin', 'bulk reject', count + ' user', 'user-x', '#fee2e2', '#dc2626');
-      this.showToast(count + ' user ditolak', 'info');
-      this.selectedUsers = [];
-      this.showBulkReject = false;
-      this.bulkRejectReason = '';
-    },
-    simulateRegistration() {
-      const names = ['Rina Wijaya', 'Budi Santoso', 'Andi Pratama', 'Dewi Lestari', 'Eko Prasetyo'];
-      const depts = ['IT', 'HRD', 'Finance', 'Marketing', 'Operasional'];
-      const name = names[Math.floor(Math.random() * names.length)];
-      const dept = depts[Math.floor(Math.random() * depts.length)];
-      const username = name.toLowerCase().replace(' ', '.') + Math.floor(Math.random() * 100);
-      const newUser = {
-        id: 'user_' + Date.now(),
-        name, username, email: username + '@company.com',
-        password: 'password123', department: dept,
-        status: 'pending', registeredAt: new Date().toISOString(),
-      };
-      this.allUsers.push(newUser);
-      this.saveUsers();
-      const notifs = JSON.parse(localStorage.getItem('dc_notifications') || '[]');
-      notifs.unshift({id: Date.now(), title: 'Pendaftaran Baru', desc: name + ' (' + username + ') mendaftar', icon: 'user-plus', bg: '#ede9fe', color: '#7c3aed', time: 'Baru saja', read: false});
-      localStorage.setItem('dc_notifications', JSON.stringify(notifs));
-      this.logActivity(name, 'mendaftar akun', dept, 'user-plus', '#ede9fe', '#7c3aed');
-      this.showToast('Simulasi: ' + name + ' mendaftar');
-    },
-    exportCSV() {
-      const headers = ['Nama,Username,Email,Departemen,Status,Tanggal Daftar'];
-      const rows = this.allUsers.map(u => `"${u.name}","${u.username}","${u.email}","${u.department || ''}","${u.status}","${this.formatDate(u.registeredAt)}"`);
-      const csv = headers.concat(rows).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'users_export_' + new Date().toISOString().slice(0,10) + '.csv';
-      a.click();
-      this.showToast('CSV berhasil diexport');
-    },
-    formatDate(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}); },
-    showToast(msg, type='success') {
-      this.toast = {show:true, message:msg, type, icon: type==='success'?'check-circle':type==='info'?'info':'alert-circle'};
-      setTimeout(() => this.toast.show = false, 3000);
-    },
+
+    showToast(msg, type) {
+      alert(msg); // Sederhana dulu, bisa diganti toast custom
+    }
   }
 }
 </script>
