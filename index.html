@@ -1248,7 +1248,7 @@ function docuCloud() {
       this.driveLoading = true;
       try{
         var folderQ = this.driveFolderId ? ("'"+this.driveFolderId+"' in parents and ") : '';
-        var fieldsStr = 'files(id,name,mimeType,size,modifiedTime,description,parents)';
+        var fieldsStr = 'files(id,name,mimeType,size,modifiedTime,description,parents,thumbnailLink)';
         var r = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=200&fields='+fieldsStr+'&q='+encodeURIComponent(folderQ+'trashed=false'),{headers:{Authorization:'Bearer '+token}});
         if(!r.ok) throw new Error('Token expired');
         var d = await r.json();
@@ -1354,9 +1354,13 @@ function docuCloud() {
       var color = this.getFileColor(type);
       var sizeBytes = parseInt(driveFile.size) || 0;
       var thumbUrl = null;
-      // ★ FIX: Generate thumbnail untuk SEMUA tipe file yang support preview
+            // ★ FIX FINAL: thumbnailLink = link anonim dari API, PASTI tampil tanpa cookie
       if(type === 'Gambar' || type === 'PDF' || type === 'Video' || type === 'Dokumen' || type === 'Spreadsheet'){
-        thumbUrl = 'https://drive.google.com/thumbnail?id=' + driveFile.id + '&sz=w600';
+        if(driveFile.thumbnailLink){
+          thumbUrl = driveFile.thumbnailLink.replace('=s220', '=s600');
+        } else {
+          thumbUrl = 'https://drive.google.com/thumbnail?id=' + driveFile.id + '&sz=w600';
+        }
       }
       var title = '';
       var descCategory = '';
