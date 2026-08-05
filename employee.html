@@ -481,35 +481,34 @@ function employeeApp() {
     currentUser: null, files: [], categories: [], notifications: [], bookmarks: [],
 
     currentTheme: { id: 'indigo-purple', gradient: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)' },
-    themePresets: [
-      { id: 'indigo-purple', gradient: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)' },
-      { id: 'ocean-blue', gradient: 'linear-gradient(135deg,#2193b0 0%,#6dd5ed 100%)' },
-      { id: 'sunset', gradient: 'linear-gradient(135deg,#ff6e7f 0%,#bfe9ff 100%)' },
-      { id: 'forest', gradient: 'linear-gradient(135deg,#134e5e 0%,#71b280 100%)' },
-    ],
-
+    
+    // ★ SINKRONISASI: Filter berdasarkan Hak Akses User
     get filteredFiles() {
       return this.files.filter(f => {
         const matchSearch = !this.searchQuery || f.name.toLowerCase().includes(this.searchQuery.toLowerCase());
         const matchCat = !this.filterCategory || f.category === this.filterCategory;
-        return matchSearch && matchCat;
+        
+        // Cek Hak Akses: Jika user hanya punya akses terbatas, sembunyikan file di luar kategorinya
+        let hasAccess = true;
+        if (this.currentUser && this.currentUser.access && this.currentUser.access !== 'all') {
+          const allowedCats = this.currentUser.access.split(',').map(s => s.trim());
+          hasAccess = allowedCats.includes(f.category);
+        }
+        
+        return matchSearch && matchCat && hasAccess;
       });
     },
-    get bookmarkedFiles() {
-      return this.files.filter(f => this.bookmarks.includes(f.id));
-    },
+    get bookmarkedFiles() { return this.files.filter(f => this.bookmarks.includes(f.id)); },
     get unreadNotifCount() { return this.notifications.filter(n => !n.read).length; },
 
     init() {
       this.loadTheme();
       this.loadCategories();
-      this.loadFiles();
+      this.loadFiles(); // ★ Mengambil data dari index.html
       this.checkSession();
       this.$nextTick(() => lucide.createIcons());
-      ['activeMenu','showRegister','isLoggedIn','showNotifDropdown','showProfileDropdown','previewFile','currentUser'].forEach(prop => {
-        this.$watch(prop, () => this.$nextTick(() => lucide.createIcons()));
-      });
-      // Auto refresh data setiap 5 detik
+      
+      // Auto-sync setiap 3 detik
       setInterval(() => {
         this.loadFiles();
         this.loadCategories();
@@ -517,7 +516,7 @@ function employeeApp() {
           this.refreshCurrentUser();
           this.loadNotifications();
         }
-      }, 5000);
+      }, 3000);
     },
 
     loadTheme() {
@@ -527,14 +526,27 @@ function employeeApp() {
         if (t) { this.currentTheme = t; document.documentElement.style.setProperty('--theme-gradient', t.gradient); }
       }
     },
+    
+    // ★ SINKRONISASI KATEGORI
     loadCategories() {
+      // Membaca kategori yang dibuat di index.html
       const saved = localStorage.getItem('dc_categories');
       this.categories = saved ? JSON.parse(saved) : [];
     },
+    
+    // ★ SINKRONISASI FILE (Mengambil metadata dari index.html)
     loadFiles() {
-      const saved = localStorage.getItem('dc_documents');
-      this.files = saved ? JSON.parse(saved) : [];
+      // index.html menyimpan cache metadata di dc_metadata_cache
+      const saved = localStorage.getItem('dc_metadata_cache');
+      if (saved) {
+        this.files = JSON.parse(saved);
+      } else {
+        // Fallback ke dc_documents jika belum ada cache
+        const docSaved = localStorage.getItem('dc_documents');
+        this.files = docSaved ? JSON.parse(docSaved) : [];
+      }
     },
+
     loadNotifications() {
       if (!this.currentUser) return;
       const saved = localStorage.getItem('dc_user_notifications_' + this.currentUser.username);
@@ -586,10 +598,12 @@ function employeeApp() {
     },
     downloadFile(file) {
       this.showToast('Mengunduh ' + file.name, 'info');
-      // Update download count
-      const files = JSON.parse(localStorage.getItem('dc_documents') || '[]');
+      const files = JSON.parse(localStorage.getItem('dc_metadata_cache') || '[]');
       const f = files.find(x => x.id === file.id);
-      if (f) { f.downloadCount = (f.downloadCount || 0) + 1; localStorage.setItem('dc_documents', JSON.stringify(files)); }
+      if (f) { 
+        f.downloadCount = (f.downloadCount || 0) + 1; 
+        localStorage.setItem('dc_metadata_cache', JSON.stringify(files)); 
+      }
     },
 
     login() {
@@ -598,6 +612,12 @@ function employeeApp() {
       const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
       const u = users.find(x => x.username === this.loginUsername && x.password === this.loginPassword);
       if (!u) { this.loginError = 'Username atau password salah'; return; }
+      
+      if (u.status !== 'approved') {
+        this.loginError = 'Akun Anda belum disetujui atau telah dicabut.';
+        return;
+      }
+
       this.currentUser = u;
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', u.id);
@@ -617,30 +637,24 @@ function employeeApp() {
       if (users.some(x => x.username.toLowerCase() === this.regUsername.toLowerCase())) {
         this.regError = 'Username sudah digunakan'; return;
       }
-      if (users.some(x => x.email.toLowerCase() === this.regEmail.toLowerCase())) {
-        this.regError = 'Email sudah terdaftar'; return;
-      }
       const newUser = {
-        id: 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+        id: 'user_' + Date.now(),
         name: this.regName, username: this.regUsername, email: this.regEmail,
         password: this.regPassword, department: this.regDepartment,
         status: 'pending', registeredAt: new Date().toISOString(),
-        bookmarks: [], downloadCount: 0,
+        access: 'all' // Default access, nanti diatur admin
       };
       users.push(newUser);
       localStorage.setItem('dc_users', JSON.stringify(users));
-      // Notif admin
+      
+      // Notif ke admin
       const notifs = JSON.parse(localStorage.getItem('dc_notifications') || '[]');
       notifs.unshift({
         id: Date.now(), title: 'Pendaftaran Baru', 
-        desc: newUser.name + ' (' + newUser.username + ') mendaftar sebagai ' + (newUser.department || 'Karyawan'),
+        desc: newUser.name + ' (' + newUser.username + ') mendaftar.',
         icon: 'user-plus', bg: '#ede9fe', color: '#7c3aed', time: 'Baru saja', read: false
       });
       localStorage.setItem('dc_notifications', JSON.stringify(notifs));
-      // Log activity
-      const acts = JSON.parse(localStorage.getItem('dc_activities') || '[]');
-      acts.unshift({id: Date.now(), user: newUser.name, action: 'mendaftar akun', file: newUser.department || '-', icon: 'user-plus', bg: '#ede9fe', color: '#7c3aed', time: 'Baru saja'});
-      localStorage.setItem('dc_activities', JSON.stringify(acts.slice(0, 50)));
 
       this.currentUser = newUser;
       this.isLoggedIn = true;
