@@ -14,6 +14,7 @@
 .glass{backdrop-filter:blur(12px);background:rgba(255,255,255,.9)}
 .dark .glass{background:rgba(15,23,42,.9)}
 .file-card{transition:all .2s ease} .file-card:hover{transform:translateY(-3px)}
+.scrollbar-hide::-webkit-scrollbar{display:none}
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors" x-data="employeeApp()" x-init="init()">
@@ -145,6 +146,7 @@
     <div x-show="(activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles).length === 0" class="text-center py-20">
       <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
       <p class="text-sm text-slate-500">Tidak ada dokumen ditemukan.</p>
+      <p class="text-xs text-slate-400 mt-2">Pastikan admin sudah mengupload file di Dashboard Utama.</p>
     </div>
   </main>
 </div>
@@ -181,19 +183,50 @@ function employeeApp() {
       this.loadCategories();
       this.loadFiles();
       this.checkSession();
-      setInterval(() => { this.loadFiles(); this.loadCategories(); }, 5000); // Auto-sync 5 detik
+      
+      // Auto-sync setiap 5 detik
+      setInterval(() => { 
+        this.loadFiles(); 
+        this.loadCategories(); 
+        if(this.isLoggedIn) this.refreshCurrentUser();
+      }, 5000); 
+      
       this.$nextTick(() => lucide.createIcons());
     },
 
     loadCategories() {
+      // Membaca kategori yang dibuat di index.html
       const saved = localStorage.getItem('dc_categories');
       this.categories = saved ? JSON.parse(saved) : [];
     },
     
-    // ★ MENGAMBIL DATA DARI INDEX.HTML
+    // ★ MENGAMBIL DATA DARI INDEX.HTML (Multi-source check)
     loadFiles() {
-      const saved = localStorage.getItem('dc_metadata_cache');
-      if (saved) this.files = JSON.parse(saved);
+      // Coba baca dari dc_metadata_cache (format baru index.html)
+      let saved = localStorage.getItem('dc_metadata_cache');
+      
+      // Fallback ke dc_documents (format lama) jika cache belum ada
+      if (!saved) {
+        saved = localStorage.getItem('dc_documents');
+      }
+      
+      if (saved) {
+        try {
+          this.files = JSON.parse(saved);
+        } catch(e) {
+          console.error('Gagal parse data file:', e);
+          this.files = [];
+        }
+      } else {
+        this.files = [];
+      }
+    },
+
+    refreshCurrentUser() {
+      if(!this.currentUser) return;
+      const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
+      const u = users.find(x => x.id === this.currentUser?.id);
+      if (u) this.currentUser = u;
     },
 
     checkSession() {
