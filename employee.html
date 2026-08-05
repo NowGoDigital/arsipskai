@@ -34,6 +34,9 @@
 .spin{animation:spin 1s linear infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.floaty{animation:floaty 7s ease-in-out infinite}
+.floaty-slow{animation:floaty 10s ease-in-out infinite}
 .file-actions-btn{opacity:0;transition:opacity .15s}
 .file-card:hover .file-actions-btn{opacity:1}
 tr:hover .file-actions-btn{opacity:1}
@@ -70,35 +73,175 @@ tr:hover .file-actions-btn{opacity:1}
   </div>
 </div>
 
-<!-- LOGIN / REGISTER OVERLAY -->
-<div x-show="!isLoggedIn && !isLoading" class="fixed inset-0 z-50 flex items-center justify-center p-4 gradient-bg">
-  <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 fade-in">
-    <div class="text-center mb-6">
-      <div class="w-16 h-16 mx-auto rounded-2xl gradient-bg flex items-center justify-center text-white mb-3">
-        <i data-lucide="users" class="w-8 h-8"></i>
+<!-- ============================================================ -->
+<!-- ★ LANDING + LOGIN / REGISTER (DESAIN BARU — PROFESIONAL)    -->
+<!-- ============================================================ -->
+<div x-show="!isLoggedIn && !isLoading" class="fixed inset-0 z-50 overflow-y-auto gradient-bg">
+
+  <!-- Dekorasi latar -->
+  <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div class="absolute -top-32 -left-32 w-[420px] h-[420px] bg-white/10 rounded-full blur-3xl floaty-slow"></div>
+    <div class="absolute -bottom-40 -right-32 w-[520px] h-[520px] bg-fuchsia-400/20 rounded-full blur-3xl floaty"></div>
+    <div class="absolute top-1/3 left-1/2 w-72 h-72 bg-indigo-300/10 rounded-full blur-2xl"></div>
+    <div class="absolute inset-0 opacity-[0.06]" style="background-image:radial-gradient(#fff 1px,transparent 1px);background-size:26px 26px"></div>
+  </div>
+
+  <div class="relative min-h-full flex flex-col">
+
+    <!-- Topbar mini -->
+    <div class="flex items-center justify-between px-6 lg:px-12 py-5">
+      <div class="flex items-center gap-2.5 text-white">
+        <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center shadow-lg"><i data-lucide="cloud-cog" class="w-5 h-5"></i></div>
+        <div><p class="font-extrabold text-sm leading-none">DocuCloud</p><p class="text-[10px] text-white/60 mt-0.5">Employee Portal v8.0</p></div>
       </div>
-      <h2 class="text-2xl font-extrabold">Employee Portal</h2>
-      <p class="text-sm text-slate-500 mt-1">Akses Dokumen Perusahaan</p>
+      <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white/80 text-[11px] font-semibold backdrop-blur">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> Sistem Aktif
+      </span>
     </div>
-    <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mb-6">
-      <button @click="showRegister=false" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="!showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500'">Login</button>
-      <button @click="showRegister=true" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500'">Daftar</button>
+
+    <!-- Konten utama: split-screen -->
+    <div class="flex-1 flex items-center justify-center px-6 lg:px-12 py-8">
+      <div class="w-full max-w-6xl grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center">
+
+        <!-- ========== KOLOM KIRI: BRANDING & INFO ========== -->
+        <div class="text-white fade-in">
+          <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-[11px] font-semibold tracking-wide mb-6 backdrop-blur">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i> PLATFORM DOKUMEN INTERNAL PERUSAHAAN
+          </span>
+
+          <h2 class="text-3xl lg:text-[2.6rem] font-extrabold leading-tight mb-4">
+            Satu Portal untuk<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-pink-200 to-indigo-200">Semua Dokumen Perusahaan</span>
+          </h2>
+          <p class="text-white/75 text-sm lg:text-[15px] leading-relaxed mb-8 max-w-lg">
+            DocuCloud Employee Portal memberikan akses terkontrol ke dokumen perusahaan yang tersinkron langsung dengan Google Drive — terkategori, aman, dan tersedia kapan pun Anda butuhkan.
+          </p>
+
+          <!-- Fitur unggulan -->
+          <div class="grid sm:grid-cols-2 gap-3 max-w-lg mb-8">
+            <div class="flex items-start gap-3 bg-white/10 backdrop-blur border border-white/15 rounded-xl p-3.5 hover:bg-white/15 transition">
+              <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="hard-drive" class="w-4 h-4"></i></div>
+              <div><p class="text-sm font-bold leading-tight">Sinkron Google Drive</p><p class="text-[11px] text-white/70 mt-1">Dokumen real-time langsung dari Drive perusahaan.</p></div>
+            </div>
+            <div class="flex items-start gap-3 bg-white/10 backdrop-blur border border-white/15 rounded-xl p-3.5 hover:bg-white/15 transition">
+              <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="shield-check" class="w-4 h-4"></i></div>
+              <div><p class="text-sm font-bold leading-tight">Hak Akses Terkontrol</p><p class="text-[11px] text-white/70 mt-1">Admin menentukan kategori yang dapat Anda akses.</p></div>
+            </div>
+            <div class="flex items-start gap-3 bg-white/10 backdrop-blur border border-white/15 rounded-xl p-3.5 hover:bg-white/15 transition">
+              <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="bookmark" class="w-4 h-4"></i></div>
+              <div><p class="text-sm font-bold leading-tight">Bookmark & Preview</p><p class="text-[11px] text-white/70 mt-1">Simpan dokumen penting, pratinjau tanpa unduh.</p></div>
+            </div>
+            <div class="flex items-start gap-3 bg-white/10 backdrop-blur border border-white/15 rounded-xl p-3.5 hover:bg-white/15 transition">
+              <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="search" class="w-4 h-4"></i></div>
+              <div><p class="text-sm font-bold leading-tight">Pencarian Cerdas</p><p class="text-[11px] text-white/70 mt-1">Filter tanggal, ukuran, tipe, dan kategori.</p></div>
+            </div>
+          </div>
+
+          <!-- Cara bergabung -->
+          <div class="bg-white/10 backdrop-blur border border-white/15 rounded-2xl p-5 max-w-lg">
+            <p class="text-[10px] uppercase tracking-[0.2em] font-bold text-white/60 mb-4">Cara Bergabung</p>
+            <div class="space-y-4">
+              <div class="flex gap-3">
+                <div class="w-7 h-7 rounded-full bg-white text-indigo-600 text-xs font-extrabold flex items-center justify-center flex-shrink-0 shadow">1</div>
+                <div><p class="text-sm font-semibold">Daftar Akun</p><p class="text-[11px] text-white/70 mt-0.5">Isi formulir pada tab "Daftar" — hanya butuh 1 menit.</p></div>
+              </div>
+              <div class="flex gap-3">
+                <div class="w-7 h-7 rounded-full bg-white text-indigo-600 text-xs font-extrabold flex items-center justify-center flex-shrink-0 shadow">2</div>
+                <div><p class="text-sm font-semibold">Persetujuan Admin</p><p class="text-[11px] text-white/70 mt-0.5">Admin memverifikasi & menetapkan hak akses kategori Anda.</p></div>
+              </div>
+              <div class="flex gap-3">
+                <div class="w-7 h-7 rounded-full bg-white text-indigo-600 text-xs font-extrabold flex items-center justify-center flex-shrink-0 shadow">3</div>
+                <div><p class="text-sm font-semibold">Mulai Jelajahi</p><p class="text-[11px] text-white/70 mt-0.5">Dokumen sesuai hak akses langsung tersedia di dashboard.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== KOLOM KANAN: KARTU LOGIN / DAFTAR ========== -->
+        <div class="fade-in">
+          <div class="w-full max-w-md mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 sm:p-10">
+            <div class="text-center mb-8">
+              <div class="w-14 h-14 mx-auto rounded-2xl gradient-bg flex items-center justify-center text-white mb-4 shadow-lg">
+                <i data-lucide="users" class="w-7 h-7"></i>
+              </div>
+              <h3 class="text-2xl font-extrabold">Employee Portal</h3>
+              <p class="text-sm text-slate-500 mt-1.5">Masuk atau daftar untuk mengakses dokumen perusahaan</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-7">
+              <button @click="showRegister=false" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition" :class="!showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'">Login</button>
+              <button @click="showRegister=true" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition" :class="showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'">Daftar</button>
+            </div>
+
+            <!-- FORM LOGIN -->
+            <div x-show="!showRegister">
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Username</label>
+              <div class="relative mb-4">
+                <i data-lucide="user" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input x-model="loginUsername" type="text" placeholder="Masukkan username" class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              </div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Password</label>
+              <div class="relative mb-5">
+                <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input x-model="loginPassword" @keydown.enter="login()" type="password" placeholder="••••••••" class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              </div>
+              <p x-show="loginError" class="text-red-500 text-xs mb-3 flex items-center gap-1.5"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i><span x-text="loginError"></span></p>
+              <button @click="login()" class="w-full py-3.5 rounded-xl gradient-bg text-white font-bold shadow-lg hover:opacity-90 hover:shadow-xl transition flex items-center justify-center gap-2">
+                <i data-lucide="log-in" class="w-4 h-4"></i> Masuk
+              </button>
+            </div>
+
+            <!-- FORM DAFTAR -->
+            <div x-show="showRegister">
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Nama Lengkap</label>
+              <div class="relative mb-3.5">
+                <i data-lucide="user-plus" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input x-model="regName" type="text" placeholder="Contoh: Budi Santoso" class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Username</label>
+                  <div class="relative mb-3.5">
+                    <i data-lucide="at-sign" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input x-model="regUsername" type="text" placeholder="username" class="w-full pl-10 pr-3 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Departemen</label>
+                  <div class="relative mb-3.5">
+                    <i data-lucide="building-2" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input x-model="regDepartment" type="text" placeholder="Opsional" class="w-full pl-10 pr-3 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                  </div>
+                </div>
+              </div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Email</label>
+              <div class="relative mb-3.5">
+                <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input x-model="regEmail" type="email" placeholder="nama@perusahaan.com" class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              </div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Password</label>
+              <div class="relative mb-5">
+                <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input x-model="regPassword" type="password" placeholder="Minimal 6 karakter" class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              </div>
+              <p x-show="regError" class="text-red-500 text-xs mb-3 flex items-center gap-1.5"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i><span x-text="regError"></span></p>
+              <button @click="register()" class="w-full py-3.5 rounded-xl gradient-bg text-white font-bold shadow-lg hover:opacity-90 hover:shadow-xl transition flex items-center justify-center gap-2">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Daftar Sekarang
+              </button>
+              <p class="text-[11px] text-center text-slate-400 mt-4 flex items-center justify-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-green-500"></i> Akun aktif setelah disetujui Admin.</p>
+            </div>
+          </div>
+          <p class="text-center text-[11px] text-white/60 mt-5 flex items-center justify-center gap-1.5"><i data-lucide="lock" class="w-3 h-3"></i> Data perusahaan terproteksi. Akses hanya untuk karyawan terdaftar.</p>
+        </div>
+
+      </div>
     </div>
-    <div x-show="!showRegister">
-      <input x-model="loginUsername" type="text" placeholder="Username" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none focus:ring-2 focus:ring-indigo-500">
-      <input x-model="loginPassword" @keydown.enter="login()" type="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-4 outline-none focus:ring-2 focus:ring-indigo-500">
-      <p x-show="loginError" class="text-red-500 text-xs mb-3" x-text="loginError"></p>
-      <button @click="login()" class="w-full py-3 rounded-lg gradient-bg text-white font-bold shadow-lg hover:opacity-90 transition">Masuk</button>
-    </div>
-    <div x-show="showRegister">
-      <input x-model="regName" type="text" placeholder="Nama Lengkap" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
-      <input x-model="regUsername" type="text" placeholder="Username" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
-      <input x-model="regEmail" type="email" placeholder="Email" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
-      <input x-model="regDepartment" type="text" placeholder="Departemen (Opsional)" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
-      <input x-model="regPassword" type="password" placeholder="Password (Min 6 char)" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-4 outline-none">
-      <p x-show="regError" class="text-red-500 text-xs mb-3" x-text="regError"></p>
-      <button @click="register()" class="w-full py-3 rounded-lg gradient-bg text-white font-bold shadow-lg hover:opacity-90 transition">Daftar Sekarang</button>
-      <p class="text-[10px] text-center text-slate-400 mt-3">Akun akan aktif setelah disetujui Admin.</p>
+
+    <!-- Footer -->
+    <div class="px-6 lg:px-12 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-white/50">
+      <p>© 2026 DocuCloud — Internal Use Only</p>
+      <p class="flex items-center gap-1.5"><i data-lucide="life-buoy" class="w-3 h-3"></i> Butuh bantuan? Hubungi Admin IT</p>
     </div>
   </div>
 </div>
@@ -590,9 +733,6 @@ function employeeApp() {
 
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
 
-    // ================================================================
-    //  KATEGORI — IndexedDB DocuCloudV8 + fallback folder Drive
-    // ================================================================
     openDB(){
       return new Promise(function(resolve,reject){
         var req = indexedDB.open('DocuCloudV8',1);
@@ -633,9 +773,6 @@ function employeeApp() {
       }
     },
 
-    // ================================================================
-    //  AUTH
-    // ================================================================
     checkSession(){
       var sessionId = localStorage.getItem('dc_employee_session');
       if(sessionId){
@@ -710,9 +847,6 @@ function employeeApp() {
       this.refreshIcons();
     },
 
-    // ================================================================
-    //  DRIVE AUTH + SYNC
-    // ================================================================
     startDriveAuth(){
       try{
         if(!window.google || !google.accounts){
@@ -927,9 +1061,7 @@ function employeeApp() {
       };
     },
 
-    // ================================================================
-    //  HAK AKSES (★ FIX: nilai access lama/invalid → fallback semua)
-    // ================================================================
+    // HAK AKSES (fallback kalau nilai access lama/invalid)
     get accessibleCategories(){
       if(!this.currentUser) return [];
       var all = this.categories.map(function(c){return c.name});
@@ -978,9 +1110,6 @@ function employeeApp() {
       }
     },
 
-    // ================================================================
-    //  FILTER & SEARCH
-    // ================================================================
     get displayedFiles(){ return this.filteredFiles.slice(0, this.displayLimit) },
     get hasActiveFilters(){ return !!(this.searchQuery||this.filterCategory||this.fileType!=='Semua'||this.filterDateFrom||this.filterDateTo||this.filterSizeMin||this.filterSizeMax) },
     get activeFilterCount(){
@@ -1016,7 +1145,7 @@ function employeeApp() {
         if(this.searchQuery){
           var q=this.searchQuery.toLowerCase();
           var match=false;
-          if(this.searchField==='all'){
+                    if(this.searchField==='all'){
             match=(f.name&&f.name.toLowerCase().indexOf(q)!==-1)||(f.title&&f.title.toLowerCase().indexOf(q)!==-1)||(f.category&&f.category.toLowerCase().indexOf(q)!==-1);
           } else if(this.searchField==='name'){ match=f.name&&f.name.toLowerCase().indexOf(q)!==-1; }
           else if(this.searchField==='title'){ match=f.title&&f.title.toLowerCase().indexOf(q)!==-1; }
