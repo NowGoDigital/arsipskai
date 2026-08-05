@@ -3,160 +3,285 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Admin Approval Center</title>
+<title>Admin Approval Center — DocuCloud</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class'}</script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*{font-family:'Inter',sans-serif} [x-cloak]{display:none!important}
+*{font-family:'Inter',sans-serif}
+[x-cloak]{display:none!important}
+.gradient-bg{background:var(--theme-gradient,linear-gradient(135deg,#667eea 0%,#764ba2 100%))}
+.glass{backdrop-filter:blur(14px);background:rgba(255,255,255,.85)}
+.dark .glass{background:rgba(15,23,42,.85)}
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.scrollbar::-webkit-scrollbar{width:6px}
+.scrollbar::-webkit-scrollbar-thumb{background:rgba(148,163,184,.35);border-radius:10px}
 </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200" x-data="adminApproval()" x-init="init()">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200"
+      x-data="approvalApp()" x-init="init()" x-cloak
+      :class="{'dark': darkMode}">
 
-<div class="max-w-5xl mx-auto p-6">
-  <header class="flex items-center justify-between mb-8">
-    <div>
-      <h1 class="text-2xl font-extrabold">Admin Approval Center</h1>
-      <p class="text-sm text-slate-500">Kelola pendaftaran karyawan & hak akses</p>
-    </div>
-    <div class="flex gap-3">
-      <button @click="loadUsers()" class="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold flex items-center gap-2">
-        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Data
-      </button>
-      <a href="index.html" target="_blank" class="px-4 py-2 rounded-lg gradient-bg text-white text-sm font-bold flex items-center gap-2">
-        <i data-lucide="external-link" class="w-4 h-4"></i> Buka Dashboard Utama
-      </a>
-    </div>
-  </header>
+<!-- HEADER -->
+<header class="h-14 glass border-b border-slate-200 dark:border-slate-800 flex items-center px-5 gap-3">
+  <div class="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center"><i data-lucide="shield-check" class="w-5 h-5 text-white"></i></div>
+  <div><h1 class="font-bold text-sm">Approval Center</h1><p class="text-[10px] text-slate-400">DocuCloud v8.0 — Kelola Akses Employee</p></div>
+  <div class="ml-auto flex items-center gap-2">
+    <button @click="darkMode=!darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i :data-lucide="darkMode?'sun':'moon'" class="w-4 h-4"></i></button>
+    <a href="index.html" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Dashboard</a>
+  </div>
+</header>
 
-  <!-- Stats -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-    <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-      <p class="text-xs font-bold text-slate-500 uppercase">Total Pendaftar</p>
-      <p class="text-2xl font-extrabold mt-1" x-text="users.length"></p>
+<main class="max-w-4xl mx-auto p-6">
+
+  <!-- STATS -->
+  <div class="grid grid-cols-3 gap-3 mb-6 fade-in">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center">
+      <p class="text-2xl font-bold text-yellow-500" x-text="pendingUsers.length"></p>
+      <p class="text-xs text-slate-500 mt-1">Menunggu</p>
     </div>
-    <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-      <p class="text-xs font-bold text-yellow-500 uppercase">Menunggu Persetujuan</p>
-      <p class="text-2xl font-extrabold mt-1" x-text="users.filter(u=>u.status==='pending').length"></p>
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center">
+      <p class="text-2xl font-bold text-green-500" x-text="approvedUsers.length"></p>
+      <p class="text-xs text-slate-500 mt-1">Disetujui</p>
     </div>
-    <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-      <p class="text-xs font-bold text-green-500 uppercase">User Aktif</p>
-      <p class="text-2xl font-extrabold mt-1" x-text="users.filter(u=>u.status==='approved').length"></p>
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center">
+      <p class="text-2xl font-bold text-red-500" x-text="rejectedUsers.length"></p>
+      <p class="text-xs text-slate-500 mt-1">Ditolak</p>
     </div>
   </div>
 
-  <!-- Tabel User -->
-  <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-    <table class="w-full text-sm text-left">
-      <thead class="bg-slate-50 dark:bg-slate-800 text-xs uppercase font-bold text-slate-500">
-        <tr>
-          <th class="px-6 py-4">Nama / Username</th>
-          <th class="px-6 py-4">Departemen</th>
-          <th class="px-6 py-4">Status</th>
-          <th class="px-6 py-4">Hak Akses Kategori</th>
-          <th class="px-6 py-4 text-right">Aksi</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-        <template x-for="u in users" :key="u.id">
-          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-            <td class="px-6 py-4">
-              <p class="font-bold" x-text="u.name"></p>
-              <p class="text-xs text-slate-500" x-text="u.username"></p>
-            </td>
-            <td class="px-6 py-4 text-slate-500" x-text="u.department || '-'"></td>
-            <td class="px-6 py-4">
-              <span class="px-2 py-1 rounded text-[10px] font-bold" 
-                    :class="u.status==='approved' ? 'bg-green-100 text-green-700' : u.status==='rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'"
-                    x-text="u.status.toUpperCase()"></span>
-            </td>
-            <td class="px-6 py-4">
-              <select x-model="u.access" @change="saveUserAccess(u)" class="bg-slate-100 dark:bg-slate-800 border-0 rounded text-xs p-1.5 outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="all">Semua Kategori</option>
-                <template x-for="cat in categories" :key="cat.name">
-                  <option :value="cat.name" x-text="cat.name"></option>
-                </template>
-              </select>
-            </td>
-            <td class="px-6 py-4 text-right">
-              <div class="flex items-center justify-end gap-2">
-                <button x-show="u.status==='pending'" @click="approveUser(u)" class="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition" title="Setujui">
-                  <i data-lucide="check" class="w-4 h-4"></i>
-                </button>
-                <button x-show="u.status==='pending'" @click="rejectUser(u)" class="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Tolak">
-                  <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-                <button @click="deleteUser(u)" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition" title="Hapus Permanen">
-                  <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-    <div x-show="users.length===0" class="p-8 text-center text-slate-500">Belum ada data pendaftar.</div>
+  <!-- PENDING LIST -->
+  <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 text-yellow-500"></i> Menunggu Persetujuan</h2>
+  <div x-show="pendingUsers.length===0" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-8 text-center text-slate-400 text-sm mb-6">
+    <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-2 text-green-300"></i>
+    Tidak ada pendaftaran baru.
+  </div>
+  <template x-for="user in pendingUsers" :key="user.id">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 mb-3 fade-in">
+      <div class="flex items-start justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-lg" x-text="user.name?user.name.charAt(0).toUpperCase():'?'"></div>
+          <div>
+            <p class="font-bold text-sm" x-text="user.name"></p>
+            <p class="text-xs text-slate-500" x-text="'@'+user.username+(user.email?' • '+user.email:'')"></p>
+            <p class="text-xs text-slate-400" x-text="user.department?'Dept: '+user.department:'Tanpa departemen'"></p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button @click="approveUser(user.id)" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition"><i data-lucide="check" class="w-3.5 h-3.5"></i> Setujui</button>
+          <button @click="rejectUser(user.id)" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition"><i data-lucide="x" class="w-3.5 h-3.5"></i> Tolak</button>
+        </div>
+      </div>
+      <!-- HAK AKSES KATEGORI -->
+      <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <p class="text-[10px] uppercase font-bold text-slate-400 mb-2">Hak Akses Kategori</p>
+        <div class="flex flex-wrap gap-2">
+          <label class="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition text-xs">
+            <input type="radio" :name="'access_'+user.id" value="all" :checked="getUserAccess(user.id)==='all'" @change="setUserAccess(user.id,'all')" class="accent-indigo-500">
+            <span class="font-semibold">Semua Kategori</span>
+          </label>
+          <template x-for="cat in categories" :key="cat.name">
+            <label class="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition text-xs">
+              <input type="checkbox" :name="'access_'+user.id" :value="cat.name" :checked="isCatChecked(user.id,cat.name)" @change="toggleCatAccess(user.id,cat.name,$event.target.checked)" class="accent-indigo-500">
+              <i :class="cat.icon" class="w-3.5 text-center" :style="'color:'+cat.color"></i>
+              <span x-text="cat.name"></span>
+            </label>
+          </template>
+        </div>
+        <div x-show="categories.length===0" class="text-xs text-slate-400 mt-1">⚠️ Belum ada kategori. Buat kategori di Dashboard Utama dulu.</div>
+      </div>
+    </div>
+  </template>
+
+  <!-- APPROVED LIST -->
+  <h2 class="text-lg font-bold mb-3 mt-8 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-green-500"></i> Employee Aktif</h2>
+  <div x-show="approvedUsers.length===0" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center text-slate-400 text-sm mb-6">Belum ada employee aktif.</div>
+  <template x-for="user in approvedUsers" :key="'a_'+user.id">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 mb-2 fade-in flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 font-bold text-sm" x-text="user.name?user.name.charAt(0).toUpperCase():'?'"></div>
+        <div>
+          <p class="font-semibold text-sm" x-text="user.name"></p>
+          <p class="text-xs text-slate-400" x-text="'@'+user.username"></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-full text-[10px] font-bold" x-text="user.access==='all'?'Akses: Semua':'Akses: '+user.access"></span>
+        <button @click="editAccessUser=user; showAccessModal=true" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title="Ubah Akses"><i data-lucide="settings" class="w-3.5 h-3.5 text-slate-400"></i></button>
+        <button @click="revokeUser(user.id)" class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg" title="Cabut Akses"><i data-lucide="user-x" class="w-3.5 h-3.5 text-red-400"></i></button>
+      </div>
+    </div>
+  </template>
+
+  <!-- REJECTED LIST -->
+  <div x-show="rejectedUsers.length>0">
+    <h2 class="text-lg font-bold mb-3 mt-8 flex items-center gap-2"><i data-lucide="user-x" class="w-5 h-5 text-red-500"></i> Ditolak</h2>
+    <template x-for="user in rejectedUsers" :key="'r_'+user.id">
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 mb-2 fade-in flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500 font-bold text-sm" x-text="user.name?user.name.charAt(0).toUpperCase():'?'"></div>
+          <div><p class="font-semibold text-sm" x-text="user.name"></p><p class="text-xs text-slate-400" x-text="'@'+user.username"></p></div>
+        </div>
+        <button @click="approveUser(user.id)" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold transition">Setujui Ulang</button>
+      </div>
+    </template>
+  </div>
+
+</main>
+
+<!-- ACCESS EDIT MODAL -->
+<div x-show="showAccessModal && editAccessUser" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+  <div @click.away="showAccessModal=false" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md shadow-2xl fade-in">
+    <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <h3 class="font-bold text-sm">Ubah Akses — <span x-text="editAccessUser?editAccessUser.name:''"></span></h3>
+      <button @click="showAccessModal=false" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-4">
+      <label class="flex items-center gap-2 mb-3 cursor-pointer text-sm">
+        <input type="radio" value="all" :checked="getUserAccess(editAccessUser?editAccessUser.id:'')==='all'" @change="setUserAccess(editAccessUser.id,'all')" class="accent-indigo-500">
+        <span class="font-semibold">Semua Kategori</span>
+      </label>
+      <template x-for="cat in categories" :key="'m_'+cat.name">
+        <label class="flex items-center gap-2 mb-2 cursor-pointer text-sm px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+          <input type="checkbox" :value="cat.name" :checked="isCatChecked(editAccessUser?editAccessUser.id:'',cat.name)" @change="toggleCatAccess(editAccessUser.id,cat.name,$event.target.checked)" class="accent-indigo-500">
+          <i :class="cat.icon" class="w-4 text-center" :style="'color:'+cat.color"></i>
+          <span x-text="cat.name"></span>
+        </label>
+      </template>
+    </div>
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+      <button @click="showAccessModal=false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold">Batal</button>
+      <button @click="saveAccess(); showAccessModal=false" class="px-4 py-2 gradient-bg text-white rounded-lg text-xs font-bold">Simpan</button>
+    </div>
   </div>
 </div>
 
+<!-- TOAST -->
+<div class="fixed top-5 right-5 z-[200] space-y-2">
+  <template x-for="toast in toasts" :key="toast.id">
+    <div x-show="toast.show" x-transition class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 min-w-[260px]">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :style="'background:'+toast.bg"><i :data-lucide="toast.icon" class="w-4 h-4" :style="'color:'+toast.color"></i></div>
+      <p class="text-sm font-semibold flex-1" x-text="toast.title"></p>
+    </div>
+  </template>
+</div>
+
 <script>
-function adminApproval() {
+function approvalApp(){
   return {
-    users: [], categories: [],
-    
-    init() {
+    darkMode:false,
+    users:[],
+    categories:[],
+    showAccessModal:false,
+    editAccessUser:null,
+    accessDraft:{},
+    toasts:[],
+
+    async init(){
+      var self=this;
+      if(localStorage.getItem('dc_dark')==='true') this.darkMode=true;
+      this.$watch('darkMode',function(v){localStorage.setItem('dc_dark',v);self.refreshIcons()});
       this.loadUsers();
-      this.loadCategories();
-      setInterval(() => { this.loadUsers(); }, 5000); // Auto-refresh
-      this.$nextTick(() => lucide.createIcons());
+      await this.loadCategories();
+      this.refreshIcons();
+      setInterval(function(){self.refreshIcons()},600);
     },
 
-    loadUsers() {
-      this.users = JSON.parse(localStorage.getItem('dc_users') || '[]');
+    refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
+
+    loadUsers(){
+      this.users=JSON.parse(localStorage.getItem('dc_users')||'[]');
     },
-    
-    loadCategories() {
-      // Membaca kategori dari index.html
-      const saved = localStorage.getItem('dc_categories');
-      this.categories = saved ? JSON.parse(saved) : [];
+    saveUsers(){
+      localStorage.setItem('dc_users',JSON.stringify(this.users));
     },
 
-    approveUser(u) {
-      if(!confirm('Setujui akun ' + u.name + '?')) return;
-      u.status = 'approved';
+    // ★ SINKRON: baca kategori dari IndexedDB DocuCloudV8 (sama dengan index.html)
+    openDB(){
+      return new Promise(function(resolve,reject){
+        var req=indexedDB.open('DocuCloudV8',1);
+        req.onupgradeneeded=function(e){
+          var db=e.target.result;
+          if(!db.objectStoreNames.contains('categories')) db.createObjectStore('categories',{keyPath:'name'});
+        };
+        req.onsuccess=function(){resolve(req.result)};
+        req.onerror=function(){reject(req.error)};
+      });
+    },
+    async loadCategories(){
+      try{
+        var db=await this.openDB();
+        var tx=db.transaction('categories','readonly');
+        var req=tx.objectStore('categories').getAll();
+        var cats=await new Promise(function(r){req.onsuccess=function(){r(req.result||[])};req.onerror=function(){r([])}});
+        this.categories=cats;
+      }catch(e){
+        console.warn('[Approval] loadCategories error:',e);
+        this.categories=[];
+      }
+    },
+
+    get pendingUsers(){ return this.users.filter(function(u){return u.status==='pending'}) },
+    get approvedUsers(){ return this.users.filter(function(u){return u.status==='approved'}) },
+    get rejectedUsers(){ return this.users.filter(function(u){return u.status==='rejected'}) },
+
+    getUserAccess(id){
+      var u=this.users.find(function(x){return x.id===id});
+      return u?(u.access||'all'):'all';
+    },
+    setUserAccess(id,val){
+      var u=this.users.find(function(x){return x.id===id});
+      if(u) u.access=val;
+    },
+    isCatChecked(id,catName){
+      var u=this.users.find(function(x){return x.id===id});
+      if(!u||u.access==='all') return false;
+      return u.access.split(',').map(function(s){return s.trim()}).indexOf(catName)!==-1;
+    },
+    toggleCatAccess(id,catName,checked){
+      var u=this.users.find(function(x){return x.id===id});
+      if(!u) return;
+      if(u.access==='all') u.access='';
+      var arr=u.access?u.access.split(',').map(function(s){return s.trim()}).filter(Boolean):[];
+      if(checked){ if(arr.indexOf(catName)===-1) arr.push(catName); }
+      else { arr=arr.filter(function(a){return a!==catName}); }
+      u.access=arr.length?arr.join(','):'all';
+    },
+
+    approveUser(id){
+      var u=this.users.find(function(x){return x.id===id});
+      if(u){ u.status='approved'; this.saveUsers(); this.showToast(u.name+' disetujui ✅','success'); }
+      this.refreshIcons();
+    },
+    rejectUser(id){
+      var u=this.users.find(function(x){return x.id===id});
+      if(u){ u.status='rejected'; this.saveUsers(); this.showToast(u.name+' ditolak','error'); }
+      this.refreshIcons();
+    },
+    revokeUser(id){
+      var u=this.users.find(function(x){return x.id===id});
+      if(u){ u.status='rejected'; this.saveUsers(); this.showToast('Akses '+u.name+' dicabut','warning'); }
+      this.refreshIcons();
+    },
+    saveAccess(){
       this.saveUsers();
-      this.showToast('User disetujui!', 'success');
+      this.showToast('Akses disimpan','success');
     },
 
-    rejectUser(u) {
-      if(!confirm('Tolak akun ' + u.name + '?')) return;
-      u.status = 'rejected';
-      this.saveUsers();
-      this.showToast('User ditolak', 'info');
-    },
-
-    deleteUser(u) {
-      if(!confirm('Hapus permanen user ' + u.name + '?')) return;
-      this.users = this.users.filter(x => x.id !== u.id);
-      this.saveUsers();
-      this.showToast('User dihapus', 'error');
-    },
-
-    saveUserAccess(u) {
-      // Menyimpan perubahan hak akses ke localStorage
-      this.saveUsers();
-      this.showToast('Hak akses ' + u.name + ' diperbarui', 'success');
-    },
-
-    saveUsers() {
-      localStorage.setItem('dc_users', JSON.stringify(this.users));
-    },
-
-    showToast(msg, type) {
-      alert(msg); // Sederhana dulu, bisa diganti toast custom
+    showToast(title,type){
+      var icons={success:'check-circle',error:'x-circle',info:'info',warning:'alert-triangle'};
+      var colors={success:'#10b981',error:'#ef4444',info:'#3b82f6',warning:'#f59e0b'};
+      var bgs={success:'#d1fae5',error:'#fee2e2',info:'#dbeafe',warning:'#fef3c7'};
+      var t={id:Date.now(),title:title,icon:icons[type]||'info',color:colors[type]||'#3b82f6',bg:bgs[type]||'#dbeafe',show:true};
+      this.toasts.push(t);
+      var self=this;
+      setTimeout(function(){t.show=false;setTimeout(function(){var i=self.toasts.indexOf(t);if(i>-1)self.toasts.splice(i,1)},300)},3000);
+      this.refreshIcons();
     }
-  }
+  };
 }
 </script>
 </body>
