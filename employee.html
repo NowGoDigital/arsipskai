@@ -102,7 +102,7 @@
       </div>
     </header>
 
-    <!-- Filter Kategori (Dinamis dari index.html) -->
+    <!-- Filter Kategori -->
     <div class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
       <button @click="filterCategory=''" class="px-4 py-1.5 rounded-full text-xs font-bold transition" :class="!filterCategory ? 'gradient-bg text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'">Semua</button>
       <template x-for="cat in categories" :key="cat.name">
@@ -113,11 +113,19 @@
     <!-- Loading State -->
     <div x-show="isLoading" class="text-center py-20">
       <svg class="w-8 h-8 spin mx-auto text-indigo-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
-      <p class="text-sm text-slate-500">Mengambil data langsung dari Google Drive...</p>
+      <p class="text-sm text-slate-500">Menghubungkan ke Google Drive...</p>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="errorMessage" class="text-center py-20 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800">
+      <i data-lucide="alert-triangle" class="w-12 h-12 mx-auto text-red-500 mb-3"></i>
+      <p class="text-sm font-bold text-red-600 dark:text-red-400 mb-2" x-text="errorMessage"></p>
+      <p class="text-xs text-slate-500 mb-4">Silakan minta Admin untuk login ulang di Dashboard Utama.</p>
+      <button @click="fetchDriveFiles()" class="px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition">Coba Lagi</button>
     </div>
 
     <!-- File Grid -->
-    <div x-show="!isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div x-show="!isLoading && !errorMessage" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <template x-for="file in (activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles)" :key="file.id">
         <div class="file-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 relative group cursor-pointer" @click="downloadFile(file)">
           <div class="flex items-start justify-between mb-3">
@@ -138,47 +146,40 @@
       </template>
     </div>
     
-    <div x-show="!isLoading && (activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles).length === 0" class="text-center py-20">
+    <div x-show="!isLoading && !errorMessage && (activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles).length === 0" class="text-center py-20">
       <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
       <p class="text-sm text-slate-500">Tidak ada dokumen ditemukan.</p>
     </div>
   </main>
 </div>
 
-<!-- SCRIPT DIRECT DRIVE FETCH -->
+<!-- SCRIPT DIRECT DRIVE FETCH WITH RETRY -->
 <script>
 function employeeApp() {
   return {
-    showRegister: false, isLoggedIn: false, activeMenu: 'dashboard', searchQuery: '', filterCategory: '', isLoading: true,
+    showRegister: false, isLoggedIn: false, activeMenu: 'dashboard', searchQuery: '', filterCategory: '', isLoading: true, errorMessage: '',
     loginUsername: '', loginPassword: '', loginError: '',
     regName: '', regUsername: '', regEmail: '', regPassword: '', regDepartment: '', regError: '',
     toast: { show: false, message: '', type: 'success', icon: 'check-circle' },
     currentUser: null, files: [], categories: [], bookmarks: [],
 
-    // ★ FILTER LOGIC: Cek Hak Akses User
     get filteredFiles() {
       return this.files.filter(f => {
         const matchSearch = !this.searchQuery || f.name.toLowerCase().includes(this.searchQuery.toLowerCase());
         const matchCat = !this.filterCategory || f.category === this.filterCategory;
-        
         let hasAccess = true;
         if (this.currentUser && this.currentUser.access && this.currentUser.access !== 'all') {
           const allowedCats = this.currentUser.access.split(',').map(s => s.trim());
           hasAccess = allowedCats.includes(f.category);
         }
-        
         return matchSearch && matchCat && hasAccess;
       });
     },
     get bookmarkedFiles() { return this.files.filter(f => this.bookmarks.includes(f.id)); },
 
     init() {
-      this.loadCategories(); // Load kategori dari index.html (tetap pakai LS karena ringan)
+      this.loadCategories();
       this.checkSession();
-      
-      // Jika sudah login, langsung fetch dari Drive
-      if(this.isLoggedIn) this.fetchDriveFiles();
-      
       this.$nextTick(() => lucide.createIcons());
     },
 
@@ -187,39 +188,44 @@ function employeeApp() {
       this.categories = saved ? JSON.parse(saved) : [];
     },
     
-    // ★ LANGKAH KUNCI: Ambil data langsung dari Google Drive API
     async fetchDriveFiles() {
       this.isLoading = true;
+      this.errorMessage = '';
       const token = localStorage.getItem('dc_drive_token');
       
       if (!token) {
-        this.showToast('Token Drive kadaluarsa. Silakan login ulang di Dashboard Admin.', 'error');
+        this.errorMessage = 'Token Drive tidak ditemukan. Admin belum login.';
         this.isLoading = false;
         return;
       }
 
       try {
-        let allFiles = [];
-        let pageToken = null;
+        // ★ FIX CORS: Gunakan mode cors dan tambahkan header Accept
+        const url = 'https://www.googleapis.com/drive/v3/files?q=trashed=false&fields=files(id,name,mimeType,size,createdTime,thumbnailLink)&pageSize=200';
+        const res = await fetch(url, { 
+          method: 'GET',
+          headers: { 
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json'
+          },
+          mode: 'cors' 
+        });
         
-        // Pagination untuk mengambil semua file (max 100 per request)
-        do {
-          const url = `https://www.googleapis.com/drive/v3/files?q=trashed=false&fields=nextPageToken,files(id,name,mimeType,size,createdTime,thumbnailLink)&pageSize=100${pageToken ? '&pageToken='+pageToken : ''}`;
-          const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-          
-          if (!res.ok) throw new Error('Gagal mengakses Drive. Pastikan token masih valid.');
-          const data = await res.json();
-          
-          // Mapping data Drive ke format aplikasi
-          const mapped = (data.files || []).map(f => this.mapDriveFileToApp(f));
-          allFiles = allFiles.concat(mapped);
-          pageToken = data.nextPageToken;
-        } while(pageToken);
-
-        this.files = allFiles.sort((a,b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+        if (res.status === 401 || res.status === 403) {
+          throw new Error('TOKEN_EXPIRED');
+        }
+        if (!res.ok) throw new Error('Gagal mengakses Drive (' + res.status + ')');
+        
+        const data = await res.json();
+        this.files = (data.files || []).map(f => this.mapDriveFileToApp(f)).sort((a,b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+        
       } catch(e) {
-        console.error(e);
-        this.showToast('Gagal memuat file: ' + e.message, 'error');
+        console.error('Drive Fetch Error:', e);
+        if (e.message === 'TOKEN_EXPIRED') {
+          this.errorMessage = 'Token Drive kadaluarsa. Mohon Admin login ulang di Dashboard Utama.';
+        } else {
+          this.errorMessage = 'Gagal memuat file: ' + e.message;
+        }
       } finally {
         this.isLoading = false;
         this.$nextTick(() => lucide.createIcons());
@@ -236,7 +242,6 @@ function employeeApp() {
       else if (mime.includes('word') || mime.includes('document')) { type = 'Dokumen'; icon = 'file-text'; color = '#3b82f6'; }
       else if (mime.includes('spreadsheet')) { type = 'Spreadsheet'; icon = 'table'; color = '#10b981'; }
 
-      // Generate thumbnail universal
       let thumbUrl = null;
       if (type === 'Gambar' || type === 'PDF' || type === 'Video' || type === 'Dokumen' || type === 'Spreadsheet') {
         if(driveFile.thumbnailLink){
@@ -246,7 +251,6 @@ function employeeApp() {
         }
       }
 
-      // Deteksi kategori otomatis berdasarkan nama/kategori di index.html
       let category = 'Lainnya';
       for(let c of this.categories) {
         if(c.name.toLowerCase() === type.toLowerCase()) { category = c.name; break; }
@@ -270,7 +274,7 @@ function employeeApp() {
           this.currentUser = u;
           this.isLoggedIn = true;
           this.loadBookmarks();
-          this.fetchDriveFiles(); // Trigger fetch saat session valid
+          this.fetchDriveFiles();
         } else {
           localStorage.removeItem('dc_employee_session');
         }
@@ -309,7 +313,7 @@ function employeeApp() {
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', u.id);
       this.loadBookmarks();
-      this.fetchDriveFiles(); // Fetch ulang setelah login
+      this.fetchDriveFiles();
       this.showToast('Selamat datang, ' + u.name);
     },
 
