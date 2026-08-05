@@ -10,6 +10,7 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *{font-family:'Inter',sans-serif}
 [x-cloak]{display:none!important}
@@ -59,7 +60,7 @@ tr:hover .file-actions-btn{opacity:1}
       :class="{'dark': darkMode}"
       :style="'--theme-gradient: ' + currentTheme.gradient">
 
-<!-- LOADING OVERLAY (sama dengan index.html) -->
+<!-- LOADING OVERLAY -->
 <div x-show="isLoading" x-transition.opacity class="fixed inset-0 bg-white/90 dark:bg-slate-950/90 z-[100] flex items-center justify-center">
   <div class="text-center">
     <div class="w-14 h-14 rounded-xl gradient-bg flex items-center justify-center mx-auto mb-3"><i data-lucide="cloud-cog" class="w-7 h-7 text-white"></i></div>
@@ -109,7 +110,7 @@ tr:hover .file-actions-btn{opacity:1}
       <i data-lucide="hourglass" class="w-8 h-8 text-yellow-500"></i>
     </div>
     <h2 class="text-xl font-extrabold mb-2">Menunggu Persetujuan Admin</h2>
-    <p class="text-sm text-slate-500 mb-6">Akun <strong x-text="currentUser ? currentUser.username : ''"></strong> sudah terdaftar. Silakan tunggu sampai Admin menyetujui akun Anda di Admin Approval Center.</p>
+    <p class="text-sm text-slate-500 mb-6">Akun <strong x-text="currentUser ? currentUser.username : ''"></strong> sudah terdaftar. Silakan tunggu sampai Admin menyetujui akun Anda.</p>
     <button @click="recheckStatus()" class="w-full py-3 rounded-lg gradient-bg text-white font-bold shadow-lg hover:opacity-90 transition mb-2 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Cek Status</button>
     <button @click="logout()" class="w-full py-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-bold hover:bg-red-50 hover:text-red-500 transition">Keluar</button>
   </div>
@@ -127,10 +128,10 @@ tr:hover .file-actions-btn{opacity:1}
   </div>
 </div>
 
-<!-- ============ MAIN APP (struktur identik index.html) ============ -->
+<!-- ============ MAIN APP ============ -->
 <div x-show="isLoggedIn && currentUser && currentUser.status==='approved'" class="flex h-screen overflow-hidden">
 
-  <!-- ★ SIDEBAR (view sama dengan index.html, read-only) -->
+  <!-- SIDEBAR -->
   <aside :class="sidebarOpen ? 'w-56' : 'w-16'" class="hidden md:flex transition-all duration-200 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col">
     <div class="h-14 flex items-center px-4 border-b border-slate-200 dark:border-slate-800">
       <div class="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0"><i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i></div>
@@ -184,7 +185,7 @@ tr:hover .file-actions-btn{opacity:1}
 
   <div class="flex-1 flex flex-col overflow-hidden">
 
-    <!-- ★ TOPBAR (view sama dengan index.html) -->
+    <!-- TOPBAR -->
     <header class="h-14 glass border-b border-slate-200 dark:border-slate-800 flex items-center px-4 gap-2">
       <button @click="sidebarOpen = !sidebarOpen" class="hidden md:block p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i data-lucide="menu" class="w-5 h-5"></i></button>
       <div class="ml-auto max-w-md relative flex-1 sm:flex-initial">
@@ -198,7 +199,7 @@ tr:hover .file-actions-btn{opacity:1}
       <div class="flex items-center gap-1.5 flex-shrink-0">
         <!-- Drive status banner -->
         <div class="relative">
-          <button @click="driveConnected ? (showDriveMenu = !showDriveMenu) : showToast('Drive belum terhubung','Minta Admin login di Dashboard Utama','warning')" class="flex items-center gap-2 transition relative" :class="driveConnected ? 'drive-topbar-banner px-3 py-[7px] text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-3 py-[7px] rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'">
+          <button @click="driveConnected ? (showDriveMenu = !showDriveMenu) : startDriveAuth()" class="flex items-center gap-2 transition relative" :class="driveConnected ? 'drive-topbar-banner px-3 py-[7px] text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-3 py-[7px] rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'">
             <svg x-show="driveConnected" class="w-[18px] h-[18px] flex-shrink-0 relative z-10" viewBox="0 0 24 24"><path fill="#fff" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45 7.71 3.5z" opacity=".85"/><path fill="#fff" d="M16.29 3.5L9.71 15h6.86l6.57-11.5h-6.85z" opacity=".65"/><path fill="#fff" d="M1.15 15l3.43 5.95h13.14L14.29 15H1.15z" opacity=".95"/></svg>
             <svg x-show="!driveConnected" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
             <template x-if="driveConnected && driveUser">
@@ -211,7 +212,7 @@ tr:hover .file-actions-btn{opacity:1}
                 </div>
               </div>
             </template>
-            <div x-show="!driveConnected" class="hidden sm:flex flex-col items-start leading-tight"><span class="text-xs font-semibold">Google Drive</span><span class="text-[10px] text-slate-500 dark:text-slate-400">⚠️ Belum terhubung</span></div>
+            <div x-show="!driveConnected" class="hidden sm:flex flex-col items-start leading-tight"><span class="text-xs font-semibold">Google Drive</span><span class="text-[10px] text-slate-500 dark:text-slate-400">⚠️ Klik untuk hubungkan</span></div>
             <span :class="driveConnected ? 'bg-green-400' : 'bg-red-400'" class="w-2 h-2 rounded-full relative z-10 flex-shrink-0" :style="driveConnected ? 'animation:pulse 2s infinite' : ''"></span>
           </button>
           <div x-show="showDriveMenu && driveConnected" @click.away="showDriveMenu = false" x-transition class="context-menu absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
@@ -228,7 +229,7 @@ tr:hover .file-actions-btn{opacity:1}
           </div>
         </div>
         <button @click="darkMode = !darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i></button>
-        <!-- ★ PROFILE AVATAR + DROPDOWN -->
+        <!-- PROFILE AVATAR + DROPDOWN -->
         <div class="relative">
           <button @click="showProfileMenu = !showProfileMenu" class="flex items-center gap-2 transition hover:opacity-80">
             <div class="w-9 h-9 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-bold shadow-md">
@@ -294,14 +295,17 @@ tr:hover .file-actions-btn{opacity:1}
 
     <main class="flex-1 overflow-y-auto scrollbar p-5">
 
-      <!-- ERROR STATE (token tidak ada / kadaluarsa) -->
+      <!-- ERROR STATE -->
       <div x-show="driveError && !driveLoading" class="max-w-lg mx-auto mt-12 text-center fade-in">
         <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mx-auto mb-5 shadow-xl">
           <i data-lucide="cloud-off" class="w-12 h-12 text-white"></i>
         </div>
         <h2 class="text-2xl font-bold mb-2">Tidak Bisa Mengakses Drive</h2>
         <p class="text-sm text-slate-500 mb-6" x-text="driveError"></p>
-        <button @click="connectDrive()" class="inline-flex items-center gap-2 px-6 py-3 gradient-bg text-white rounded-xl text-sm font-bold hover:opacity-90 shadow-lg"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Coba Lagi</button>
+        <button @click="startDriveAuth()" class="inline-flex items-center gap-2 px-6 py-3 gradient-bg text-white rounded-xl text-sm font-bold hover:opacity-90 shadow-lg">
+          <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" opacity=".8" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" opacity=".7" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" opacity=".9" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Login Google Drive
+        </button>
       </div>
 
       <!-- DASHBOARD -->
@@ -407,7 +411,7 @@ tr:hover .file-actions-btn{opacity:1}
         </div>
         <div x-show="viewMode === 'list' && !(driveLoading && files.length === 0)" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
           <table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase"><tr><th class="text-left px-4 py-3">Nama</th><th class="text-left px-4 py-3">Kategori</th><th class="text-left px-4 py-3">Ukuran</th><th class="text-left px-4 py-3">Tanggal</th><th class="text-right px-4 py-3">Aksi</th></tr></thead>
-            <tbody><template x-for="file in displayedFiles" :key="file.id"><tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition" @click="openFile(file)"><td class="px-4 py-3"><div class="flex items-center gap-2.5"><div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden relative" :style="'background:'+file.color+'15'">
+            <tbody><template x-for="file in displayedFiles" :key="'l_'+file.id"><tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition" @click="openFile(file)"><td class="px-4 py-3"><div class="flex items-center gap-2.5"><div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden relative" :style="'background:'+file.color+'15'">
               <template x-if="file.thumbUrl">
                 <img :src="file.thumbUrl" class="w-full h-full object-cover rounded-lg lazy-img" @load="$event.target.classList.add('loaded')" @error="$event.target.style.display='none'; $event.target.nextElementSibling && ($event.target.nextElementSibling.style.display='flex')" loading="lazy" alt="">
               </template>
@@ -426,7 +430,7 @@ tr:hover .file-actions-btn{opacity:1}
         <div class="mb-4"><h2 class="text-xl font-bold">Bookmark</h2><p class="text-xs text-slate-500 mt-0.5" x-text="bookmarkedFiles.length + ' file disimpan'"></p></div>
         <div x-show="bookmarkedFiles.length === 0" class="py-16 text-center"><i data-lucide="bookmark" class="w-16 h-16 mx-auto text-slate-300 mb-3"></i><p class="text-sm font-medium text-slate-500">Belum ada bookmark</p><p class="text-xs text-slate-400 mt-1">Klik ikon bookmark pada file untuk menyimpannya di sini.</p></div>
         <div x-show="bookmarkedFiles.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          <template x-for="file in bookmarkedFiles" :key="'bm-'+file.id">
+          <template x-for="file in bookmarkedFiles" :key="'bm_'+file.id">
             <div class="file-card bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:shadow-lg relative" @click="openFile(file)">
               <div class="absolute top-2 right-2 z-10">
                 <button @click.stop="toggleBookmark(file.id)" class="file-actions-btn p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-lg shadow" title="Hapus bookmark">
@@ -456,7 +460,7 @@ tr:hover .file-actions-btn{opacity:1}
 <!-- MOBILE NAV -->
 <nav x-show="isLoggedIn && currentUser && currentUser.status==='approved'" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 z-30"><div class="grid grid-cols-4 h-16"><button @click="activeMenu='dashboard'" :class="activeMenu==='dashboard' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="text-[10px]">Home</span></button><button @click="activeMenu='files'; filterFiles()" :class="activeMenu==='files' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="folder" class="w-5 h-5"></i><span class="text-[10px]">Files</span></button><button @click="refreshFromDrive()" class="flex flex-col items-center justify-center gap-0.5 text-slate-500"><div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center -mt-5 shadow-lg"><i data-lucide="refresh-cw" class="w-5 h-5 text-white" :class="driveLoading ? 'spin' : ''"></i></div><span class="text-[10px] -mt-0.5">Sync</span></button><button @click="activeMenu='bookmarks'" :class="activeMenu==='bookmarks' ? 'text-indigo-600' : 'text-slate-500'" class="flex flex-col items-center justify-center gap-0.5 transition"><i data-lucide="bookmark" class="w-5 h-5"></i><span class="text-[10px]">Bookmark</span></button></div></nav>
 
-<!-- PREVIEW MODAL (sama dengan index.html) -->
+<!-- PREVIEW MODAL -->
 <div x-show="previewFile" x-transition class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
   <div @click.away="previewFile = null" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-2xl max-h-[88vh] overflow-hidden flex flex-col shadow-2xl">
     <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
@@ -486,7 +490,7 @@ tr:hover .file-actions-btn{opacity:1}
   </div>
 </div>
 
-<!-- TOAST NOTIFICATIONS (sama dengan index.html) -->
+<!-- TOAST NOTIFICATIONS -->
 <div class="fixed top-5 right-5 z-[200] space-y-2">
   <template x-for="toast in toasts" :key="toast.id">
     <div x-show="toast.show" x-transition class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 min-w-[280px]">
@@ -499,12 +503,29 @@ tr:hover .file-actions-btn{opacity:1}
 <!-- ============ JAVASCRIPT ============ -->
 <script>
 // ============================================================
+//  GOOGLE DRIVE AUTH (Client ID SAMA dengan index.html)
+// ============================================================
+var EMP_DRIVE_CLIENT_ID = '1001156603615-jn13949339q1m7sv9t56987975n0s41m.apps.googleusercontent.com';
+
+function handleDriveAuth(response){
+  if(response && response.access_token){
+    localStorage.setItem('dc_drive_token', response.access_token);
+    console.log('[Employee] ✅ Token Drive baru disimpan');
+    if(window.__employeeApp){
+      window.__employeeApp.driveError = '';
+      window.__employeeApp.showToast('Google Drive terhubung','Token berhasil diambil','success');
+      window.__employeeApp.connectDrive();
+    }
+  } else if(window.__employeeApp){
+    window.__employeeApp.showToast('Login Drive gagal','Tidak ada token diterima','error');
+  }
+}
+
+// ============================================================
 //  Employee Portal — Data langsung dari Google Drive
-//  Sinkron dengan DocuCloud v8.0 (index.html)
 // ============================================================
 function employeeApp() {
   return {
-    // UI State
     isLoading: true, loadingMessage: 'Memuat...', loadingProgress: 0,
     sidebarOpen: true, darkMode: false, activeMenu: 'dashboard',
     searchQuery: '', viewMode: 'grid', fileType: 'Semua', filterCategory: '',
@@ -516,11 +537,9 @@ function employeeApp() {
     filterDateFrom: '', filterDateTo: '',
     filterSizeMin: '', filterSizeMax: '', filterSizeUnit: 'MB',
     sortBy: 'date', sortDir: 'desc', debounceTimer: null,
-    // Auth
     isLoggedIn: false, currentUser: null, showRegister: false,
     loginUsername: '', loginPassword: '', loginError: '',
     regName: '', regUsername: '', regEmail: '', regPassword: '', regDepartment: '', regError: '',
-    // Drive
     driveConnected: false, driveUser: null, driveLoading: false,
     driveFolderId: null, driveFiles: [], driveFolders: [], driveError: '',
     bookmarks: [],
@@ -544,10 +563,8 @@ function employeeApp() {
     currentTheme: {id:'indigo',gradient:'linear-gradient(135deg,#667eea,#764ba2)'},
     usedStorage: '0 B',
 
-    // ================================================================
-    //  INIT
-    // ================================================================
     init(){
+      window.__employeeApp = this;
       var self = this;
       var t = localStorage.getItem('dc_theme');
       if(t){ var f = this.themePresets.find(function(p){return p.id===t}); if(f) this.currentTheme = f; }
@@ -578,7 +595,7 @@ function employeeApp() {
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
 
     // ================================================================
-    //  KATEGORI — baca dari IndexedDB DocuCloudV8 (sama dengan index.html)
+    //  KATEGORI — baca dari IndexedDB DocuCloudV8
     // ================================================================
     openDB(){
       return new Promise(function(resolve,reject){
@@ -607,7 +624,7 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  AUTH (login / register / session)
+    //  AUTH
     // ================================================================
     checkSession(){
       var sessionId = localStorage.getItem('dc_employee_session');
@@ -645,7 +662,8 @@ function employeeApp() {
       if(!this.regName || !this.regUsername || !this.regPassword){ this.regError = 'Data wajib diisi'; return; }
       if(this.regPassword.length < 6){ this.regError = 'Password minimal 6 karakter'; return; }
       var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
-      if(users.some(function(x){return x.username === this.regUsername}.bind(this))){ this.regError = 'Username sudah dipakai'; return; }
+      var self = this;
+      if(users.some(function(x){return x.username === self.regUsername})){ this.regError = 'Username sudah dipakai'; return; }
       var newUser = {
         id: 'user_' + Date.now(), name: this.regName, username: this.regUsername,
         email: this.regEmail, password: this.regPassword, department: this.regDepartment,
@@ -686,21 +704,44 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  DRIVE SYNC — ambil data LANGSUNG dari Google Drive
-    //  (token & folder dari sesi Admin di index.html)
+    //  GOOGLE DRIVE AUTH
     // ================================================================
+    startDriveAuth(){
+      var self = this;
+      try{
+        if(!window.google || !google.accounts){
+          this.showToast('SDK Google belum dimuat','Refresh halaman lalu coba lagi','error');
+          return;
+        }
+        if(!this._tokenClient){
+          this._tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: EMP_DRIVE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            callback: handleDriveAuth
+          });
+        }
+        console.log('[Employee] Membuka popup login Google Drive...');
+        this._tokenClient.requestAccessToken({prompt:''});
+      }catch(e){
+        console.error('[Employee] Auth error:', e);
+        this.showToast('Gagal memulai login Drive', e.message, 'error');
+      }
+    },
+
     async connectDrive(){
       this.driveError = '';
       var token = localStorage.getItem('dc_drive_token');
       if(!token){
         this.driveConnected = false;
-        this.driveError = 'Token Google Drive tidak ditemukan. Minta Admin untuk login terlebih dahulu di Dashboard Utama (index.html).';
+        this.driveError = 'Belum terhubung ke Google Drive. Klik tombol di bawah untuk menghubungkan.';
         this.isLoading = false;
         this.refreshIcons();
+        this.startDriveAuth();
         return;
       }
       this.driveLoading = true;
       try{
+        console.log('[Employee] Mengecek token & user Drive...');
         var ur = await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token}});
         if(ur.status === 401 || ur.status === 403) throw new Error('TOKEN_EXPIRED');
         if(ur.ok){
@@ -708,6 +749,7 @@ function employeeApp() {
           this.driveUser = {name:u.name||(u.email?u.email.split('@')[0]:'Drive'), email:u.email, picture:u.picture};
         }
         this.driveFolderId = localStorage.getItem('dc_drive_folder') || null;
+        console.log('[Employee] Folder ID:', this.driveFolderId);
         await this.syncDriveFiles();
         this.buildFileListFromDrive();
         this.updateCategoryCounts();
@@ -715,10 +757,12 @@ function employeeApp() {
         this.filterFiles();
         this.driveConnected = true;
         this.driveError = '';
+        console.log('[Employee] ✅ Berhasil memuat ' + this.files.length + ' file dari Drive');
       }catch(e){
+        console.error('[Employee] Drive error:', e);
         this.driveConnected = false;
         if(e.message === 'TOKEN_EXPIRED'){
-          this.driveError = 'Token Drive kadaluarsa. Mohon Admin login ulang di Dashboard Utama (index.html).';
+          this.driveError = 'Token Drive kadaluarsa. Klik tombol di bawah untuk login ulang.';
         } else {
           this.driveError = 'Gagal terhubung ke Google Drive: ' + e.message;
         }
@@ -744,7 +788,7 @@ function employeeApp() {
         this.showToast('Sinkron selesai', this.accessibleFiles.length + ' file dapat diakses', 'success');
       }catch(e){
         this.driveConnected = false;
-        this.driveError = (e.message === 'TOKEN_EXPIRED') ? 'Token Drive kadaluarsa. Mohon Admin login ulang di Dashboard Utama.' : 'Gagal refresh: ' + e.message;
+        this.driveError = (e.message === 'TOKEN_EXPIRED') ? 'Token Drive kadaluarsa. Klik tombol Drive di topbar untuk login ulang.' : 'Gagal refresh: ' + e.message;
         this.showToast('Refresh gagal','','error');
       }finally{
         this.driveLoading = false;
@@ -783,6 +827,7 @@ function employeeApp() {
         folders.sort(function(a,b){ return a.name.localeCompare(b.name) });
         this.driveFiles = files;
         this.driveFolders = folders;
+        console.log('[Employee] Drive sync: ' + files.length + ' files, ' + folders.length + ' folders');
       }catch(e){
         this.driveLoading = false;
         throw e;
@@ -852,11 +897,17 @@ function employeeApp() {
       var title = '';
       var descCategory = '';
       if(driveFile.description){
-        var parts = driveFile.description.split('||');
-        title = parts[0] || '';
-        for(var p = 1; p < parts.length; p++){
-          var segment = parts[p].trim();
-          if(segment.indexOf('category:') === 0){ descCategory = segment.substring(9).trim(); break; }
+        var desc = driveFile.description;
+        if(desc.indexOf('||') !== -1){
+          var parts = desc.split('||');
+          for(var p = 0; p < parts.length; p++){
+            var seg = parts[p].trim();
+            if(seg.indexOf('title:') === 0) title = seg.substring(6).trim();
+            if(seg.indexOf('category:') === 0) descCategory = seg.substring(9).trim();
+          }
+        } else {
+          var p2 = desc.split('|');
+          if(p2.length >= 2 && p2[1].trim()) descCategory = p2[1].trim();
         }
       }
       var finalCategory = categoryName || descCategory || '';
@@ -880,7 +931,7 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  HAK AKSES (dari admin-approval.html → dc_users)
+    //  HAK AKSES
     // ================================================================
     get accessibleCategories(){
       if(!this.currentUser) return [];
@@ -905,7 +956,7 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  FILTER & SEARCH (logika sama dengan index.html)
+    //  FILTER & SEARCH
     // ================================================================
     get displayedFiles(){ return this.filteredFiles.slice(0, this.displayLimit) },
     get hasActiveFilters(){ return !!(this.searchQuery||this.filterCategory||this.fileType!=='Semua'||this.filterDateFrom||this.filterDateTo||this.filterSizeMin||this.filterSizeMax) },
@@ -926,7 +977,7 @@ function employeeApp() {
       this.searchField='all'; this.sortBy='date'; this.sortDir='desc'; this.displayLimit=30;
       this.filterFiles();
     },
-        filterFiles(){
+    filterFiles(){
       var result=[], self=this;
       var minBytes=0, maxBytes=Infinity;
       if(this.filterSizeMin){ var v=parseFloat(this.filterSizeMin); if(!isNaN(v)){ var m=this.filterSizeUnit==='GB'?1073741824:(this.filterSizeUnit==='MB'?1048576:1024); minBytes=v*m; } }
