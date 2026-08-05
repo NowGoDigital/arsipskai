@@ -11,10 +11,9 @@
 <style>
 *{font-family:'Inter',sans-serif} [x-cloak]{display:none!important}
 .gradient-bg{background:var(--theme-gradient,linear-gradient(135deg,#667eea 0%,#764ba2 100%))}
-.glass{backdrop-filter:blur(12px);background:rgba(255,255,255,.9)}
-.dark .glass{background:rgba(15,23,42,.9)}
 .file-card{transition:all .2s ease} .file-card:hover{transform:translateY(-3px)}
 .scrollbar-hide::-webkit-scrollbar{display:none}
+@keyframes spin{to{transform:rotate(360deg)}} .spin{animation:spin 1s linear infinite}
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors" x-data="employeeApp()" x-init="init()">
@@ -35,13 +34,10 @@
       <h2 class="text-2xl font-extrabold">Employee Portal</h2>
       <p class="text-sm text-slate-500 mt-1">Akses Dokumen Perusahaan</p>
     </div>
-
-    <!-- Tabs -->
     <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mb-6">
       <button @click="showRegister=false" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="!showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500'">Login</button>
       <button @click="showRegister=true" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500'">Daftar</button>
     </div>
-
     <!-- Login Form -->
     <div x-show="!showRegister">
       <input x-model="loginUsername" type="text" placeholder="Username" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none focus:ring-2 focus:ring-indigo-500">
@@ -49,7 +45,6 @@
       <p x-show="loginError" class="text-red-500 text-xs mb-3" x-text="loginError"></p>
       <button @click="login()" class="w-full py-3 rounded-lg gradient-bg text-white font-bold shadow-lg hover:opacity-90 transition">Masuk</button>
     </div>
-
     <!-- Register Form -->
     <div x-show="showRegister">
       <input x-model="regName" type="text" placeholder="Nama Lengkap" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
@@ -64,7 +59,7 @@
   </div>
 </div>
 
-<!-- MAIN APP (Hanya muncul jika login & approved) -->
+<!-- MAIN APP -->
 <div x-show="isLoggedIn && currentUser.status === 'approved'" class="min-h-screen flex flex-col md:flex-row">
   
   <!-- Sidebar -->
@@ -107,7 +102,7 @@
       </div>
     </header>
 
-    <!-- Filter Kategori -->
+    <!-- Filter Kategori (Dinamis dari index.html) -->
     <div class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
       <button @click="filterCategory=''" class="px-4 py-1.5 rounded-full text-xs font-bold transition" :class="!filterCategory ? 'gradient-bg text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'">Semua</button>
       <template x-for="cat in categories" :key="cat.name">
@@ -115,8 +110,14 @@
       </template>
     </div>
 
+    <!-- Loading State -->
+    <div x-show="isLoading" class="text-center py-20">
+      <svg class="w-8 h-8 spin mx-auto text-indigo-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+      <p class="text-sm text-slate-500">Mengambil data langsung dari Google Drive...</p>
+    </div>
+
     <!-- File Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div x-show="!isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <template x-for="file in (activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles)" :key="file.id">
         <div class="file-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 relative group cursor-pointer" @click="downloadFile(file)">
           <div class="flex items-start justify-between mb-3">
@@ -133,29 +134,22 @@
             <span>•</span>
             <span x-text="file.date"></span>
           </div>
-          <!-- Tags AI (Jika ada) -->
-          <div x-show="file.tags && file.tags.length > 0" class="flex flex-wrap gap-1 mt-3">
-            <template x-for="tag in (file.tags || [])" :key="tag">
-              <span class="px-1.5 py-0.5 rounded text-[8px] font-bold text-white" :style="'background:#'+Math.floor(Math.random()*16777215).toString(16)" x-text="tag"></span>
-            </template>
-          </div>
         </div>
       </template>
     </div>
     
-    <div x-show="(activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles).length === 0" class="text-center py-20">
+    <div x-show="!isLoading && (activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles).length === 0" class="text-center py-20">
       <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
       <p class="text-sm text-slate-500">Tidak ada dokumen ditemukan.</p>
-      <p class="text-xs text-slate-400 mt-2">Pastikan admin sudah mengupload file di Dashboard Utama.</p>
     </div>
   </main>
 </div>
 
-<!-- SCRIPT SINKRONISASI -->
+<!-- SCRIPT DIRECT DRIVE FETCH -->
 <script>
 function employeeApp() {
   return {
-    showRegister: false, isLoggedIn: false, activeMenu: 'dashboard', searchQuery: '', filterCategory: '',
+    showRegister: false, isLoggedIn: false, activeMenu: 'dashboard', searchQuery: '', filterCategory: '', isLoading: true,
     loginUsername: '', loginPassword: '', loginError: '',
     regName: '', regUsername: '', regEmail: '', regPassword: '', regDepartment: '', regError: '',
     toast: { show: false, message: '', type: 'success', icon: 'check-circle' },
@@ -167,7 +161,6 @@ function employeeApp() {
         const matchSearch = !this.searchQuery || f.name.toLowerCase().includes(this.searchQuery.toLowerCase());
         const matchCat = !this.filterCategory || f.category === this.filterCategory;
         
-        // Cek Hak Akses: Jika user hanya punya akses terbatas, sembunyikan file di luar kategorinya
         let hasAccess = true;
         if (this.currentUser && this.currentUser.access && this.currentUser.access !== 'all') {
           const allowedCats = this.currentUser.access.split(',').map(s => s.trim());
@@ -180,53 +173,92 @@ function employeeApp() {
     get bookmarkedFiles() { return this.files.filter(f => this.bookmarks.includes(f.id)); },
 
     init() {
-      this.loadCategories();
-      this.loadFiles();
+      this.loadCategories(); // Load kategori dari index.html (tetap pakai LS karena ringan)
       this.checkSession();
       
-      // Auto-sync setiap 5 detik
-      setInterval(() => { 
-        this.loadFiles(); 
-        this.loadCategories(); 
-        if(this.isLoggedIn) this.refreshCurrentUser();
-      }, 5000); 
+      // Jika sudah login, langsung fetch dari Drive
+      if(this.isLoggedIn) this.fetchDriveFiles();
       
       this.$nextTick(() => lucide.createIcons());
     },
 
     loadCategories() {
-      // Membaca kategori yang dibuat di index.html
       const saved = localStorage.getItem('dc_categories');
       this.categories = saved ? JSON.parse(saved) : [];
     },
     
-    // ★ MENGAMBIL DATA DARI INDEX.HTML (Multi-source check)
-    loadFiles() {
-      // Coba baca dari dc_metadata_cache (format baru index.html)
-      let saved = localStorage.getItem('dc_metadata_cache');
+    // ★ LANGKAH KUNCI: Ambil data langsung dari Google Drive API
+    async fetchDriveFiles() {
+      this.isLoading = true;
+      const token = localStorage.getItem('dc_drive_token');
       
-      // Fallback ke dc_documents (format lama) jika cache belum ada
-      if (!saved) {
-        saved = localStorage.getItem('dc_documents');
+      if (!token) {
+        this.showToast('Token Drive kadaluarsa. Silakan login ulang di Dashboard Admin.', 'error');
+        this.isLoading = false;
+        return;
       }
-      
-      if (saved) {
-        try {
-          this.files = JSON.parse(saved);
-        } catch(e) {
-          console.error('Gagal parse data file:', e);
-          this.files = [];
-        }
-      } else {
-        this.files = [];
+
+      try {
+        let allFiles = [];
+        let pageToken = null;
+        
+        // Pagination untuk mengambil semua file (max 100 per request)
+        do {
+          const url = `https://www.googleapis.com/drive/v3/files?q=trashed=false&fields=nextPageToken,files(id,name,mimeType,size,createdTime,thumbnailLink)&pageSize=100${pageToken ? '&pageToken='+pageToken : ''}`;
+          const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+          
+          if (!res.ok) throw new Error('Gagal mengakses Drive. Pastikan token masih valid.');
+          const data = await res.json();
+          
+          // Mapping data Drive ke format aplikasi
+          const mapped = (data.files || []).map(f => this.mapDriveFileToApp(f));
+          allFiles = allFiles.concat(mapped);
+          pageToken = data.nextPageToken;
+        } while(pageToken);
+
+        this.files = allFiles.sort((a,b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+      } catch(e) {
+        console.error(e);
+        this.showToast('Gagal memuat file: ' + e.message, 'error');
+      } finally {
+        this.isLoading = false;
+        this.$nextTick(() => lucide.createIcons());
       }
     },
 
-    refreshCurrentUser() {
-      if(!this.currentUser) return;
-      const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
-      const u = users.find(x => x.id === this.currentUser?.id);
-      if (u) this.currentUser = u;
+    mapDriveFileToApp(driveFile) {
+      const mime = driveFile.mimeType || '';
+      let type = 'Lainnya', icon = 'file', color = '#94a3b8';
+      
+      if (mime.startsWith('image/')) { type = 'Gambar'; icon = 'image'; color = '#ec4899'; }
+      else if (mime.includes('pdf')) { type = 'PDF'; icon = 'file-text'; color = '#ef4444'; }
+      else if (mime.startsWith('video/')) { type = 'Video'; icon = 'video'; color = '#f59e0b'; }
+      else if (mime.includes('word') || mime.includes('document')) { type = 'Dokumen'; icon = 'file-text'; color = '#3b82f6'; }
+      else if (mime.includes('spreadsheet')) { type = 'Spreadsheet'; icon = 'table'; color = '#10b981'; }
+
+      // Generate thumbnail universal
+      let thumbUrl = null;
+      if (type === 'Gambar' || type === 'PDF' || type === 'Video' || type === 'Dokumen' || type === 'Spreadsheet') {
+        if(driveFile.thumbnailLink){
+          thumbUrl = driveFile.thumbnailLink.replace('=s220', '=s600');
+        } else {
+          thumbUrl = 'https://drive.google.com/thumbnail?id=' + driveFile.id + '&sz=w600';
+        }
+      }
+
+      // Deteksi kategori otomatis berdasarkan nama/kategori di index.html
+      let category = 'Lainnya';
+      for(let c of this.categories) {
+        if(c.name.toLowerCase() === type.toLowerCase()) { category = c.name; break; }
+      }
+
+      return {
+        id: driveFile.id, name: driveFile.name, type: type,
+        size: this.formatBytes(driveFile.size || 0),
+        date: new Date(driveFile.createdTime).toLocaleDateString('id-ID'),
+        dateRaw: driveFile.createdTime, category: category,
+        icon: icon, color: color, thumbUrl: thumbUrl
+      };
     },
 
     checkSession() {
@@ -238,6 +270,7 @@ function employeeApp() {
           this.currentUser = u;
           this.isLoggedIn = true;
           this.loadBookmarks();
+          this.fetchDriveFiles(); // Trigger fetch saat session valid
         } else {
           localStorage.removeItem('dc_employee_session');
         }
@@ -276,6 +309,7 @@ function employeeApp() {
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', u.id);
       this.loadBookmarks();
+      this.fetchDriveFiles(); // Fetch ulang setelah login
       this.showToast('Selamat datang, ' + u.name);
     },
 
@@ -294,7 +328,7 @@ function employeeApp() {
       localStorage.setItem('dc_users', JSON.stringify(users));
       
       this.currentUser = newUser;
-      this.isLoggedIn = true; // Masuk sebagai pending user
+      this.isLoggedIn = true;
       this.showToast('Pendaftaran berhasil! Menunggu approval.', 'info');
       this.showRegister = false;
     },
@@ -302,7 +336,15 @@ function employeeApp() {
     logout() {
       localStorage.removeItem('dc_employee_session');
       this.currentUser = null; this.isLoggedIn = false;
+      this.files = [];
       this.showToast('Anda telah keluar', 'info');
+    },
+
+    formatBytes(bytes) {
+      if (!bytes || bytes == 0) return '0 B';
+      const k = 1024, sizes = ['B','KB','MB','GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     },
 
     showToast(msg, type='success') {
