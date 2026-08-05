@@ -1,488 +1,165 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>DocuCloud — Portal Karyawan</title>
+<title>Employee Portal — DocuCloud</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  * { font-family: 'Inter', sans-serif; font-size: 14px; }
-  [x-cloak] { display: none !important; }
-  .scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-  .scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.35); border-radius: 10px; }
-  .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,.8); }
-  .dark .glass { background: rgba(15,23,42,.8); }
-  .gradient-bg { background: var(--theme-gradient, linear-gradient(135deg,#667eea 0%,#764ba2 100%)); }
-  .file-card { transition: all .2s ease; }
-  .file-card:hover { transform: translateY(-3px); }
-  .fade-in { animation: fadeIn .35s ease; }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-  .pulse-dot { animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .dropdown-enter { animation: dropIn .2s ease; }
-  @keyframes dropIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-  .notif-dot { animation: notifPulse 1s ease-in-out infinite; }
-  @keyframes notifPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
-  @media (max-width: 768px) { main { padding-bottom: 4.5rem !important; } }
+*{font-family:'Inter',sans-serif} [x-cloak]{display:none!important}
+.gradient-bg{background:var(--theme-gradient,linear-gradient(135deg,#667eea 0%,#764ba2 100%))}
+.glass{backdrop-filter:blur(12px);background:rgba(255,255,255,.9)}
+.dark .glass{background:rgba(15,23,42,.9)}
+.file-card{transition:all .2s ease} .file-card:hover{transform:translateY(-3px)}
 </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200"
-      x-data="employeeApp()" x-init="init()" x-cloak :class="{'dark': darkMode}" :style="`--theme-gradient: ${currentTheme.gradient}`">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors" x-data="employeeApp()" x-init="init()">
 
-<!-- LOGIN / REGISTER SCREEN -->
-<div x-show="!isLoggedIn && !showRegister" class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
+<!-- TOAST -->
+<div x-show="toast.show" x-transition class="fixed bottom-5 right-5 z-[100] px-4 py-3 rounded-xl shadow-lg bg-white dark:bg-slate-800 border-l-4 flex items-center gap-3" :class="toast.type==='success'?'border-green-500':'border-blue-500'">
+  <i :data-lucide="toast.icon" class="w-5 h-5" :class="toast.type==='success'?'text-green-500':'text-blue-500'"></i>
+  <span class="text-sm font-semibold" x-text="toast.message"></span>
+</div>
+
+<!-- LOGIN / REGISTER OVERLAY -->
+<div x-show="!isLoggedIn" class="fixed inset-0 z-50 flex items-center justify-center p-4 gradient-bg">
+  <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 fade-in">
     <div class="text-center mb-6">
-      <div class="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-3">
-        <i data-lucide="cloud-cog" class="w-8 h-8 text-white"></i>
+      <div class="w-16 h-16 mx-auto rounded-2xl gradient-bg flex items-center justify-center text-white mb-3">
+        <i data-lucide="users" class="w-8 h-8"></i>
       </div>
-      <h1 class="text-2xl font-bold">DocuCloud</h1>
-      <p class="text-sm text-slate-500 mt-1">Portal Karyawan</p>
+      <h2 class="text-2xl font-extrabold">Employee Portal</h2>
+      <p class="text-sm text-slate-500 mt-1">Akses Dokumen Perusahaan</p>
     </div>
-    <div class="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-lg border border-slate-200 dark:border-slate-800">
-      <h2 class="font-semibold text-base mb-4">Login</h2>
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs font-medium mb-1 block">Username</label>
-          <input x-model="loginUsername" type="text" placeholder="username"
-                 class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="text-xs font-medium mb-1 block">Password</label>
-          <input x-model="loginPassword" @keydown.enter="login()" type="password" placeholder="••••••••"
-                 class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div x-show="loginError" class="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg text-xs text-red-700 dark:text-red-400">
-          <i data-lucide="alert-circle" class="w-4 h-4"></i>
-          <span x-text="loginError"></span>
-        </div>
-        <button @click="login()" class="w-full py-2.5 gradient-bg text-white rounded-lg text-sm font-medium hover:opacity-90">
-          Masuk
-        </button>
-      </div>
-      <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
-        Belum punya akun?
-        <button @click="showRegister = true" class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Daftar di sini</button>
-      </div>
-      <div class="mt-3 text-center">
-        <a href="index.html" class="text-xs text-slate-400 hover:text-slate-600">← Kembali ke Admin</a>
-      </div>
+
+    <!-- Tabs -->
+    <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mb-6">
+      <button @click="showRegister=false" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="!showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500'">Login</button>
+      <button @click="showRegister=true" class="flex-1 py-2 text-sm font-bold rounded-md transition" :class="showRegister ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500'">Daftar</button>
+    </div>
+
+    <!-- Login Form -->
+    <div x-show="!showRegister">
+      <input x-model="loginUsername" type="text" placeholder="Username" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none focus:ring-2 focus:ring-indigo-500">
+      <input x-model="loginPassword" type="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-4 outline-none focus:ring-2 focus:ring-indigo-500">
+      <p x-show="loginError" class="text-red-500 text-xs mb-3" x-text="loginError"></p>
+      <button @click="login()" class="w-full py-3 rounded-lg gradient-bg text-white font-bold shadow-lg hover:opacity-90 transition">Masuk</button>
+    </div>
+
+    <!-- Register Form -->
+    <div x-show="showRegister">
+      <input x-model="regName" type="text" placeholder="Nama Lengkap" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
+      <input x-model="regUsername" type="text" placeholder="Username" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
+      <input x-model="regEmail" type="email" placeholder="Email" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
+      <input x-model="regDepartment" type="text" placeholder="Departemen (Opsional)" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3 outline-none">
+      <input x-model="regPassword" type="password" placeholder="Password (Min 6 char)" class="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 mb-4 outline-none">
+      <p x-show="regError" class="text-red-500 text-xs mb-3" x-text="regError"></p>
+      <button @click="register()" class="w-full py-3 rounded-lg gradient-bg text-white font-bold shadow-lg hover:opacity-90 transition">Daftar Sekarang</button>
+      <p class="text-[10px] text-center text-slate-400 mt-3">Akun akan aktif setelah disetujui Admin.</p>
     </div>
   </div>
 </div>
 
-<!-- REGISTER SCREEN -->
-<div x-show="showRegister && !isLoggedIn" class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <div class="text-center mb-6">
-      <div class="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-3">
-        <i data-lucide="user-plus" class="w-8 h-8 text-white"></i>
-      </div>
-      <h1 class="text-2xl font-bold">Daftar Akun</h1>
-      <p class="text-sm text-slate-500 mt-1">Pendaftaran akan menunggu approval admin</p>
+<!-- MAIN APP (Hanya muncul jika login & approved) -->
+<div x-show="isLoggedIn && currentUser.status === 'approved'" class="min-h-screen flex flex-col md:flex-row">
+  
+  <!-- Sidebar -->
+  <aside class="w-full md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-shrink-0 hidden md:flex flex-col">
+    <div class="h-16 flex items-center gap-3 px-6 border-b border-slate-200 dark:border-slate-800">
+      <div class="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center text-white"><i data-lucide="cloud" class="w-4 h-4"></i></div>
+      <span class="font-extrabold text-sm">DocuCloud Employee</span>
     </div>
-    <div class="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-lg border border-slate-200 dark:border-slate-800">
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs font-medium mb-1 block">Nama Lengkap *</label>
-          <input x-model="regName" type="text" placeholder="Budi Santoso" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0">
+    <nav class="p-4 space-y-1 flex-1">
+      <button @click="activeMenu='dashboard'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition" :class="activeMenu==='dashboard' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'hover:bg-slate-100 dark:hover:bg-slate-800'">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i> Dashboard
+      </button>
+      <button @click="activeMenu='bookmarks'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition" :class="activeMenu==='bookmarks' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'hover:bg-slate-100 dark:hover:bg-slate-800'">
+        <i data-lucide="bookmark" class="w-4 h-4"></i> Bookmark
+      </button>
+    </nav>
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-xs" x-text="currentUser.name.charAt(0)"></div>
+        <div class="min-w-0">
+          <p class="text-xs font-bold truncate" x-text="currentUser.name"></p>
+          <p class="text-[10px] text-slate-500 truncate" x-text="currentUser.department || 'Staff'"></p>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-medium mb-1 block">Username *</label>
-            <input x-model="regUsername" type="text" placeholder="budi.s" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0">
-          </div>
-          <div>
-            <label class="text-xs font-medium mb-1 block">Departemen</label>
-            <select x-model="regDepartment" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0">
-              <option value="">Pilih</option>
-              <option>IT</option><option>HRD</option><option>Finance</option>
-              <option>Marketing</option><option>Operasional</option><option>Legal</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="text-xs font-medium mb-1 block">Email *</label>
-          <input x-model="regEmail" type="email" placeholder="budi@company.com" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0">
-        </div>
-        <div>
-          <label class="text-xs font-medium mb-1 block">Password * (min 6 karakter)</label>
-          <input x-model="regPassword" type="password" placeholder="••••••••" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm border-0">
-        </div>
-        <div x-show="regError" class="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg text-xs text-red-700 dark:text-red-400">
-          <i data-lucide="alert-circle" class="w-4 h-4"></i><span x-text="regError"></span>
-        </div>
-        <button @click="register()" class="w-full py-2.5 gradient-bg text-white rounded-lg text-sm font-medium hover:opacity-90">
-          Daftar Sekarang
-        </button>
       </div>
-      <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
-        Sudah punya akun?
-        <button @click="showRegister = false" class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Login di sini</button>
-      </div>
+      <button @click="logout()" class="w-full py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-red-50 hover:text-red-500 transition">Keluar</button>
     </div>
-  </div>
-</div>
+  </aside>
 
-<!-- PENDING SCREEN -->
-<div x-show="currentUser && currentUser.status === 'pending'" class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md text-center">
-    <div class="w-20 h-20 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
-      <i data-lucide="clock" class="w-10 h-10 text-amber-600 dark:text-amber-400"></i>
-    </div>
-    <h1 class="text-xl font-bold mb-2">Menunggu Persetujuan</h1>
-    <p class="text-sm text-slate-500 mb-6">Pendaftaran Anda sedang ditinjau oleh admin. Silakan tunggu notifikasi approval.</p>
-    <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-left mb-4">
-      <div class="flex justify-between py-2 text-sm">
-        <span class="text-slate-500">Nama</span><span class="font-medium" x-text="currentUser?.name"></span>
+  <!-- Content -->
+  <main class="flex-1 p-4 md:p-8">
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-extrabold" x-text="activeMenu==='dashboard' ? 'Dokumen Saya' : 'Bookmark'"></h1>
+        <p class="text-sm text-slate-500 mt-1">Hak Akses: <span class="font-bold text-indigo-500" x-text="currentUser.access === 'all' ? 'Semua Kategori' : 'Terbatas (' + currentUser.access + ')'"></span></p>
       </div>
-      <div class="flex justify-between py-2 text-sm border-t border-slate-100 dark:border-slate-800">
-        <span class="text-slate-500">Username</span><span class="font-mono" x-text="currentUser?.username"></span>
-      </div>
-      <div class="flex justify-between py-2 text-sm border-t border-slate-100 dark:border-slate-800">
-        <span class="text-slate-500">Status</span>
-        <span class="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs px-2 py-0.5 rounded-full">Pending</span>
-      </div>
-      <div class="flex justify-between py-2 text-sm border-t border-slate-100 dark:border-slate-800">
-        <span class="text-slate-500">Didaftarkan</span><span x-text="formatDate(currentUser?.registeredAt)"></span>
-      </div>
-    </div>
-    <button @click="logout()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">Keluar</button>
-  </div>
-</div>
-
-<!-- REJECTED SCREEN -->
-<div x-show="currentUser && currentUser.status === 'rejected'" class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md text-center">
-    <div class="w-20 h-20 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
-      <i data-lucide="x-circle" class="w-10 h-10 text-red-600"></i>
-    </div>
-    <h1 class="text-xl font-bold mb-2">Pendaftaran Ditolak</h1>
-    <p class="text-sm text-slate-500 mb-4">Mohon maaf, pendaftaran Anda tidak disetujui.</p>
-    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4 text-left">
-      <p class="text-xs font-medium text-red-700 dark:text-red-400 mb-1">Alasan Penolakan:</p>
-      <p class="text-sm text-red-800 dark:text-red-300" x-text="currentUser?.rejectionReason || 'Tidak disebutkan'"></p>
-    </div>
-    <button @click="logout()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">Keluar</button>
-  </div>
-</div>
-
-<!-- REVOKED SCREEN -->
-<div x-show="currentUser && currentUser.status === 'revoked'" class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md text-center">
-    <div class="w-20 h-20 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
-      <i data-lucide="shield-off" class="w-10 h-10 text-amber-600"></i>
-    </div>
-    <h1 class="text-xl font-bold mb-2">Akses Dicabut</h1>
-    <p class="text-sm text-slate-500">Akses Anda telah dicabut oleh admin. Hubungi HRD untuk informasi lebih lanjut.</p>
-    <button @click="logout()" class="mt-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">Keluar</button>
-  </div>
-</div>
-
-<!-- DASHBOARD (Approved User) -->
-<div x-show="isLoggedIn && currentUser && currentUser.status === 'approved'" class="flex h-screen overflow-hidden">
-
-  <div class="flex-1 flex flex-col overflow-hidden">
-
-    <!-- Topbar -->
-    <header class="h-14 glass border-b border-slate-200 dark:border-slate-800 flex items-center px-4 gap-2">
-      <div class="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0">
-        <i data-lucide="cloud-cog" class="w-5 h-5 text-white"></i>
-      </div>
-      <div class="hidden sm:block">
-        <h1 class="font-semibold text-sm">DocuCloud</h1>
-        <p class="text-[11px] text-slate-400">Portal Karyawan</p>
-      </div>
-
-      <div class="ml-auto max-w-md relative">
+      <div class="relative w-64">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input x-model="searchQuery" type="text" placeholder="Cari dokumen..."
-               class="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-transparent">
-      </div>
-
-      <div class="flex items-center gap-1.5">
-        <button @click="darkMode = !darkMode" class="hidden sm:block p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-          <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
-        </button>
-
-        <!-- Notifications -->
-        <div class="relative">
-          <button @click="showNotifDropdown = !showNotifDropdown; showProfileDropdown = false" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative">
-            <i data-lucide="bell" class="w-4 h-4"></i>
-            <span x-show="unreadNotifCount > 0" x-text="unreadNotifCount > 9 ? '9+' : unreadNotifCount"
-                  class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center notif-dot"></span>
-          </button>
-          <div x-show="showNotifDropdown" @click.away="showNotifDropdown = false" x-transition
-               class="dropdown-enter absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
-            <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h3 class="font-semibold text-sm">Notifikasi</h3>
-              <button x-show="unreadNotifCount > 0" @click="markAllRead()" class="text-[11px] text-indigo-600 font-medium hover:underline">Tandai dibaca</button>
-            </div>
-            <div class="max-h-80 overflow-y-auto scrollbar">
-              <template x-for="notif in notifications" :key="notif.id">
-                <div class="flex gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800"
-                     :class="notif.read ? 'opacity-60' : ''" @click="notif.read = true; saveNotifications()">
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" :style="`background:${notif.bg}`">
-                    <i :data-lucide="notif.icon" class="w-4 h-4" :style="`color:${notif.color}`"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs" :class="notif.read ? '' : 'font-semibold'" x-text="notif.title"></p>
-                    <p class="text-[11px] text-slate-500" x-text="notif.desc"></p>
-                    <p class="text-[10px] text-slate-400 mt-0.5" x-text="notif.time"></p>
-                  </div>
-                </div>
-              </template>
-              <div x-show="notifications.length === 0" class="p-8 text-center text-slate-400 text-xs">Tidak ada notifikasi</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Profile -->
-        <div class="relative">
-          <button @click="showProfileDropdown = !showProfileDropdown; showNotifDropdown = false"
-                  class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-semibold cursor-pointer">
-            <span x-text="currentUser?.name ? currentUser.name[0].toUpperCase() : 'U'"></span>
-          </button>
-          <div x-show="showProfileDropdown" @click.away="showProfileDropdown = false" x-transition
-               class="dropdown-enter absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
-            <div class="gradient-bg px-4 py-4 text-white">
-              <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold" x-text="currentUser?.name ? currentUser.name[0].toUpperCase() : 'U'"></div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-semibold text-sm truncate" x-text="currentUser?.name"></p>
-                  <p class="text-[11px] text-white/80 truncate" x-text="currentUser?.email"></p>
-                </div>
-              </div>
-              <div class="mt-3 flex items-center gap-2 text-[11px]">
-                <span class="bg-white/20 px-2 py-0.5 rounded-full" x-text="currentUser?.department || 'Karyawan'"></span>
-              </div>
-            </div>
-            <div class="py-2">
-              <button @click="activeMenu='profile'; showProfileDropdown=false" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm">
-                <i data-lucide="user" class="w-4 h-4 text-slate-400"></i><span class="font-medium">Profil Saya</span>
-              </button>
-              <button @click="activeMenu='bookmarks'; showProfileDropdown=false" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm">
-                <i data-lucide="bookmark" class="w-4 h-4 text-slate-400"></i><span class="font-medium">Bookmark Saya</span>
-              </button>
-              <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
-              <button @click="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
-                <i data-lucide="log-out" class="w-4 h-4"></i><span class="font-medium">Keluar</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <input x-model="searchQuery" type="text" placeholder="Cari dokumen..." class="w-full pl-9 pr-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
       </div>
     </header>
 
-    <!-- Main -->
-    <main class="flex-1 overflow-y-auto scrollbar p-5">
+    <!-- Filter Kategori -->
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+      <button @click="filterCategory=''" class="px-4 py-1.5 rounded-full text-xs font-bold transition" :class="!filterCategory ? 'gradient-bg text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'">Semua</button>
+      <template x-for="cat in categories" :key="cat.name">
+        <button @click="filterCategory=cat.name" class="px-4 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap" :class="filterCategory===cat.name ? 'gradient-bg text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'" x-text="cat.name"></button>
+      </template>
+    </div>
 
-      <!-- Dashboard -->
-      <div x-show="activeMenu === 'dashboard'" class="fade-in">
-        <div class="mb-5">
-          <h2 class="text-xl font-bold">Selamat datang, <span x-text="currentUser?.name?.split(' ')[0]"></span> 👋</h2>
-          <p class="text-slate-500 text-sm mt-0.5">Akses dokumen perusahaan dengan mudah.</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 mb-5">
-          <div class="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
-              </div>
-              <div class="flex-1"><p class="text-xl font-bold" x-text="files.length"></p></div>
+    <!-- File Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <template x-for="file in (activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles)" :key="file.id">
+        <div class="file-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 relative group cursor-pointer" @click="downloadFile(file)">
+          <div class="flex items-start justify-between mb-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center" :style="'background:'+file.color+'15'">
+              <i :data-lucide="file.icon" class="w-5 h-5" :style="'color:'+file.color"></i>
             </div>
-            <p class="text-xs text-slate-500 mt-2 pl-12">Total Dokumen</p>
+            <button @click.stop="toggleBookmark(file.id)" class="text-slate-400 hover:text-yellow-500 transition">
+              <i data-lucide="bookmark" :class="isBookmarked(file.id) ? 'fill-yellow-500 text-yellow-500' : ''" class="w-4 h-4"></i>
+            </button>
           </div>
-          <div class="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <i data-lucide="bookmark" class="w-4 h-4 text-purple-600"></i>
-              </div>
-              <div class="flex-1"><p class="text-xl font-bold" x-text="bookmarkedFiles.length"></p></div>
-            </div>
-            <p class="text-xs text-slate-500 mt-2 pl-12">Bookmark Saya</p>
+          <h3 class="text-sm font-bold truncate mb-1" x-text="file.name"></h3>
+          <div class="flex items-center gap-2 text-[10px] text-slate-500">
+            <span x-text="file.size"></span>
+            <span>•</span>
+            <span x-text="file.date"></span>
           </div>
-        </div>
-
-        <!-- Categories Filter -->
-        <div class="mb-4">
-          <h3 class="font-semibold text-sm mb-2">Kategori</h3>
-          <div class="flex gap-2 flex-wrap">
-            <template x-for="cat in [{name:'Semua',color:'#64748b'}, ...categories]" :key="cat.name">
-              <button @click="filterCategory = cat.name === 'Semua' ? '' : cat.name"
-                      :class="(cat.name === 'Semua' && !filterCategory) || filterCategory === cat.name ? 'text-white' : 'text-slate-700 dark:text-slate-300'"
-                      class="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 transition inline-flex items-center gap-1.5"
-                      :style="(cat.name === 'Semua' && !filterCategory) || filterCategory === cat.name ? `background:${cat.color}` : ''">
-                <span class="w-1.5 h-1.5 rounded-full" :style="`background:${cat.color}`"></span>
-                <span x-text="cat.name"></span>
-              </button>
+          <!-- Tags AI (Jika ada) -->
+          <div x-show="file.tags && file.tags.length > 0" class="flex flex-wrap gap-1 mt-3">
+            <template x-for="tag in (file.tags || [])" :key="tag">
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-bold text-white" :style="'background:#'+Math.floor(Math.random()*16777215).toString(16)" x-text="tag"></span>
             </template>
           </div>
         </div>
-
-        <!-- Files Grid -->
-        <h3 class="font-semibold text-sm mb-2">Dokumen Tersedia</h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          <template x-for="file in filteredFiles" :key="file.id">
-            <div class="file-card bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:shadow-md relative"
-                 @click="previewFile = file">
-              <button @click.stop="toggleBookmark(file.id)" class="absolute top-2 right-2 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
-                <i :data-lucide="isBookmarked(file.id) ? 'bookmark' : 'bookmark'" 
-                   :class="isBookmarked(file.id) ? 'fill-current text-indigo-600' : 'text-slate-400'" class="w-4 h-4"></i>
-              </button>
-              <div class="aspect-square rounded flex items-center justify-center mb-2.5" :style="`background:${file.color}15`">
-                <i :data-lucide="file.icon" class="w-10 h-10" :style="`color:${file.color}`"></i>
-              </div>
-              <p class="text-sm font-medium truncate" x-text="file.name"></p>
-              <div class="flex items-center justify-between mt-1.5">
-                <span class="text-xs text-slate-500" x-text="file.size"></span>
-                <span class="text-xs text-slate-400" x-text="file.date"></span>
-              </div>
-            </div>
-          </template>
-        </div>
-        <div x-show="filteredFiles.length === 0" class="py-16 text-center">
-          <i data-lucide="file-x" class="w-14 h-14 mx-auto text-slate-300 mb-3"></i>
-          <p class="text-sm text-slate-500">Tidak ada dokumen ditemukan</p>
-        </div>
-      </div>
-
-      <!-- Bookmarks -->
-      <div x-show="activeMenu === 'bookmarks'" class="fade-in">
-        <div class="mb-5">
-          <h2 class="text-xl font-bold">Bookmark Saya</h2>
-          <p class="text-slate-500 text-sm mt-0.5" x-text="bookmarkedFiles.length + ' dokumen tersimpan'"></p>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          <template x-for="file in bookmarkedFiles" :key="file.id">
-            <div class="file-card bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:shadow-md"
-                 @click="previewFile = file">
-              <div class="aspect-square rounded flex items-center justify-center mb-2.5" :style="`background:${file.color}15`">
-                <i :data-lucide="file.icon" class="w-10 h-10" :style="`color:${file.color}`"></i>
-              </div>
-              <p class="text-sm font-medium truncate" x-text="file.name"></p>
-            </div>
-          </template>
-        </div>
-        <div x-show="bookmarkedFiles.length === 0" class="py-16 text-center">
-          <i data-lucide="bookmark" class="w-14 h-14 mx-auto text-slate-300 mb-3"></i>
-          <p class="text-sm text-slate-500">Belum ada bookmark</p>
-        </div>
-      </div>
-
-      <!-- Profile -->
-      <div x-show="activeMenu === 'profile'" class="fade-in">
-        <div class="mb-5">
-          <h2 class="text-xl font-bold">Profil Saya</h2>
-        </div>
-        <div class="max-w-lg bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-800">
-          <div class="flex items-center gap-4 mb-6">
-            <div class="w-20 h-20 rounded-full gradient-bg flex items-center justify-center text-white text-3xl font-bold" x-text="currentUser?.name ? currentUser.name[0].toUpperCase() : 'U'"></div>
-            <div>
-              <h3 class="text-lg font-semibold" x-text="currentUser?.name"></h3>
-              <p class="text-sm text-slate-500" x-text="currentUser?.email"></p>
-              <span class="inline-block mt-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs px-2 py-0.5 rounded-full">Aktif</span>
-            </div>
-          </div>
-          <div class="space-y-3">
-            <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800 text-sm">
-              <span class="text-slate-500">Username</span><span class="font-mono" x-text="currentUser?.username"></span>
-            </div>
-            <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800 text-sm">
-              <span class="text-slate-500">Departemen</span><span x-text="currentUser?.department || '-'"></span>
-            </div>
-            <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800 text-sm">
-              <span class="text-slate-500">Terdaftar</span><span x-text="formatDate(currentUser?.registeredAt)"></span>
-            </div>
-            <div class="flex justify-between py-2 text-sm">
-              <span class="text-slate-500">Disetujui</span><span x-text="formatDate(currentUser?.approvedAt)"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </main>
-  </div>
+      </template>
+    </div>
+    
+    <div x-show="(activeMenu==='dashboard' ? filteredFiles : bookmarkedFiles).length === 0" class="text-center py-20">
+      <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+      <p class="text-sm text-slate-500">Tidak ada dokumen ditemukan.</p>
+    </div>
+  </main>
 </div>
 
-<!-- Bottom Nav Mobile (for logged in) -->
-<nav x-show="isLoggedIn && currentUser && currentUser.status === 'approved'" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 z-40">
-  <div class="grid grid-cols-4 h-16">
-    <button @click="activeMenu = 'dashboard'" :class="activeMenu === 'dashboard' ? 'gradient-bg text-white' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center gap-0.5">
-      <i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] font-medium">Home</span>
-    </button>
-    <button @click="activeMenu = 'bookmarks'" :class="activeMenu === 'bookmarks' ? 'gradient-bg text-white' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center gap-0.5">
-      <i data-lucide="bookmark" class="w-5 h-5"></i><span class="text-[10px] font-medium">Bookmark</span>
-    </button>
-    <button @click="activeMenu = 'profile'" :class="activeMenu === 'profile' ? 'gradient-bg text-white' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center gap-0.5">
-      <i data-lucide="user" class="w-5 h-5"></i><span class="text-[10px] font-medium">Profil</span>
-    </button>
-    <button @click="logout()" class="flex flex-col items-center justify-center gap-0.5 text-slate-500">
-      <i data-lucide="log-out" class="w-5 h-5"></i><span class="text-[10px] font-medium">Keluar</span>
-    </button>
-  </div>
-</nav>
-
-<!-- Preview File Modal -->
-<div x-show="previewFile" x-transition class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-  <div @click.away="previewFile=null" class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg p-5 shadow-xl">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="font-semibold text-sm truncate" x-text="previewFile?.name"></h3>
-      <button @click="previewFile=null"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-    <div class="aspect-video bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center mb-4">
-      <i :data-lucide="previewFile?.icon" class="w-16 h-16" :style="`color:${previewFile?.color}`"></i>
-    </div>
-    <div class="text-sm space-y-2 mb-4">
-      <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-        <span class="text-slate-500">Ukuran</span><span x-text="previewFile?.size"></span>
-      </div>
-      <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-        <span class="text-slate-500">Kategori</span><span x-text="previewFile?.category"></span>
-      </div>
-      <div class="flex justify-between py-2">
-        <span class="text-slate-500">Tanggal</span><span x-text="previewFile?.date"></span>
-      </div>
-    </div>
-    <div class="flex gap-2">
-      <button @click="toggleBookmark(previewFile.id)" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm flex items-center justify-center gap-2">
-        <i :data-lucide="isBookmarked(previewFile.id) ? 'bookmark-check' : 'bookmark'" class="w-4 h-4"></i>
-        <span x-text="isBookmarked(previewFile.id) ? 'Hapus Bookmark' : 'Bookmark'"></span>
-      </button>
-      <button @click="downloadFile(previewFile)" class="flex-1 py-2 gradient-bg text-white rounded-lg text-sm flex items-center justify-center gap-2">
-        <i data-lucide="download" class="w-4 h-4"></i> Download
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Toast -->
-<div x-show="toast.show" x-transition class="fixed bottom-20 md:bottom-5 right-5 z-[60] bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 max-w-sm">
-  <i :data-lucide="toast.icon" class="w-4 h-4" :class="toast.type==='success' ? 'text-green-400' : toast.type==='info' ? 'text-blue-400' : 'text-red-400'"></i>
-  <span x-text="toast.message" class="text-sm"></span>
-</div>
-
+<!-- SCRIPT SINKRONISASI -->
 <script>
 function employeeApp() {
   return {
-    showRegister: false, isLoggedIn: false, darkMode: false,
-    activeMenu: 'dashboard', searchQuery: '', filterCategory: '',
-    showNotifDropdown: false, showProfileDropdown: false, previewFile: null,
+    showRegister: false, isLoggedIn: false, activeMenu: 'dashboard', searchQuery: '', filterCategory: '',
     loginUsername: '', loginPassword: '', loginError: '',
     regName: '', regUsername: '', regEmail: '', regPassword: '', regDepartment: '', regError: '',
     toast: { show: false, message: '', type: 'success', icon: 'check-circle' },
-    currentUser: null, files: [], categories: [], notifications: [], bookmarks: [],
+    currentUser: null, files: [], categories: [], bookmarks: [],
 
-    currentTheme: { id: 'indigo-purple', gradient: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)' },
-    
-    // ★ SINKRONISASI: Filter berdasarkan Hak Akses User
+    // ★ FILTER LOGIC: Cek Hak Akses User
     get filteredFiles() {
       return this.files.filter(f => {
         const matchSearch = !this.searchQuery || f.name.toLowerCase().includes(this.searchQuery.toLowerCase());
@@ -499,69 +176,24 @@ function employeeApp() {
       });
     },
     get bookmarkedFiles() { return this.files.filter(f => this.bookmarks.includes(f.id)); },
-    get unreadNotifCount() { return this.notifications.filter(n => !n.read).length; },
 
     init() {
-      this.loadTheme();
       this.loadCategories();
-      this.loadFiles(); // ★ Mengambil data dari index.html
+      this.loadFiles();
       this.checkSession();
+      setInterval(() => { this.loadFiles(); this.loadCategories(); }, 5000); // Auto-sync 5 detik
       this.$nextTick(() => lucide.createIcons());
-      
-      // Auto-sync setiap 3 detik
-      setInterval(() => {
-        this.loadFiles();
-        this.loadCategories();
-        if (this.currentUser) {
-          this.refreshCurrentUser();
-          this.loadNotifications();
-        }
-      }, 3000);
     },
 
-    loadTheme() {
-      const saved = localStorage.getItem('dc_theme');
-      if (saved) {
-        const t = this.themePresets.find(x => x.id === saved);
-        if (t) { this.currentTheme = t; document.documentElement.style.setProperty('--theme-gradient', t.gradient); }
-      }
-    },
-    
-    // ★ SINKRONISASI KATEGORI
     loadCategories() {
-      // Membaca kategori yang dibuat di index.html
       const saved = localStorage.getItem('dc_categories');
       this.categories = saved ? JSON.parse(saved) : [];
     },
     
-    // ★ SINKRONISASI FILE (Mengambil metadata dari index.html)
+    // ★ MENGAMBIL DATA DARI INDEX.HTML
     loadFiles() {
-      // index.html menyimpan cache metadata di dc_metadata_cache
       const saved = localStorage.getItem('dc_metadata_cache');
-      if (saved) {
-        this.files = JSON.parse(saved);
-      } else {
-        // Fallback ke dc_documents jika belum ada cache
-        const docSaved = localStorage.getItem('dc_documents');
-        this.files = docSaved ? JSON.parse(docSaved) : [];
-      }
-    },
-
-    loadNotifications() {
-      if (!this.currentUser) return;
-      const saved = localStorage.getItem('dc_user_notifications_' + this.currentUser.username);
-      this.notifications = saved ? JSON.parse(saved) : [];
-    },
-    saveNotifications() {
-      if (!this.currentUser) return;
-      localStorage.setItem('dc_user_notifications_' + this.currentUser.username, JSON.stringify(this.notifications));
-    },
-    markAllRead() { this.notifications.forEach(n => n.read = true); this.saveNotifications(); this.showToast('Semua ditandai dibaca'); },
-
-    refreshCurrentUser() {
-      const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
-      const u = users.find(x => x.id === this.currentUser?.id);
-      if (u) this.currentUser = u;
+      if (saved) this.files = JSON.parse(saved);
     },
 
     checkSession() {
@@ -569,11 +201,10 @@ function employeeApp() {
       if (sessionId) {
         const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
         const u = users.find(x => x.id === sessionId);
-        if (u) {
+        if (u && u.status === 'approved') {
           this.currentUser = u;
           this.isLoggedIn = true;
           this.loadBookmarks();
-          this.loadNotifications();
         } else {
           localStorage.removeItem('dc_employee_session');
         }
@@ -592,92 +223,57 @@ function employeeApp() {
     isBookmarked(id) { return this.bookmarks.includes(id); },
     toggleBookmark(id) {
       const idx = this.bookmarks.indexOf(id);
-      if (idx === -1) { this.bookmarks.push(id); this.showToast('Ditambahkan ke bookmark'); }
+      if (idx === -1) { this.bookmarks.push(id); this.showToast('Disimpan ke bookmark'); }
       else { this.bookmarks.splice(idx, 1); this.showToast('Dihapus dari bookmark', 'info'); }
       this.saveBookmarks();
     },
     downloadFile(file) {
-      this.showToast('Mengunduh ' + file.name, 'info');
-      const files = JSON.parse(localStorage.getItem('dc_metadata_cache') || '[]');
-      const f = files.find(x => x.id === file.id);
-      if (f) { 
-        f.downloadCount = (f.downloadCount || 0) + 1; 
-        localStorage.setItem('dc_metadata_cache', JSON.stringify(files)); 
-      }
+      window.open(`https://drive.google.com/file/d/${file.id}/view`, '_blank');
+      this.showToast('Membuka: ' + file.name);
     },
 
     login() {
       this.loginError = '';
-      if (!this.loginUsername || !this.loginPassword) { this.loginError = 'Isi username dan password'; return; }
       const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
       const u = users.find(x => x.username === this.loginUsername && x.password === this.loginPassword);
       if (!u) { this.loginError = 'Username atau password salah'; return; }
+      if (u.status !== 'approved') { this.loginError = 'Akun belum disetujui Admin.'; return; }
       
-      if (u.status !== 'approved') {
-        this.loginError = 'Akun Anda belum disetujui atau telah dicabut.';
-        return;
-      }
-
       this.currentUser = u;
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', u.id);
       this.loadBookmarks();
-      this.loadNotifications();
-      this.loginUsername = ''; this.loginPassword = '';
-      this.showToast('Login berhasil! Selamat datang, ' + u.name);
+      this.showToast('Selamat datang, ' + u.name);
     },
 
     register() {
       this.regError = '';
-      if (!this.regName || !this.regUsername || !this.regEmail || !this.regPassword) {
-        this.regError = 'Semua field wajib diisi'; return;
-      }
-      if (this.regPassword.length < 6) { this.regError = 'Password minimal 6 karakter'; return; }
+      if (!this.regName || !this.regUsername || !this.regPassword) { this.regError = 'Data wajib diisi'; return; }
       const users = JSON.parse(localStorage.getItem('dc_users') || '[]');
-      if (users.some(x => x.username.toLowerCase() === this.regUsername.toLowerCase())) {
-        this.regError = 'Username sudah digunakan'; return;
-      }
+      if (users.some(x => x.username === this.regUsername)) { this.regError = 'Username sudah dipakai'; return; }
+      
       const newUser = {
-        id: 'user_' + Date.now(),
-        name: this.regName, username: this.regUsername, email: this.regEmail,
-        password: this.regPassword, department: this.regDepartment,
-        status: 'pending', registeredAt: new Date().toISOString(),
-        access: 'all' // Default access, nanti diatur admin
+        id: 'user_' + Date.now(), name: this.regName, username: this.regUsername, 
+        email: this.regEmail, password: this.regPassword, department: this.regDepartment,
+        status: 'pending', access: 'all', registeredAt: new Date().toISOString()
       };
       users.push(newUser);
       localStorage.setItem('dc_users', JSON.stringify(users));
       
-      // Notif ke admin
-      const notifs = JSON.parse(localStorage.getItem('dc_notifications') || '[]');
-      notifs.unshift({
-        id: Date.now(), title: 'Pendaftaran Baru', 
-        desc: newUser.name + ' (' + newUser.username + ') mendaftar.',
-        icon: 'user-plus', bg: '#ede9fe', color: '#7c3aed', time: 'Baru saja', read: false
-      });
-      localStorage.setItem('dc_notifications', JSON.stringify(notifs));
-
       this.currentUser = newUser;
-      this.isLoggedIn = true;
-      localStorage.setItem('dc_employee_session', newUser.id);
-      this.showToast('Pendaftaran berhasil! Menunggu approval admin.', 'info');
+      this.isLoggedIn = true; // Masuk sebagai pending user
+      this.showToast('Pendaftaran berhasil! Menunggu approval.', 'info');
       this.showRegister = false;
-      this.regName = ''; this.regUsername = ''; this.regEmail = ''; this.regPassword = ''; this.regDepartment = '';
     },
 
     logout() {
       localStorage.removeItem('dc_employee_session');
-      this.currentUser = null;
-      this.isLoggedIn = false;
-      this.showRegister = false;
-      this.bookmarks = [];
-      this.notifications = [];
-      this.activeMenu = 'dashboard';
+      this.currentUser = null; this.isLoggedIn = false;
       this.showToast('Anda telah keluar', 'info');
     },
 
-    formatDate(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}); },
     showToast(msg, type='success') {
-      this.toast = {show:true, message:msg, type, icon: type==='success'?'check-circle':type==='info'?'info':'alert-circle'};
+      this.toast = {show:true, message:msg, type, icon: type==='success'?'check-circle':'info'};
       setTimeout(() => this.toast.show = false, 3000);
     },
   }
