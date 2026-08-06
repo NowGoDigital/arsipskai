@@ -212,6 +212,9 @@ function adminApp() {
     init(){
       var self = this;
       if(localStorage.getItem('dc_dark')==='true') this.darkMode = true;
+      // ★ WARM-UP: bangunkan server Apps Script di background begitu halaman dibuka,
+      // ★ sehingga saat tombol login ditekan server sudah panas = CEPAT
+      try{ fetch(DC_USERS_URL + '?action=ping').catch(function(){}); }catch(e){}
       var s = sessionStorage.getItem('dc_admin_secret');
       if(s){
         this.adminSecret = s;
@@ -266,29 +269,39 @@ function adminApp() {
     },
     async loadAll(){
       this.loading = true;
-      this.users = await this.fetchUsers();
-      await this.loadCategories();
+      // ★ PARALEL: akun + kategori dimuat bersamaan = lebih cepat
+      await Promise.all([
+        this.fetchUsers().then(function(u){ this.users = u; }.bind(this)),
+        this.loadCategories()
+      ]);
       this.loading = false;
       this.refreshIcons();
     },
 
-    // ============ AUTH ============
+    // ============ AUTH — CEPAT: 1 request saja ============
     async login(){
       this.loginError = '';
       if(!this.loginCode){ this.loginError = 'Kode admin wajib diisi'; return; }
       this.loading = true;
-      this.adminSecret = this.loginCode;
-      var users = await this.fetchUsers();
-      var ok = await this.saveToServer(users); // ★ verifikasi secret (tulis ulang data sama)
-      if(ok){
-        sessionStorage.setItem('dc_admin_secret', this.loginCode);
-        this.users = users;
-        this.isAdmin = true;
-        await this.loadCategories();
-        this.showToast('Selamat datang, Admin','Database akun terhubung ke server','success');
-      } else {
-        this.loginError = 'Kode admin salah atau server menolak';
-        this.adminSecret = '';
+      try{
+        var r = await fetch(DC_USERS_URL, {
+          method: 'POST',
+          headers: {'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({action:'login', secret:this.loginCode})
+        });
+        var d = await r.json();
+        if(d && d.ok){
+          this.adminSecret = this.loginCode;
+          sessionStorage.setItem('dc_admin_secret', this.loginCode);
+          this.users = d.users || [];
+          this.isAdmin = true;
+          this.loadCategories(); // ★ kategori dimuat background, tidak ditunggu
+          this.showToast('Selamat datang, Admin','Database akun terhubung ke server','success');
+        } else {
+          this.loginError = 'Kode admin salah atau server menolak';
+        }
+      }catch(e){
+        this.loginError = 'Tidak bisa menghubungi server. Periksa koneksi.';
       }
       this.loading = false;
       this.refreshIcons();
@@ -370,5 +383,6 @@ function adminApp() {
   };
 }
 </script>
+
 </body>
 </html>
