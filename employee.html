@@ -10,7 +10,6 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *{font-family:'Inter',sans-serif}
 [x-cloak]{display:none!important}
@@ -73,7 +72,7 @@ tr:hover .file-actions-btn{opacity:1}
   </div>
 </div>
 
-<!-- ============ LANDING + LOGIN / DAFTAR (COMPACT) ============ -->
+<!-- ============ LANDING + LOGIN / DAFTAR (COMPACT, TANPA GOOGLE) ============ -->
 <div x-show="!isLoggedIn && !isLoading" class="fixed inset-0 z-50 overflow-y-auto gradient-bg">
   <div class="pointer-events-none absolute inset-0 overflow-hidden">
     <div class="absolute -top-32 -left-32 w-[380px] h-[380px] bg-white/10 rounded-full blur-3xl floaty-slow"></div>
@@ -84,7 +83,7 @@ tr:hover .file-actions-btn{opacity:1}
     <div class="flex items-center justify-between px-6 lg:px-10 py-3">
       <div class="flex items-center gap-2.5 text-white">
         <div class="w-8 h-8 rounded-lg bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center shadow-lg"><i data-lucide="cloud-cog" class="w-4 h-4"></i></div>
-        <div><p class="font-extrabold text-[13px] leading-none">DocuCloud</p><p class="text-[9px] text-white/60 mt-0.5">Employee Portal v8.1</p></div>
+        <div><p class="font-extrabold text-[13px] leading-none">DocuCloud</p><p class="text-[9px] text-white/60 mt-0.5">Employee Portal v8.2</p></div>
       </div>
       <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-semibold backdrop-blur">
         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> Sistem Aktif
@@ -106,8 +105,8 @@ tr:hover .file-actions-btn{opacity:1}
           </p>
           <div class="grid sm:grid-cols-2 gap-2 max-w-lg mb-4">
             <div class="flex items-start gap-2.5 bg-white/10 backdrop-blur border border-white/15 rounded-lg p-2.5 hover:bg-white/15 transition">
-              <div class="w-8 h-8 rounded-md bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="hard-drive" class="w-3.5 h-3.5"></i></div>
-              <div><p class="text-[13px] font-bold leading-tight">Sinkron Google Drive</p><p class="text-[10px] text-white/70 mt-0.5">Dokumen real-time dari Drive perusahaan.</p></div>
+              <div class="w-8 h-8 rounded-md bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="zap" class="w-3.5 h-3.5"></i></div>
+              <div><p class="text-[13px] font-bold leading-tight">Auto-Connect Drive</p><p class="text-[10px] text-white/70 mt-0.5">Dokumen termuat otomatis tanpa login Google.</p></div>
             </div>
             <div class="flex items-start gap-2.5 bg-white/10 backdrop-blur border border-white/15 rounded-lg p-2.5 hover:bg-white/15 transition">
               <div class="w-8 h-8 rounded-md bg-white/15 flex items-center justify-center flex-shrink-0"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></div>
@@ -170,6 +169,7 @@ tr:hover .file-actions-btn{opacity:1}
               <button @click="login()" class="w-full py-2.5 rounded-lg gradient-bg text-white font-bold shadow-lg hover:opacity-90 hover:shadow-xl transition flex items-center justify-center gap-2">
                 <i data-lucide="log-in" class="w-4 h-4"></i> Masuk
               </button>
+              <p class="text-[10px] text-center text-slate-400 mt-2.5 flex items-center justify-center gap-1.5"><i data-lucide="sparkles" class="w-3 h-3 text-indigo-400"></i> Tanpa akun Google — dokumen terhubung otomatis.</p>
             </div>
             <!-- FORM DAFTAR (tanpa email, departemen dropdown) -->
             <div x-show="showRegister">
@@ -300,7 +300,7 @@ tr:hover .file-actions-btn{opacity:1}
       <div x-show="sidebarOpen" class="gradient-bg rounded-lg p-3 text-white">
         <div class="flex items-center justify-between mb-1"><span class="text-[11px] font-medium opacity-90">Google Drive</span><i data-lucide="hard-drive" class="w-3.5 h-3.5"></i></div>
         <p class="text-sm font-bold" x-text="usedStorage"></p>
-        <p class="text-[10px] opacity-75 mt-0.5">Data perusahaan (read-only)</p>
+        <p class="text-[10px] opacity-75 mt-0.5">Auto-connect (read-only)</p>
       </div>
     </div>
   </aside>
@@ -320,32 +320,32 @@ tr:hover .file-actions-btn{opacity:1}
       </div>
       <div class="flex items-center gap-1.5 flex-shrink-0">
         <div class="relative">
-          <button @click="driveConnected ? (showDriveMenu = !showDriveMenu) : startDriveAuth()" class="flex items-center gap-2 transition relative" :class="driveConnected ? 'drive-topbar-banner px-3 py-[7px] text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-3 py-[7px] rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'">
+          <!-- ★ v8.2: tanpa OAuth — klik = refresh / menu status -->
+          <button @click="driveConnected ? (showDriveMenu = !showDriveMenu) : connectDrive()" class="flex items-center gap-2 transition relative" :class="driveConnected ? 'drive-topbar-banner px-3 py-[7px] text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-3 py-[7px] rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'">
             <svg x-show="driveConnected" class="w-[18px] h-[18px] flex-shrink-0 relative z-10" viewBox="0 0 24 24"><path fill="#fff" d="M7.71 3.5L1.15 15l3.43 5.95L11.14 9.45 7.71 3.5z" opacity=".85"/><path fill="#fff" d="M16.29 3.5L9.71 15h6.86l6.57-11.5h-6.85z" opacity=".65"/><path fill="#fff" d="M1.15 15l3.43 5.95h13.14L14.29 15H1.15z" opacity=".95"/></svg>
             <svg x-show="!driveConnected" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
             <template x-if="driveConnected && driveUser">
               <div class="flex items-center gap-2 relative z-10">
-                <img x-show="driveUser && driveUser.picture" :src="driveUser.picture" class="w-7 h-7 rounded-full border-2 border-white/30 flex-shrink-0 object-cover" alt="" referrerpolicy="no-referrer">
-                <div x-show="!driveUser || !driveUser.picture" class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold flex-shrink-0" x-text="driveUser && driveUser.name ? driveUser.name.charAt(0) : 'D'"></div>
+                <div class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold flex-shrink-0">D</div>
                 <div class="flex flex-col leading-none min-w-0">
                   <span class="drive-banner-name text-[11px] font-semibold truncate max-w-[110px] text-white" x-text="driveUser ? (driveUser.name || '') : ''"></span>
                   <span class="drive-banner-email text-[9px] text-white/60 truncate max-w-[110px]" x-text="driveUser ? (driveUser.email || '') : ''"></span>
                 </div>
               </div>
             </template>
-            <div x-show="!driveConnected" class="hidden sm:flex flex-col items-start leading-tight"><span class="text-xs font-semibold">Google Drive</span><span class="text-[10px] text-slate-500 dark:text-slate-400">⚠️ Klik untuk hubungkan</span></div>
+            <div x-show="!driveConnected" class="hidden sm:flex flex-col items-start leading-tight"><span class="text-xs font-semibold">Google Drive</span><span class="text-[10px] text-slate-500 dark:text-slate-400">⚠️ Klik untuk coba lagi</span></div>
             <span :class="driveConnected ? 'bg-green-400' : 'bg-red-400'" class="w-2 h-2 rounded-full relative z-10 flex-shrink-0" :style="driveConnected ? 'animation:pulse 2s infinite' : ''"></span>
           </button>
           <div x-show="showDriveMenu && driveConnected" @click.away="showDriveMenu = false" x-transition class="context-menu absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
             <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3 text-white">
               <div class="flex items-center gap-3">
-                <img x-show="driveUser && driveUser.picture" :src="driveUser ? driveUser.picture : ''" class="w-10 h-10 rounded-full border-2 border-white/30" alt="" referrerpolicy="no-referrer">
-                <div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate" x-text="driveUser ? driveUser.name : ''"></p><p class="text-[11px] text-white/80 truncate" x-text="driveUser ? driveUser.email : ''"></p></div>
+                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold">D</div>
+                <div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate">DocuCloud Drive</p><p class="text-[11px] text-white/80 truncate">Mode Auto-Connect • read-only</p></div>
               </div>
             </div>
             <div class="py-2">
               <button @click="showDriveMenu=false;refreshFromDrive()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm transition"><i data-lucide="refresh-cw" class="w-4 h-4 text-blue-500"></i><span>Refresh dari Drive</span></button>
-              <p class="px-4 py-2 text-[10px] text-slate-400">Sumber data: Google Drive perusahaan (read-only). Sinkron dengan Dashboard Utama.</p>
+              <p class="px-4 py-2 text-[10px] text-slate-400">Dokumen dimuat otomatis via tautan publik — karyawan tidak perlu login Google.</p>
             </div>
           </div>
         </div>
@@ -378,7 +378,7 @@ tr:hover .file-actions-btn{opacity:1}
               <button @click="showProfileMenu=false; logout()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-sm text-red-500 transition"><i data-lucide="log-out" class="w-4 h-4"></i><span>Keluar (Logout)</span></button>
             </div>
             <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <span class="text-[10px] text-slate-500">DocuCloud v8.1</span>
+              <span class="text-[10px] text-slate-500">DocuCloud v8.2</span>
               <span class="text-[10px] text-slate-400">Employee Portal</span>
             </div>
           </div>
@@ -422,9 +422,8 @@ tr:hover .file-actions-btn{opacity:1}
         </div>
         <h2 class="text-2xl font-bold mb-2">Tidak Bisa Mengakses Drive</h2>
         <p class="text-sm text-slate-500 mb-6" x-text="driveError"></p>
-        <button @click="startDriveAuth()" class="inline-flex items-center gap-2 px-6 py-3 gradient-bg text-white rounded-xl text-sm font-bold hover:opacity-90 shadow-lg">
-          <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" opacity=".8" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" opacity=".7" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" opacity=".9" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Login Google Drive
+        <button @click="connectDrive()" class="inline-flex items-center gap-2 px-6 py-3 gradient-bg text-white rounded-xl text-sm font-bold hover:opacity-90 shadow-lg">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i> Coba Lagi
         </button>
       </div>
 
@@ -678,32 +677,11 @@ tr:hover .file-actions-btn{opacity:1}
 <!-- ============================================================ -->
 <script>
 // ============================================================
-//  GOOGLE DRIVE AUTH — MANDIRI (tidak bergantung index.html)
+//  ★★★ KONFIGURASI WAJIB ISI (hasil Langkah 1–3 setup) ★★★
 // ============================================================
-// ★★★ PENTING: jika sebelumnya Anda sudah mengganti baris ini dengan
-// ★★★ client_id ASLI dari index.html, ganti lagi nilai di bawah ini
-// ★★★ dengan nilai yang sama persis!
-var EMP_DRIVE_CLIENT_ID = '703011298290-2m6opraos750v8t9l4u83912hsfek5i4.apps.googleusercontent.com';
-var EMP_TOKEN_KEY = 'dc_emp_drive_token'; // ★ token KHUSUS employee — mandiri
-
-function handleDriveAuth(response){
-  if(response && response.access_token){
-    localStorage.setItem(EMP_TOKEN_KEY, response.access_token);
-    console.log('[Employee] ✅ Token Drive employee disimpan (mandiri)');
-    if(window.__employeeApp){
-      var app = window.__employeeApp;
-      app.driveError = '';
-      app.showToast('Google Drive terhubung','Token berhasil diambil','success');
-      app.connectDrive();
-      // ★ lanjutkan aksi tertunda (login/daftar dari browser baru)
-      if(app._pendingAction === 'login'){ app._pendingAction = null; app.login(); }
-      else if(app._pendingAction === 'register'){ app._pendingAction = null; app.register(); }
-    }
-  } else if(window.__employeeApp){
-    window.__employeeApp._pendingAction = null;
-    window.__employeeApp.showToast('Login Drive gagal','Tidak ada token diterima','error');
-  }
-}
+var DC_API_KEY   = '703011298290-2m6opraos750v8t9l4u83912hsfek5i4.apps.googleusercontent.com';        // dari Google Cloud Console (Credentials > API key)
+var DC_FOLDER_ID = '1ZIyHepAPiEtSuX_2pDv3LjQ6fRLHTWZW';     // ID folder utama DocuCloud (dari link share)
+var DC_USERS_URL = 'https://script.google.com/macros/s/AKfycbyun2bAhAJddJK4KSrPAScwSp8Q9ufJLzVOSxmX8h-IZYFftNWX3QPCfpTysJKPc3m1/exec';         // URL Apps Script berakhiran /exec
 
 function employeeApp() {
   return {
@@ -722,11 +700,9 @@ function employeeApp() {
     loginUsername: '', loginPassword: '', loginError: '',
     regName: '', regUsername: '', regEmail: '', regPassword: '', regDepartment: '', regError: '',
     driveConnected: false, driveUser: null, driveLoading: false,
-    driveFolderId: null, driveFiles: [], driveFolders: [], driveError: '',
+    driveFiles: [], driveFolders: [], driveError: '',
     bookmarks: [],
     historyLog: [],
-    _pendingAction: null,
-    _usersFileId: null,
     stats: [
       {label:'Total File',value:'0',icon:'file-text',color:'#6366f1',bg:'#eef2ff'},
       {label:'Total Ukuran',value:'0 B',icon:'hard-drive',color:'#3b82f6',bg:'#dbeafe'},
@@ -750,13 +726,12 @@ function employeeApp() {
     init(){
       if(this._booted) return;
       this._booted = true;
-      window.__employeeApp = this;
       var self = this;
       var t = localStorage.getItem('dc_theme');
       if(t){ var f = this.themePresets.find(function(p){return p.id===t}); if(f) this.currentTheme = f; }
       if(localStorage.getItem('dc_dark')==='true') this.darkMode = true;
 
-      var steps = ['Mempersiapkan...','Memuat data...','Menghubungkan ke Drive...'];
+      var steps = ['Mempersiapkan...','Memuat data...','Menghubungkan ke Drive (auto)...'];
       var i = 0;
       var iv = setInterval(function(){
         self.loadingProgress = Math.min(100,(i+1)*33);
@@ -781,7 +756,32 @@ function employeeApp() {
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
 
     // ================================================================
-    //  KATEGORI — IndexedDB DocuCloudV8 (ditulis index.html) + fallback folder Drive
+    //  KONFIGURASI CHECK
+    // ================================================================
+    configReady(){
+      return DC_API_KEY.indexOf('ISI_') !== 0 && DC_FOLDER_ID.indexOf('ISI_') !== 0 && DC_USERS_URL.indexOf('ISI_') !== 0 && DC_USERS_URL.indexOf('http') === 0;
+    },
+
+    // ================================================================
+    //  DATABASE AKUN — via Apps Script Users API (tanpa Google login)
+    // ================================================================
+    async fetchUsers(){
+      try{
+        var r = await fetch(DC_USERS_URL + '?action=getUsers');
+        if(r.ok){
+          var d = await r.json();
+          if(d && d.ok && Object.prototype.toString.call(d.users) === '[object Array]'){
+            localStorage.setItem('dc_users', JSON.stringify(d.users));
+            console.log('[Employee] 👥 Database akun dimuat dari server:', d.users.length, 'akun');
+            return d.users;
+          }
+        }
+      }catch(e){ console.warn('[Employee] fetchUsers gagal, pakai cache lokal:', e.message); }
+      return JSON.parse(localStorage.getItem('dc_users')||'[]');
+    },
+
+    // ================================================================
+    //  KATEGORI — IndexedDB (jika ada) + merge folder Drive (real-time)
     // ================================================================
     openDB(){
       return new Promise(function(resolve,reject){
@@ -808,112 +808,46 @@ function employeeApp() {
           }
           this.categories = cats;
         }
-        console.log('[Employee] 📂 Kategori dari IndexedDB:', this.categories.length, this.categories.map(function(c){return c.name}).join(', ') || '(kosong)');
+        console.log('[Employee] 📂 Kategori dari IndexedDB:', this.categories.length);
       }catch(e){ console.warn('[Employee] loadCategories error:', e); }
     },
-    ensureCategoriesFromDrive(){
-      if(this.categories.length > 0) return;
+    mergeCategoriesFromDrive(){
+      // ★ kategori baru dari folder Drive otomatis masuk; warna/ikon lama dipertahankan
       var palette = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
-      for(var i=0;i<this.driveFolders.length;i++){
-        var f = this.driveFolders[i];
-        this.categories.push({ name: f.name, color: palette[i % palette.length], icon: 'folder', driveFolderId: f.id, count: 0, auto: true });
+      var existing = {};
+      for(var i=0;i<this.categories.length;i++){
+        if(this.categories[i].driveFolderId) existing[this.categories[i].driveFolderId] = this.categories[i];
+        existing['name:'+this.categories[i].name.toLowerCase()] = this.categories[i];
       }
-      if(this.categories.length > 0){
-        console.log('[Employee] 📂 Kategori dibuat dari folder Drive:', this.categories.map(function(c){return c.name}).join(', '));
-      }
-    },
-
-    // ================================================================
-    //  DATABASE AKUN SHARED — users.json di Google Drive
-    // ================================================================
-    async syncUsersFromDrive(silent){
-      var token = localStorage.getItem(EMP_TOKEN_KEY);
-      if(!token) return false;
-      try{
-        var q = encodeURIComponent("name='DocuCloud_users.json' and trashed=false");
-        var r = await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name)&pageSize=1',{headers:{Authorization:'Bearer '+token}});
-        if(r.status === 401 || r.status === 403){ if(!silent) localStorage.removeItem(EMP_TOKEN_KEY); return 'expired'; }
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        var d = await r.json();
-        var local = JSON.parse(localStorage.getItem('dc_users')||'[]');
-        if(d.files && d.files.length > 0){
-          this._usersFileId = d.files[0].id;
-          var dr = await fetch('https://www.googleapis.com/drive/v3/files/'+d.files[0].id+'?alt=media',{headers:{Authorization:'Bearer '+token}});
-          if(dr.ok){
-            var remote = await dr.json();
-            if(Array.isArray(remote) && remote.length > 0){
-              localStorage.setItem('dc_users', JSON.stringify(remote));
-              console.log('[Employee] 👥 Database akun dimuat dari Drive:', remote.length, 'akun');
-              return true;
-            }
-            if(Array.isArray(remote) && remote.length === 0 && local.length > 0){
-              await this.saveUsersToDrive(local);
-              return true;
-            }
-          }
-        } else if(local.length > 0){
-          // ★ MIGRASI otomatis: file belum ada → unggah akun lokal ke Drive
-          await this.saveUsersToDrive(local);
-          console.log('[Employee] 👥 Migrasi: database akun lokal diunggah ke Drive');
-          return true;
-        }
-        return true;
-      }catch(e){
-        console.warn('[Employee] syncUsersFromDrive:', e.message);
-        return false;
-      }
-    },
-    async saveUsersToDrive(users){
-      localStorage.setItem('dc_users', JSON.stringify(users)); // cache lokal tetap jalan
-      var token = localStorage.getItem(EMP_TOKEN_KEY);
-      if(!token) return false;
-      try{
-        if(!this._usersFileId){
-          var q = encodeURIComponent("name='DocuCloud_users.json' and trashed=false");
-          var sr = await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)',{headers:{Authorization:'Bearer '+token}});
-          if(sr.ok){ var sd = await sr.json(); if(sd.files && sd.files.length) this._usersFileId = sd.files[0].id; }
-        }
-        var body = JSON.stringify(users);
-        if(this._usersFileId){
-          var ur = await fetch('https://www.googleapis.com/upload/drive/v3/files/'+this._usersFileId+'?uploadType=media',{method:'PATCH',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:body});
-          if(ur.status === 401 || ur.status === 403) throw new Error('TOKEN_EXPIRED');
-          if(!ur.ok) throw new Error('HTTP '+ur.status);
+      var added = 0;
+      for(var f=0;f<this.driveFolders.length;f++){
+        var folder = this.driveFolders[f];
+        var match = existing[folder.id] || existing['name:'+folder.name.toLowerCase()];
+        if(match){
+          match.driveFolderId = folder.id;
         } else {
-          var boundary = 'dcboundary' + Date.now();
-          var meta = JSON.stringify({name:'DocuCloud_users.json',mimeType:'application/json'});
-          var payload = '--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+boundary+'--';
-          var cr = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'multipart/related; boundary='+boundary},body:payload});
-          if(cr.status === 401 || cr.status === 403) throw new Error('TOKEN_EXPIRED');
-          if(!cr.ok) throw new Error('HTTP '+cr.status);
-          var cd = await cr.json();
-          this._usersFileId = cd.id;
+          this.categories.push({ name: folder.name, color: palette[this.categories.length % palette.length], icon: 'folder', driveFolderId: folder.id, count: 0, auto: true });
+          added++;
         }
-        console.log('[Employee] 💾 users.json tersimpan di Drive');
-        return true;
-      }catch(e){
-        console.warn('[Employee] saveUsersToDrive gagal (cache lokal tetap):', e.message);
-        this.showToast('Gagal simpan ke Drive','Akun tersimpan lokal sementara','warning');
-        return false;
       }
+      if(added > 0) console.log('[Employee] 📂 Kategori baru dari Drive:', added);
     },
 
     // ================================================================
-    //  AUTH
+    //  AUTH (username + password saja — tanpa akun Google)
     // ================================================================
     async checkSession(){
       var sessionId = localStorage.getItem('dc_employee_session');
       if(!sessionId) return;
-      if(localStorage.getItem(EMP_TOKEN_KEY)){
-        await this.syncUsersFromDrive(true);
-      }
-      var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
-      var u = users.find(function(x){return x.id === sessionId});
+      var users = await this.fetchUsers();
+      var u = null;
+      for(var i=0;i<users.length;i++){ if(users[i].id === sessionId){ u = users[i]; break; } }
       if(u){
         this.currentUser = u;
         this.isLoggedIn = true;
         this.loadBookmarks();
         this.loadHistory();
-        console.log('[Employee] 👤 Login sebagai:', u.username, '| status:', u.status, '| access:', u.access || 'all');
+        console.log('[Employee] 👤 Login sebagai:', u.username, '| status:', u.status);
         if(u.status === 'approved') this.connectDrive();
       } else {
         localStorage.removeItem('dc_employee_session');
@@ -921,21 +855,9 @@ function employeeApp() {
     },
     async login(){
       this.loginError = '';
-      if(!localStorage.getItem(EMP_TOKEN_KEY)){
-        // ★ browser baru: ambil database akun dari Drive dulu (popup = user gesture, aman)
-        this._pendingAction = 'login';
-        this.showToast('Menghubungkan Google Drive','Login Google untuk verifikasi akun','info');
-        this.startDriveAuth();
-        return;
-      }
-      var s = await this.syncUsersFromDrive();
-      if(s === 'expired'){ this._pendingAction = 'login'; this.startDriveAuth(); return; }
-      this.doLogin();
-    },
-    doLogin(){
-      this.loginError = '';
+      if(!this.configReady()){ this.loginError = 'Konfigurasi server belum diisi (DC_USERS_URL)'; return; }
+      var users = await this.fetchUsers();
       var self = this;
-      var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
       var u = users.find(function(x){return x.username === self.loginUsername && x.password === self.loginPassword});
       if(!u){ this.loginError = 'Username atau password salah'; return; }
       this.currentUser = u;
@@ -951,28 +873,27 @@ function employeeApp() {
       this.regError = '';
       if(!this.regName || !this.regUsername || !this.regPassword){ this.regError = 'Data wajib diisi'; return; }
       if(this.regPassword.length < 6){ this.regError = 'Password minimal 6 karakter'; return; }
-      if(!localStorage.getItem(EMP_TOKEN_KEY)){
-        this._pendingAction = 'register';
-        this.showToast('Menghubungkan Google Drive','Login Google untuk menyimpan pendaftaran','info');
-        this.startDriveAuth();
-        return;
-      }
-      var s = await this.syncUsersFromDrive();
-      if(s === 'expired'){ this._pendingAction = 'register'; this.startDriveAuth(); return; }
-      await this.doRegister();
-    },
-    async doRegister(){
-      this.regError = '';
-      var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
-      var self = this;
-      if(users.some(function(x){return x.username === self.regUsername})){ this.regError = 'Username sudah dipakai'; return; }
+      if(!this.configReady()){ this.regError = 'Konfigurasi server belum diisi (DC_USERS_URL)'; return; }
       var newUser = {
         id: 'user_' + Date.now(), name: this.regName, username: this.regUsername,
         email: '', password: this.regPassword, department: this.regDepartment,
         status: 'pending', access: 'all', registeredAt: new Date().toISOString()
       };
-      users.push(newUser);
-      await this.saveUsersToDrive(users);
+      try{
+        var r = await fetch(DC_USERS_URL, {
+          method: 'POST',
+          headers: {'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({action:'register', user:newUser})
+        });
+        var d = await r.json();
+        if(!d.ok){
+          this.regError = (d.error === 'username exists') ? 'Username sudah dipakai' : 'Gagal mendaftar: ' + (d.error||'server error');
+          return;
+        }
+      }catch(e){
+        this.regError = 'Tidak bisa menghubungi server akun. Periksa koneksi lalu coba lagi.';
+        return;
+      }
       this.currentUser = newUser;
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', newUser.id);
@@ -982,9 +903,8 @@ function employeeApp() {
       this.refreshIcons();
     },
     async recheckStatus(){
-      if(localStorage.getItem(EMP_TOKEN_KEY)) await this.syncUsersFromDrive(true);
+      var users = await this.fetchUsers();
       var self = this;
-      var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
       var u = users.find(function(x){return x.id === self.currentUser.id});
       if(u){
         this.currentUser = u;
@@ -1006,72 +926,34 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  DRIVE AUTH + SYNC (★ MANDIRI — token sendiri, popup sendiri)
+    //  DRIVE AUTO-CONNECT — API KEY, tanpa OAuth, tanpa popup
     // ================================================================
-    startDriveAuth(){
-      try{
-        if(!window.google || !google.accounts){
-          this.showToast('SDK Google belum dimuat','Refresh halaman lalu coba lagi','error');
-          return;
-        }
-        if(!this._tokenClient){
-          this._tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: EMP_DRIVE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/drive.file',
-            callback: handleDriveAuth
-          });
-        }
-        console.log('[Employee] Membuka popup login Google Drive (mandiri)...');
-        this._tokenClient.requestAccessToken({prompt:''});
-      }catch(e){
-        console.error('[Employee] Auth error:', e);
-        this.showToast('Gagal memulai login Drive', e.message, 'error');
-      }
-    },
     async connectDrive(){
       this.driveError = '';
-      var token = localStorage.getItem(EMP_TOKEN_KEY);
-      if(!token){
-        // ★ MANDIRI: langsung buka popup login Drive sendiri, tidak peduli status index.html
-        this.driveConnected = false;
-        this.driveError = 'Hubungkan akun Google Drive perusahaan Anda untuk mulai mengakses dokumen.';
+      if(!this.configReady()){
+        this.driveError = 'Konfigurasi belum lengkap. Isi DC_API_KEY, DC_FOLDER_ID dan DC_USERS_URL di bagian atas script employee.html.';
         this.isLoading = false;
         this.refreshIcons();
-        this.showToast('Menghubungkan Google Drive','Login dengan akun Google perusahaan','info');
-        this.startDriveAuth();
         return;
       }
       this.driveLoading = true;
       try{
-        console.log('[Employee] Mengecek token & user Drive...');
-        var ur = await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token}});
-        if(ur.status === 401 || ur.status === 403) throw new Error('TOKEN_EXPIRED');
-        if(ur.ok){
-          var u = await ur.json();
-          this.driveUser = {name:u.name||(u.email?u.email.split('@')[0]:'Drive'), email:u.email, picture:u.picture};
-        }
-        this.driveFolderId = localStorage.getItem('dc_drive_folder') || null;
-        console.log('[Employee] Folder ID:', this.driveFolderId);
+        console.log('[Employee] ⚡ Auto-connect ke Drive via API key...');
         await this.syncDriveFiles();
-        this.ensureCategoriesFromDrive();
+        this.mergeCategoriesFromDrive();
         this.buildFileListFromDrive();
         this.updateCategoryCounts();
         this.updateStats();
         this.filterFiles();
         this.driveConnected = true;
+        this.driveUser = {name:'Drive Perusahaan', email:'Auto-connect • tanpa login Google'};
         this.driveError = '';
         this.warnInvalidAccess();
         console.log('[Employee] ✅ Total file Drive:', this.files.length, '| Dapat diakses:', this.accessibleFiles.length);
       }catch(e){
         console.error('[Employee] Drive error:', e);
         this.driveConnected = false;
-        if(e.message === 'TOKEN_EXPIRED'){
-          localStorage.removeItem(EMP_TOKEN_KEY);
-          this.driveError = 'Sesi Google Drive berakhir. Klik tombol di bawah untuk menghubungkan ulang.';
-          this.startDriveAuth();
-        } else {
-          this.driveError = 'Gagal terhubung ke Google Drive: ' + e.message;
-        }
+        this.driveError = 'Gagal terhubung ke Google Drive: ' + e.message + '. Pastikan folder sudah di-share "Siapa saja yang memiliki link" dan API key benar.';
       }finally{
         this.driveLoading = false;
         this.isLoading = false;
@@ -1079,13 +961,11 @@ function employeeApp() {
       }
     },
     async refreshFromDrive(){
-      if(!localStorage.getItem(EMP_TOKEN_KEY)){ this.connectDrive(); return; }
       this.driveLoading = true;
       try{
-        this.driveFolderId = localStorage.getItem('dc_drive_folder') || null;
-        await this.loadCategories();   // ★ baca ulang kategori terbaru dari index.html (IndexedDB)
+        await this.loadCategories();
         await this.syncDriveFiles();
-        this.ensureCategoriesFromDrive();
+        this.mergeCategoriesFromDrive();
         this.buildFileListFromDrive();
         this.updateCategoryCounts();
         this.updateStats();
@@ -1095,12 +975,7 @@ function employeeApp() {
         this.showToast('Sinkron selesai', this.accessibleFiles.length + ' file dapat diakses', 'success');
       }catch(e){
         this.driveConnected = false;
-        if(e.message === 'TOKEN_EXPIRED'){
-          localStorage.removeItem(EMP_TOKEN_KEY);
-          this.driveError = 'Sesi Google Drive berakhir. Klik tombol Drive di topbar untuk login ulang.';
-        } else {
-          this.driveError = 'Gagal refresh: ' + e.message;
-        }
+        this.driveError = 'Gagal refresh: ' + e.message;
         this.showToast('Refresh gagal','','error');
       }finally{
         this.driveLoading = false;
@@ -1108,42 +983,33 @@ function employeeApp() {
       }
     },
     async syncDriveFiles(){
-      var token = localStorage.getItem(EMP_TOKEN_KEY);
-      if(!token) throw new Error('NO_TOKEN');
-      this.driveLoading = true;
-      try{
-        var folderQ = this.driveFolderId ? ("'"+this.driveFolderId+"' in parents and ") : '';
-        var fieldsStr = 'files(id,name,mimeType,size,modifiedTime,description,parents,thumbnailLink)';
-        var r = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=200&fields='+fieldsStr+'&q='+encodeURIComponent(folderQ+'trashed=false'),{headers:{Authorization:'Bearer '+token}});
-        if(r.status === 401 || r.status === 403) throw new Error('TOKEN_EXPIRED');
-        if(!r.ok) throw new Error('Drive error ' + r.status);
-        var d = await r.json();
-        var allItems = d.files || [];
-        var folders = [], files = [];
-        for(var i = 0; i < allItems.length; i++){
-          if(allItems[i].mimeType === 'application/vnd.google-apps.folder'){
-            allItems[i].children = [];
-            folders.push(allItems[i]);
-          } else {
-            files.push(allItems[i]);
-          }
+      var fieldsStr = 'files(id,name,mimeType,size,modifiedTime,description,parents,thumbnailLink)';
+      var q = encodeURIComponent("'"+DC_FOLDER_ID+"' in parents and trashed=false");
+      var r = await fetch('https://www.googleapis.com/drive/v3/files?key='+DC_API_KEY+'&pageSize=1000&fields='+fieldsStr+'&q='+q);
+      if(!r.ok) throw new Error('Drive error ' + r.status + ' (cek API key / share folder)');
+      var d = await r.json();
+      var allItems = d.files || [];
+      var folders = [], files = [];
+      for(var i = 0; i < allItems.length; i++){
+        if(allItems[i].mimeType === 'application/vnd.google-apps.folder'){
+          allItems[i].children = [];
+          folders.push(allItems[i]);
+        } else {
+          files.push(allItems[i]);
         }
-        var childPromises = folders.map(function(folder){
-          return fetch('https://www.googleapis.com/drive/v3/files?pageSize=200&fields='+fieldsStr+'&q='+encodeURIComponent("'"+folder.id+"' in parents and trashed=false"),{headers:{Authorization:'Bearer '+token}})
-            .then(function(res){ return res.ok ? res.json() : {files:[]} })
-            .then(function(data){ folder.children = data.files || []; })
-            .catch(function(){ folder.children = []; });
-        });
-        await Promise.all(childPromises);
-        folders.sort(function(a,b){ return a.name.localeCompare(b.name) });
-        this.driveFiles = files;
-        this.driveFolders = folders;
-        console.log('[Employee] Drive sync: ' + files.length + ' files root, ' + folders.length + ' folders');
-      }catch(e){
-        this.driveLoading = false;
-        throw e;
       }
-      this.driveLoading = false;
+      var childPromises = folders.map(function(folder){
+        var q2 = encodeURIComponent("'"+folder.id+"' in parents and trashed=false");
+        return fetch('https://www.googleapis.com/drive/v3/files?key='+DC_API_KEY+'&pageSize=1000&fields='+fieldsStr+'&q='+q2)
+          .then(function(res){ return res.ok ? res.json() : {files:[]} })
+          .then(function(data){ folder.children = data.files || []; })
+          .catch(function(){ folder.children = []; });
+      });
+      await Promise.all(childPromises);
+      folders.sort(function(a,b){ return a.name.localeCompare(b.name) });
+      this.driveFiles = files;
+      this.driveFolders = folders;
+      console.log('[Employee] Drive sync: ' + files.length + ' files root, ' + folders.length + ' folders');
     },
     buildFileListFromDrive(){
       var result = [];
@@ -1187,7 +1053,6 @@ function employeeApp() {
       }
       deduped.sort(function(a,b){ return (b.modifiedTime||0) - (a.modifiedTime||0) });
       this.files = deduped;
-      console.log('[Employee] File list:', deduped.length, '| contoh kategori:', deduped.slice(0,3).map(function(f){return f.category||'(kosong)'}).join(', '));
     },
     mapDriveFileToApp(driveFile, categoryName){
       var mime = driveFile.mimeType || '';
@@ -1233,7 +1098,7 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  HAK AKSES (fallback nilai access lama/invalid)
+    //  HAK AKSES
     // ================================================================
     get accessibleCategories(){
       if(!this.currentUser) return [];
@@ -1241,10 +1106,7 @@ function employeeApp() {
       if(!this.currentUser.access || this.currentUser.access === 'all') return all;
       var list = this.currentUser.access.split(',').map(function(s){return s.trim()}).filter(Boolean);
       var valid = list.filter(function(a){ return all.indexOf(a) !== -1 });
-      if(valid.length === 0){
-        console.warn('[Employee] ⚠️ Access "'+this.currentUser.access+'" tidak cocok dengan kategori manapun → fallback: semua kategori');
-        return all;
-      }
+      if(valid.length === 0) return all;
       return list;
     },
     hasAccess(file){
@@ -1278,7 +1140,7 @@ function employeeApp() {
         var catNames = this.categories.map(function(c){return c.name});
         var adaCocok = accList.some(function(a){ return catNames.indexOf(a) !== -1 });
         if(!adaCocok){
-          this.showToast('Hak akses "'+this.currentUser.access+'" tidak valid','Minta Admin atur ulang di Approval Center. Sementara semua file ditampilkan.','warning');
+          this.showToast('Hak akses "'+this.currentUser.access+'" tidak valid','Minta Admin atur ulang. Sementara semua file ditampilkan.','warning');
         }
       }
     },
@@ -1457,11 +1319,25 @@ function employeeApp() {
       return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i];
     },
     openFile(file){ this.previewFile=file; this.logActivity('view',file); this.refreshIcons(); },
-    downloadFile(file){
+    async downloadFile(file){
       if(!file) return;
-      window.open('https://drive.google.com/uc?export=download&id='+file.id,'_blank');
       this.logActivity('download',file);
       this.showToast('Mengunduh...',file.name,'info');
+      try{
+        // ★ download langsung via API key (tanpa login Google)
+        var r = await fetch('https://www.googleapis.com/drive/v3/files/'+file.id+'?alt=media&key='+DC_API_KEY);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        var blob = await r.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){ URL.revokeObjectURL(url); if(a.parentNode) a.parentNode.removeChild(a); },1000);
+      }catch(e){
+        console.warn('[Employee] download blob gagal, fallback link:', e.message);
+        window.open('https://drive.google.com/uc?export=download&id='+file.id,'_blank');
+      }
     },
     toggleFileMenu(id,e){
       if(e) e.stopPropagation();
