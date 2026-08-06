@@ -849,6 +849,7 @@ function employeeApp() {
         this.isLoggedIn = true;
         this.loadBookmarks();
         this.loadHistory();
+        this.logActivity('login', null);
         console.log('[Employee] 👤 Login sebagai:', u.username, '| status:', u.status);
         if(u.status === 'approved') this.connectDrive();
         var self = this;
@@ -876,9 +877,9 @@ function employeeApp() {
       if(!u){ this.loginError = 'Username atau password salah'; return; }
       this.currentUser = u;
       this.isLoggedIn = true;
-      localStorage.setItem('dc_employee_session', u.id);
       this.loadBookmarks();
       this.loadHistory();
+      this.logActivity('login', null);
       if(u.status === 'approved'){ this.connectDrive(); this.showToast('Selamat datang', u.name, 'success'); }
       else if(u.status === 'pending'){ this.showToast('Menunggu persetujuan','Akun belum disetujui Admin','info'); }
       this.refreshIcons();
@@ -1299,18 +1300,31 @@ function employeeApp() {
       var key='dc_history_'+this.currentUser.id;
       localStorage.setItem(key,JSON.stringify(this.historyLog.slice(0,200)));
     },
-    logActivity(type,file){
-      if(!file||!this.currentUser) return;
-      this.historyLog.unshift({
+        logActivity(type,file){
+      if(!this.currentUser) return;
+      var entry = {
         id: Date.now()+'_'+Math.random().toString(36).substr(2,5),
-        fileId: file.id,
-        fileName: file.title||file.name,
-        fileCategory: file.category||'',
+        fileId: file ? file.id : '',
+        fileName: file ? (file.title||file.name) : '',
+        fileCategory: file ? (file.category||'') : '',
         type: type,
         time: new Date().toISOString()
-      });
-      if(this.historyLog.length>200) this.historyLog=this.historyLog.slice(0,200);
-      this.saveHistory();
+      };
+      if(file){
+        this.historyLog.unshift(entry);
+        if(this.historyLog.length>200) this.historyLog=this.historyLog.slice(0,200);
+        this.saveHistory();
+      }
+      this.sendActivity(entry); // ★ lapor ke server (dipantau Admin)
+    },
+    sendActivity(entry){
+      try{
+        fetch(DC_USERS_URL, {
+          method: 'POST',
+          headers: {'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({action:'logActivity', userId:this.currentUser.id, entry:entry})
+        }).catch(function(){});
+      }catch(e){}
     },
     clearHistory(){
       this.historyLog=[];
