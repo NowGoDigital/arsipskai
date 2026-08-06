@@ -679,14 +679,15 @@ tr:hover .file-actions-btn{opacity:1}
 
 <script>
 // ============================================================
-//  GOOGLE DRIVE AUTH (Client ID SAMA dengan index.html)
+//  GOOGLE DRIVE AUTH — MANDIRI (tidak bergantung index.html)
 // ============================================================
 var EMP_DRIVE_CLIENT_ID = '1001156603615-jn13949339q1m7sv9t56987975n0s41m.apps.googleusercontent.com';
+var EMP_TOKEN_KEY = 'dc_emp_drive_token'; // ★ token KHUSUS employee — mandiri
 
 function handleDriveAuth(response){
   if(response && response.access_token){
-    localStorage.setItem('dc_drive_token', response.access_token);
-    console.log('[Employee] ✅ Token Drive baru disimpan');
+    localStorage.setItem(EMP_TOKEN_KEY, response.access_token);
+    console.log('[Employee] ✅ Token Drive employee disimpan (mandiri)');
     if(window.__employeeApp){
       window.__employeeApp.driveError = '';
       window.__employeeApp.showToast('Google Drive terhubung','Token berhasil diambil','success');
@@ -771,7 +772,7 @@ function employeeApp() {
     refreshIcons(){ this.$nextTick(function(){ if(window.lucide) lucide.createIcons() }) },
 
     // ================================================================
-    //  KATEGORI — IndexedDB DocuCloudV8 + fallback folder Drive
+    //  KATEGORI — IndexedDB DocuCloudV8 (ditulis index.html) + fallback folder Drive
     // ================================================================
     openDB(){
       return new Promise(function(resolve,reject){
@@ -894,7 +895,7 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  DRIVE AUTH + SYNC
+    //  DRIVE AUTH + SYNC (★ MANDIRI — token sendiri, popup sendiri)
     // ================================================================
     startDriveAuth(){
       try{
@@ -909,7 +910,7 @@ function employeeApp() {
             callback: handleDriveAuth
           });
         }
-        console.log('[Employee] Membuka popup login Google Drive...');
+        console.log('[Employee] Membuka popup login Google Drive (mandiri)...');
         this._tokenClient.requestAccessToken({prompt:''});
       }catch(e){
         console.error('[Employee] Auth error:', e);
@@ -918,12 +919,14 @@ function employeeApp() {
     },
     async connectDrive(){
       this.driveError = '';
-      var token = localStorage.getItem('dc_drive_token');
+      var token = localStorage.getItem(EMP_TOKEN_KEY);
       if(!token){
+        // ★ MANDIRI: langsung buka popup login Drive sendiri, tidak peduli status index.html
         this.driveConnected = false;
-        this.driveError = 'Belum terhubung ke Google Drive. Klik tombol di bawah untuk menghubungkan.';
+        this.driveError = 'Hubungkan akun Google Drive perusahaan Anda untuk mulai mengakses dokumen.';
         this.isLoading = false;
         this.refreshIcons();
+        this.showToast('Menghubungkan Google Drive','Login dengan akun Google perusahaan','info');
         this.startDriveAuth();
         return;
       }
@@ -952,7 +955,10 @@ function employeeApp() {
         console.error('[Employee] Drive error:', e);
         this.driveConnected = false;
         if(e.message === 'TOKEN_EXPIRED'){
-          this.driveError = 'Token Drive kadaluarsa. Klik tombol di bawah untuk login ulang.';
+          // ★ token expired → buang & langsung re-auth sendiri
+          localStorage.removeItem(EMP_TOKEN_KEY);
+          this.driveError = 'Sesi Google Drive berakhir. Klik tombol di bawah untuk menghubungkan ulang.';
+          this.startDriveAuth();
         } else {
           this.driveError = 'Gagal terhubung ke Google Drive: ' + e.message;
         }
@@ -963,10 +969,11 @@ function employeeApp() {
       }
     },
     async refreshFromDrive(){
-      if(!localStorage.getItem('dc_drive_token')){ this.connectDrive(); return; }
+      if(!localStorage.getItem(EMP_TOKEN_KEY)){ this.connectDrive(); return; }
       this.driveLoading = true;
       try{
         this.driveFolderId = localStorage.getItem('dc_drive_folder') || null;
+        await this.loadCategories();   // ★ baca ulang kategori terbaru dari index.html (IndexedDB)
         await this.syncDriveFiles();
         this.ensureCategoriesFromDrive();
         this.buildFileListFromDrive();
@@ -978,7 +985,12 @@ function employeeApp() {
         this.showToast('Sinkron selesai', this.accessibleFiles.length + ' file dapat diakses', 'success');
       }catch(e){
         this.driveConnected = false;
-        this.driveError = (e.message === 'TOKEN_EXPIRED') ? 'Token Drive kadaluarsa. Klik tombol Drive di topbar untuk login ulang.' : 'Gagal refresh: ' + e.message;
+        if(e.message === 'TOKEN_EXPIRED'){
+          localStorage.removeItem(EMP_TOKEN_KEY);
+          this.driveError = 'Sesi Google Drive berakhir. Klik tombol Drive di topbar untuk login ulang.';
+        } else {
+          this.driveError = 'Gagal refresh: ' + e.message;
+        }
         this.showToast('Refresh gagal','','error');
       }finally{
         this.driveLoading = false;
@@ -986,7 +998,7 @@ function employeeApp() {
       }
     },
     async syncDriveFiles(){
-      var token = localStorage.getItem('dc_drive_token');
+      var token = localStorage.getItem(EMP_TOKEN_KEY);
       if(!token) throw new Error('NO_TOKEN');
       this.driveLoading = true;
       try{
