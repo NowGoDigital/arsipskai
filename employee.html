@@ -84,7 +84,7 @@ tr:hover .file-actions-btn{opacity:1}
     <div class="flex items-center justify-between px-6 lg:px-10 py-3">
       <div class="flex items-center gap-2.5 text-white">
         <div class="w-8 h-8 rounded-lg bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center shadow-lg"><i data-lucide="cloud-cog" class="w-4 h-4"></i></div>
-        <div><p class="font-extrabold text-[13px] leading-none">DocuCloud</p><p class="text-[9px] text-white/60 mt-0.5">Employee Portal v8.0</p></div>
+        <div><p class="font-extrabold text-[13px] leading-none">DocuCloud</p><p class="text-[9px] text-white/60 mt-0.5">Employee Portal v8.1</p></div>
       </div>
       <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-semibold backdrop-blur">
         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> Sistem Aktif
@@ -378,7 +378,7 @@ tr:hover .file-actions-btn{opacity:1}
               <button @click="showProfileMenu=false; logout()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-sm text-red-500 transition"><i data-lucide="log-out" class="w-4 h-4"></i><span>Keluar (Logout)</span></button>
             </div>
             <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <span class="text-[10px] text-slate-500">DocuCloud v8.0</span>
+              <span class="text-[10px] text-slate-500">DocuCloud v8.1</span>
               <span class="text-[10px] text-slate-400">Employee Portal</span>
             </div>
           </div>
@@ -676,11 +676,13 @@ tr:hover .file-actions-btn{opacity:1}
 <!-- ============================================================ -->
 <!-- ★ END OF PART 1 — balas "lanjut" untuk PART 2 (JavaScript)  -->
 <!-- ============================================================ -->
-
 <script>
 // ============================================================
 //  GOOGLE DRIVE AUTH — MANDIRI (tidak bergantung index.html)
 // ============================================================
+// ★★★ PENTING: jika sebelumnya Anda sudah mengganti baris ini dengan
+// ★★★ client_id ASLI dari index.html, ganti lagi nilai di bawah ini
+// ★★★ dengan nilai yang sama persis!
 var EMP_DRIVE_CLIENT_ID = '703011298290-2m6opraos750v8t9l4u83912hsfek5i4.apps.googleusercontent.com';
 var EMP_TOKEN_KEY = 'dc_emp_drive_token'; // ★ token KHUSUS employee — mandiri
 
@@ -689,11 +691,16 @@ function handleDriveAuth(response){
     localStorage.setItem(EMP_TOKEN_KEY, response.access_token);
     console.log('[Employee] ✅ Token Drive employee disimpan (mandiri)');
     if(window.__employeeApp){
-      window.__employeeApp.driveError = '';
-      window.__employeeApp.showToast('Google Drive terhubung','Token berhasil diambil','success');
-      window.__employeeApp.connectDrive();
+      var app = window.__employeeApp;
+      app.driveError = '';
+      app.showToast('Google Drive terhubung','Token berhasil diambil','success');
+      app.connectDrive();
+      // ★ lanjutkan aksi tertunda (login/daftar dari browser baru)
+      if(app._pendingAction === 'login'){ app._pendingAction = null; app.login(); }
+      else if(app._pendingAction === 'register'){ app._pendingAction = null; app.register(); }
     }
   } else if(window.__employeeApp){
+    window.__employeeApp._pendingAction = null;
     window.__employeeApp.showToast('Login Drive gagal','Tidak ada token diterima','error');
   }
 }
@@ -718,6 +725,8 @@ function employeeApp() {
     driveFolderId: null, driveFiles: [], driveFolders: [], driveError: '',
     bookmarks: [],
     historyLog: [],
+    _pendingAction: null,
+    _usersFileId: null,
     stats: [
       {label:'Total File',value:'0',icon:'file-text',color:'#6366f1',bg:'#eef2ff'},
       {label:'Total Ukuran',value:'0 B',icon:'hard-drive',color:'#3b82f6',bg:'#dbeafe'},
@@ -757,7 +766,7 @@ function employeeApp() {
           clearInterval(iv);
           setTimeout(async function(){
             await self.loadCategories();
-            self.checkSession();
+            await self.checkSession();
             self.isLoading = false;
             self.refreshIcons();
           },300);
@@ -815,26 +824,115 @@ function employeeApp() {
     },
 
     // ================================================================
-    //  AUTH
+    //  DATABASE AKUN SHARED — users.json di Google Drive
     // ================================================================
-    checkSession(){
-      var sessionId = localStorage.getItem('dc_employee_session');
-      if(sessionId){
-        var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
-        var u = users.find(function(x){return x.id === sessionId});
-        if(u){
-          this.currentUser = u;
-          this.isLoggedIn = true;
-          this.loadBookmarks();
-          this.loadHistory();
-          console.log('[Employee] 👤 Login sebagai:', u.username, '| status:', u.status, '| access:', u.access || 'all');
-          if(u.status === 'approved') this.connectDrive();
-        } else {
-          localStorage.removeItem('dc_employee_session');
+    async syncUsersFromDrive(silent){
+      var token = localStorage.getItem(EMP_TOKEN_KEY);
+      if(!token) return false;
+      try{
+        var q = encodeURIComponent("name='DocuCloud_users.json' and trashed=false");
+        var r = await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name)&pageSize=1',{headers:{Authorization:'Bearer '+token}});
+        if(r.status === 401 || r.status === 403){ if(!silent) localStorage.removeItem(EMP_TOKEN_KEY); return 'expired'; }
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        var d = await r.json();
+        var local = JSON.parse(localStorage.getItem('dc_users')||'[]');
+        if(d.files && d.files.length > 0){
+          this._usersFileId = d.files[0].id;
+          var dr = await fetch('https://www.googleapis.com/drive/v3/files/'+d.files[0].id+'?alt=media',{headers:{Authorization:'Bearer '+token}});
+          if(dr.ok){
+            var remote = await dr.json();
+            if(Array.isArray(remote) && remote.length > 0){
+              localStorage.setItem('dc_users', JSON.stringify(remote));
+              console.log('[Employee] 👥 Database akun dimuat dari Drive:', remote.length, 'akun');
+              return true;
+            }
+            if(Array.isArray(remote) && remote.length === 0 && local.length > 0){
+              await this.saveUsersToDrive(local);
+              return true;
+            }
+          }
+        } else if(local.length > 0){
+          // ★ MIGRASI otomatis: file belum ada → unggah akun lokal ke Drive
+          await this.saveUsersToDrive(local);
+          console.log('[Employee] 👥 Migrasi: database akun lokal diunggah ke Drive');
+          return true;
         }
+        return true;
+      }catch(e){
+        console.warn('[Employee] syncUsersFromDrive:', e.message);
+        return false;
       }
     },
-    login(){
+    async saveUsersToDrive(users){
+      localStorage.setItem('dc_users', JSON.stringify(users)); // cache lokal tetap jalan
+      var token = localStorage.getItem(EMP_TOKEN_KEY);
+      if(!token) return false;
+      try{
+        if(!this._usersFileId){
+          var q = encodeURIComponent("name='DocuCloud_users.json' and trashed=false");
+          var sr = await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)',{headers:{Authorization:'Bearer '+token}});
+          if(sr.ok){ var sd = await sr.json(); if(sd.files && sd.files.length) this._usersFileId = sd.files[0].id; }
+        }
+        var body = JSON.stringify(users);
+        if(this._usersFileId){
+          var ur = await fetch('https://www.googleapis.com/upload/drive/v3/files/'+this._usersFileId+'?uploadType=media',{method:'PATCH',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:body});
+          if(ur.status === 401 || ur.status === 403) throw new Error('TOKEN_EXPIRED');
+          if(!ur.ok) throw new Error('HTTP '+ur.status);
+        } else {
+          var boundary = 'dcboundary' + Date.now();
+          var meta = JSON.stringify({name:'DocuCloud_users.json',mimeType:'application/json'});
+          var payload = '--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+boundary+'--';
+          var cr = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'multipart/related; boundary='+boundary},body:payload});
+          if(cr.status === 401 || cr.status === 403) throw new Error('TOKEN_EXPIRED');
+          if(!cr.ok) throw new Error('HTTP '+cr.status);
+          var cd = await cr.json();
+          this._usersFileId = cd.id;
+        }
+        console.log('[Employee] 💾 users.json tersimpan di Drive');
+        return true;
+      }catch(e){
+        console.warn('[Employee] saveUsersToDrive gagal (cache lokal tetap):', e.message);
+        this.showToast('Gagal simpan ke Drive','Akun tersimpan lokal sementara','warning');
+        return false;
+      }
+    },
+
+    // ================================================================
+    //  AUTH
+    // ================================================================
+    async checkSession(){
+      var sessionId = localStorage.getItem('dc_employee_session');
+      if(!sessionId) return;
+      if(localStorage.getItem(EMP_TOKEN_KEY)){
+        await this.syncUsersFromDrive(true);
+      }
+      var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
+      var u = users.find(function(x){return x.id === sessionId});
+      if(u){
+        this.currentUser = u;
+        this.isLoggedIn = true;
+        this.loadBookmarks();
+        this.loadHistory();
+        console.log('[Employee] 👤 Login sebagai:', u.username, '| status:', u.status, '| access:', u.access || 'all');
+        if(u.status === 'approved') this.connectDrive();
+      } else {
+        localStorage.removeItem('dc_employee_session');
+      }
+    },
+    async login(){
+      this.loginError = '';
+      if(!localStorage.getItem(EMP_TOKEN_KEY)){
+        // ★ browser baru: ambil database akun dari Drive dulu (popup = user gesture, aman)
+        this._pendingAction = 'login';
+        this.showToast('Menghubungkan Google Drive','Login Google untuk verifikasi akun','info');
+        this.startDriveAuth();
+        return;
+      }
+      var s = await this.syncUsersFromDrive();
+      if(s === 'expired'){ this._pendingAction = 'login'; this.startDriveAuth(); return; }
+      this.doLogin();
+    },
+    doLogin(){
       this.loginError = '';
       var self = this;
       var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
@@ -849,10 +947,22 @@ function employeeApp() {
       else if(u.status === 'pending'){ this.showToast('Menunggu persetujuan','Akun belum disetujui Admin','info'); }
       this.refreshIcons();
     },
-    register(){
+    async register(){
       this.regError = '';
       if(!this.regName || !this.regUsername || !this.regPassword){ this.regError = 'Data wajib diisi'; return; }
       if(this.regPassword.length < 6){ this.regError = 'Password minimal 6 karakter'; return; }
+      if(!localStorage.getItem(EMP_TOKEN_KEY)){
+        this._pendingAction = 'register';
+        this.showToast('Menghubungkan Google Drive','Login Google untuk menyimpan pendaftaran','info');
+        this.startDriveAuth();
+        return;
+      }
+      var s = await this.syncUsersFromDrive();
+      if(s === 'expired'){ this._pendingAction = 'register'; this.startDriveAuth(); return; }
+      await this.doRegister();
+    },
+    async doRegister(){
+      this.regError = '';
       var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
       var self = this;
       if(users.some(function(x){return x.username === self.regUsername})){ this.regError = 'Username sudah dipakai'; return; }
@@ -862,7 +972,7 @@ function employeeApp() {
         status: 'pending', access: 'all', registeredAt: new Date().toISOString()
       };
       users.push(newUser);
-      localStorage.setItem('dc_users', JSON.stringify(users));
+      await this.saveUsersToDrive(users);
       this.currentUser = newUser;
       this.isLoggedIn = true;
       localStorage.setItem('dc_employee_session', newUser.id);
@@ -871,7 +981,8 @@ function employeeApp() {
       this.showRegister = false;
       this.refreshIcons();
     },
-    recheckStatus(){
+    async recheckStatus(){
+      if(localStorage.getItem(EMP_TOKEN_KEY)) await this.syncUsersFromDrive(true);
       var self = this;
       var users = JSON.parse(localStorage.getItem('dc_users')||'[]');
       var u = users.find(function(x){return x.id === self.currentUser.id});
@@ -955,7 +1066,6 @@ function employeeApp() {
         console.error('[Employee] Drive error:', e);
         this.driveConnected = false;
         if(e.message === 'TOKEN_EXPIRED'){
-          // ★ token expired → buang & langsung re-auth sendiri
           localStorage.removeItem(EMP_TOKEN_KEY);
           this.driveError = 'Sesi Google Drive berakhir. Klik tombol di bawah untuk menghubungkan ulang.';
           this.startDriveAuth();
