@@ -536,7 +536,7 @@ tr:hover .file-actions-btn{opacity:1}
       <!-- SEMUA FILE -->
       <div x-show="activeMenu === 'files' && driveConnected && !driveError" class="fade-in">
         <div class="flex items-center justify-between mb-4">
-          <div><h2 class="text-xl font-bold">Semua File</h2><p class="text-xs text-slate-500 mt-0.5" x-text="filteredFiles.length + ' dari ' + accessibleFiles.length + ' file di Google Drive'"></p></div>
+          <div><h2 class="text-xl font-bold">Semua File<span x-show="filterCategory" class="ml-2 align-middle text-sm font-bold px-2.5 py-1 rounded-full" :style="'color:'+catColor(filterCategory)+';background:'+catColor(filterCategory)+'1f'" x-text="filterCategory"></span></h2><p class="text-xs text-slate-500 mt-0.5" x-text="filterCategory ? (filteredFiles.length + ' dari ' + accessibleFiles.filter(function(f){ return f.category === filterCategory }).length + ' file di kategori ' + filterCategory) : (filteredFiles.length + ' dari ' + accessibleFiles.length + ' file di Google Drive')"></p></div>
           <div class="flex gap-2">
             <button @click="refreshFromDrive()" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-slate-50"><i data-lucide="refresh-cw" class="w-4 h-4" :class="driveLoading ? 'spin' : ''"></i><span class="hidden md:inline" x-text="driveLoading ? 'Syncing...' : 'Refresh'"></span></button>
           </div>
