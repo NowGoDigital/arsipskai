@@ -273,7 +273,7 @@ tr:hover .file-actions-btn{opacity:1}
       <template x-for="cat in visibleCategories" :key="cat.name">
         <div class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition"
              @click="filterCategory = (filterCategory === cat.name ? '' : cat.name); activeMenu = 'files'; filterFiles()">
-          <i data-lucide="folder" class="w-4 h-4 flex-shrink-0" :style="'color:'+cat.color"></i>
+          <i data-lucide="folder" class="cat-ic w-4 h-4 flex-shrink-0" :style="'color:'+cat.color"></i>
           <span x-show="sidebarOpen" x-text="cat.name" class="flex-1 truncate"></span>
           <template x-if="sidebarOpen && driveConnected && cat.driveFolderId">
             <span class="text-[9px] text-blue-400" title="Folder tersinkron di Drive">☁️</span>
@@ -448,7 +448,7 @@ tr:hover .file-actions-btn{opacity:1}
             <div class="space-y-1">
               <template x-for="cat in visibleCategories" :key="cat.name">
                 <button @click="filterCategory = cat.name; activeMenu = 'files'; filterFiles()" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition text-left">
-                  <i data-lucide="folder" class="w-4 h-4 flex-shrink-0" :style="'color:'+cat.color"></i>
+                  <i data-lucide="folder" class="cat-ic w-4 h-4 flex-shrink-0" :style="'color:'+cat.color"></i>
                   <span class="text-xs font-medium flex-1 truncate" x-text="cat.name"></span>
                   <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full font-semibold" x-text="cat.count"></span>
                 </button>
@@ -1452,6 +1452,7 @@ function employeeApp() {
      ============================================================ -->
 <style>
   header, .sticky{ z-index:60 !important; }
+  .cat-ic, .cat-ic svg{ fill: currentColor; }
 </style>
 <script>
 (function(){
