@@ -1447,27 +1447,37 @@ function employeeApp() {
 </script>
 
 <!-- ============================================================
-     ★ FIX v8.5.1 — ikon kategori & posisi dropdown profil
-     Tempel tepat sebelum </body>. Tidak mengubah kode lain.
+     ★ FIX v8.5.2 — paksa ikon kategori muncul
+     (menggantikan blok fix v8.5.1 — kode lain TIDAK diubah)
      ============================================================ -->
 <style>
-  /* dropdown profil wajib di atas semua konten */
   header, .sticky{ z-index:60 !important; }
 </style>
 <script>
 (function(){
-  function fixIcons(){
-    if(!window.lucide) return;
-    // nama ikon kosong/undefined → normalkan jadi 'folder' biar valid
-    document.querySelectorAll('i[data-lucide]').forEach(function(el){
-      var n = (el.getAttribute('data-lucide')||'').trim();
-      if(!n || n==='undefined' || n==='null') el.setAttribute('data-lucide','folder');
-    });
-    // render ulang semua ikon dinamis (kategori, dll)
-    lucide.createIcons();
+  var FOLDER_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0" class="text-indigo-400"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>';
+
+  function fix(){
+    var nodes = document.querySelectorAll('i[data-lucide]'), i, name;
+
+    // 1) nama ikon kosong/undefined → normalkan jadi 'folder'
+    for(i=0;i<nodes.length;i++){
+      name = (nodes[i].getAttribute('data-lucide')||'').trim();
+      if(!name || name==='undefined' || name==='null') nodes[i].setAttribute('data-lucide','folder');
+    }
+
+    // 2) biarkan lucide merender seperti biasa
+    if(window.lucide && lucide.createIcons) lucide.createIcons();
+
+    // 3) kalau lucide aktif tapi masih ada <i> gagal render → tempel SVG folder manual
+    if(window.lucide){
+      var left = document.querySelectorAll('i[data-lucide]');
+      for(i=0;i<left.length;i++) left[i].outerHTML = FOLDER_SVG;
+    }
   }
-  document.addEventListener('DOMContentLoaded', fixIcons);
-  setInterval(fixIcons, 1200); // jaga-jaga: data async kapan pun datang, ikon tetap muncul
+
+  fix();
+  setInterval(fix, 1000); // jaga-jaga untuk data async (kategori dari Drive)
 })();
 </script>
       
