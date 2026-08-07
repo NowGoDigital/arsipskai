@@ -1484,11 +1484,32 @@ function employeeApp() {
     }
   }
 
-  fix();
-    setInterval(fix, 1000);
+   fix();
+  setInterval(fix, 1000); // jaga-jaga untuk data async (kategori dari Drive)
 
-  // ★ v8.5.3 — isi nama & departemen langsung dari localStorage (anti-gagal)
-  setInterval(function(){
+  // ★ v8.5.3 — isi nama & departemen (anti-gagal, tidak bergantung Alpine)
+  function fillHeader(){
+    try{
+      var u = JSON.parse(localStorage.getItem('dc_user')||'null')||{};
+      var name = u.name || u.username || '';
+      var dept = u.dept || '';
+      if(!name || !dept){
+        var accs = JSON.parse(localStorage.getItem('dc_accounts')||'[]')||[];
+        for(var i=0;i<accs.length;i++){
+          if(accs[i].username === u.username){ name = name || (accs[i].name||''); dept = dept || (accs[i].dept||''); break; }
+        }
+      }
+      var n = document.getElementById('hdrName');
+      var d = document.getElementById('hdrDept');
+      if(n) n.textContent = name;
+      if(d) d.textContent = dept || '-';
+    }catch(e){}
+  }
+  fillHeader();
+  setInterval(fillHeader, 1000);
+})();
+  
+setInterval(function(){
     try{
       var u = JSON.parse(localStorage.getItem('dc_user')||'null')||{};
       var n = document.getElementById('hdrName');
