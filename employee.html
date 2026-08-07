@@ -1445,5 +1445,31 @@ function employeeApp() {
   };
 }
 </script>
+
+<!-- ============================================================
+     ★ FIX v8.5.1 — ikon kategori & posisi dropdown profil
+     Tempel tepat sebelum </body>. Tidak mengubah kode lain.
+     ============================================================ -->
+<style>
+  /* dropdown profil wajib di atas semua konten */
+  header, .sticky{ z-index:60 !important; }
+</style>
+<script>
+(function(){
+  function fixIcons(){
+    if(!window.lucide) return;
+    // nama ikon kosong/undefined → normalkan jadi 'folder' biar valid
+    document.querySelectorAll('i[data-lucide]').forEach(function(el){
+      var n = (el.getAttribute('data-lucide')||'').trim();
+      if(!n || n==='undefined' || n==='null') el.setAttribute('data-lucide','folder');
+    });
+    // render ulang semua ikon dinamis (kategori, dll)
+    lucide.createIcons();
+  }
+  document.addEventListener('DOMContentLoaded', fixIcons);
+  setInterval(fixIcons, 1200); // jaga-jaga: data async kapan pun datang, ikon tetap muncul
+})();
+</script>
+      
 </body>
 </html>
