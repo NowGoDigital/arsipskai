@@ -171,7 +171,7 @@ tr:hover .file-actions-btn{opacity:1}
               </button>
               <p class="text-[10px] text-center text-slate-400 mt-2.5 flex items-center justify-center gap-1.5"><i data-lucide="sparkles" class="w-3 h-3 text-indigo-400"></i> Tanpa akun Google — dokumen terhubung otomatis.</p>
             </div>
-            <!-- FORM DAFTAR (tanpa email, departemen dropdown) -->
+            <!-- FORM DAFTAR (tanpa email, unit kerja dropdown) -->
             <div x-show="showRegister">
               <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Lengkap</label>
               <div class="relative mb-2.5">
@@ -183,15 +183,16 @@ tr:hover .file-actions-btn{opacity:1}
                 <i data-lucide="at-sign" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input x-model="regUsername" type="text" placeholder="username" class="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
               </div>
-              <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">Departemen</label>
+              <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">Unit Kerja</label>
               <div class="relative mb-2.5">
                 <i data-lucide="building-2" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                 <select x-model="regDepartment" class="w-full pl-9 pr-8 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition appearance-none cursor-pointer">
-                  <option value="">— Pilih Departemen —</option>
+                  <option value="">— Pilih Unit Kerja —</option>
                   <option value="BISNIS">BISNIS</option>
                   <option value="PEMBINAAN &amp; REMEDIAL">PEMBINAAN &amp; REMEDIAL</option>
                   <option value="OPERASIONAL">OPERASIONAL</option>
                   <option value="SDM &amp; UMUM">SDM &amp; UMUM</option>
+                  <option value="SKAI">TEKNOLOGI INFORMASI</option>
                   <option value="SKAI">SKAI</option>
                   <option value="MRK">MRK</option>
                   <option value="KCO GERUNG">KCO GERUNG</option>
