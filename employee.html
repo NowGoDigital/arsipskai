@@ -445,7 +445,7 @@ tr:hover .file-actions-btn{opacity:1}
         <div class="grid lg:grid-cols-5 gap-2">
           <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
             <h3 class="text-xs font-bold mb-2 flex items-center gap-1.5"><i data-lucide="folder-heart" class="w-3.5 h-3.5 text-indigo-500"></i> Kategori</h3>
-            <div class="space-y-1">
+            <div class="space-y-1 dc-scroll scrollbar pr-1">
               <template x-for="cat in visibleCategories" :key="cat.name">
                 <button @click="filterCategory = cat.name; activeMenu = 'files'; filterFiles()" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition text-left">
                   <i data-lucide="folder" class="cat-ic w-4 h-4 flex-shrink-0" :style="'color:'+cat.color"></i>
@@ -459,7 +459,7 @@ tr:hover .file-actions-btn{opacity:1}
           <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3">
             <div class="flex items-center justify-between mb-2"><h3 class="text-xs font-bold flex items-center gap-1.5"><i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i> Terbaru</h3><span class="text-[10px] text-slate-400" x-text="Math.min(accessibleFiles.length, 6) + ' file'"></span></div>
             <div x-show="accessibleFiles.length === 0" class="py-6 text-center"><i data-lucide="inbox" class="w-8 h-8 mx-auto text-slate-300 mb-1.5"></i><p class="text-xs text-slate-500">Belum ada file yang bisa diakses</p></div>
-            <div x-show="accessibleFiles.length > 0" class="space-y-1">
+            <div x-show="accessibleFiles.length > 0" class="space-y-1 dc-scroll scrollbar pr-1">
               <template x-for="file in accessibleFiles.slice(0, 6)" :key="file.id">
                 <div @click="openFile(file)" class="flex items-center gap-2.5 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition group">
                   <div class="w-11 h-11 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden relative" :style="'background:'+file.color+'15'">
@@ -1453,6 +1453,9 @@ function employeeApp() {
 <style>
   header, .sticky{ z-index:60 !important; }
   .cat-ic, .cat-ic svg{ fill: currentColor; }
+/* tinggi section Kategori & Terbaru = 4 baris file, lebihnya scroll */
+  .dc-scroll{ max-height:252px; overflow-y:auto; }
+      
 </style>
 <script>
 (function(){
